@@ -322,12 +322,12 @@ def index():
         property_data = []
 
     resp = make_response(render_template("index.html", property_data=property_data, company_names=company_names))
-    if 'visited' not in request.cookies:
-        visitor = {
-            'timestamp': datetime.utcnow()
-        }
-        db.visitors.insert_one(visitor)
-        resp.set_cookie('visited', 'true')
+    # if 'visited' not in request.cookies:
+    #     visitor = {
+    #         'timestamp': datetime.utcnow()
+    #     }
+    #     db.visitors.insert_one(visitor)
+    #     resp.set_cookie('visited', 'true')
     return resp
     
 ###########SEND US A MESSAGE###############
