@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Overview</title>
+  <!-- base:css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
+  <!-- endinject -->
+  <!-- plugin css for this page -->
+  <!-- End plugin css for this page -->
+  <!-- inject:css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
+  <!-- endinject -->
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+</head>
+<body>
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".container-scroller").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
+  <div class="container-scroller">
+    <!-- partial:partials/_navbar.html -->
+    <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+      <div class="navbar-brand-wrapper d-flex justify-content-center">
+        <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
+          <a class="navbar-brand brand-logo" href="#"><img src="/static/images/logo.png" alt="logo"/></a>
+          <a class="navbar-brand brand-logo-mini" href="#"><img src="/static/images/logo.png" alt="logo"/></a>
+          <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+            <span class="typcn typcn-th-menu"></span>
+          </button>
+        </div>
+      </div>
+      <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+        <ul class="navbar-nav mr-lg-2">
+          <li class="nav-item nav-profile dropdown">
+            <a class="nav-link" href="#" data-toggle="dropdown" id="profileDropdown">
+              <img class="display-picture-logged-in" src="data:image/jpeg;base64,{{ dp }}" alt="profile">
+              <span class="nav-profile-name">{{ session['user_message1'] }}</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+              <a class="dropdown-item" href="{{url_for('account_setup_page')}}">
+                <i class="typcn typcn-cog-outline text-primary"></i>
+                Settings
+              </a>
+              <a class="dropdown-item" href="{{ url_for('logout') }}">
+                <i class="typcn typcn-eject text-primary"></i>
+                Logout
+              </a>
+            </div>
+          </li>
+          <li class="nav-item nav-user-status dropdown">
+            <p class="mb-0">
+                Last login was 
+                {% if 'time_since_last_login_secs' in session %}
+                    {{session['time_since_last_login_secs']}} seconds ago.
+                {% elif 'time_since_last_login_mins' in session %}
+                    {{session['time_since_last_login_mins']}} minutes ago.
+                {% elif 'time_since_last_login_hrs' in session %}
+                    {{session['time_since_last_login_hrs']}} hours ago.
+                {% elif 'time_since_last_login_days' in session %}
+                    {{session['time_since_last_login_days']}} days ago.
+                {% elif 'time_since_last_login_weeks' in session %}
+                    {{session['time_since_last_login_weeks']}} weeks ago.
+                {% elif 'time_since_last_login_months' in session %}
+                    {{session['time_since_last_login_months']}} months ago.
+                {% else %}
+                    {{session['time_since_last_login_years']}} years ago.
+                {% endif %}
+            </p>
+          </li>        
+        </ul>
+        <ul class="navbar-nav navbar-nav-right">
+          <li class="nav-item dropdown">
+            <a class="nav-link count-indicator dropdown-toggle d-flex justify-content-center align-items-center" id="messageDropdown" href="#" data-toggle="dropdown">
+              <i class="typcn typcn-cog-outline mx-0"></i>
+              <span class="count"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="messageDropdown">
+              <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
+              <a class="dropdown-item preview-item" href="{{url_for('account_setup_page')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Settings
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    User account set up
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Users
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    View other users
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('add_new_manager_email')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Add a manager
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Add a new manager
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Log Out
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Log Out
+                  </p>
+                </div>
+              </a>
+            </div>
+          </li>
+        </ul>
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+          <span class="typcn typcn-th-menu"></span>
+        </button>
+      </div>
+    </nav>
+    <!-- partial -->
+    <nav class="navbar-breadcrumb col-xl-12 col-12 d-flex flex-row p-0">
+      <div class="navbar-links-wrapper d-flex align-items-stretch">
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-calendar-outline"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-mail"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-folder"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-document-text"></i></a>
+        </div>
+      </div>
+      <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+        <ul class="navbar-nav mr-lg-2">
+          <li class="nav-item ml-0">
+            <h4 class="mb-0">Dashboard</h4>
+          </li>
+        </ul>
+        <ul class="navbar-nav navbar-nav-right">
+          <li class="nav-item mr-0">
+            <h5 class="mb-0">{{session['user_message2']}} Days left</h5>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <!-- ADD PROPERTY FORM -->
+    <div class="property-form">
+      <form id="myForm" action="{{url_for('add_property')}}" method="POST">
+        <h4>Add new property</h4>
+        <label class="input_labels" for="">Property Unique Name</label>
+        <input class="property_inputs" type="text" name="propertyName" required><br>
+        <label class="input_labels" for="">Property Type</label>
+        <select class="property_inputs" name="type" id="" required>
+            <option value="none" disabled selected>Select Type</option>
+            <option value="Studio Apartments">Studio Apartments</option>
+            <option value="One-Bedroom Apartments">One-Bedroom Apartments</option>
+            <option value="Two-Bedroom Apartments">Two-Bedroom Apartments</option>
+            <option value="Three-Bedroom Apartments">Three-Bedroom Apartments</option>
+            <option value="Serviced Apartments">Serviced Apartments</option>
+            <option value="Maisonette Apartments">Maisonette Apartments</option>
+            <option value="Office building">Office space</option>
+            <option value="Retail space">Retail space</option>
+            <option value="Warehouse">Warehouse space</option>
+            <option value="Hotel">Hotel</option>
+            <option value="Motel">Motel</option>
+        </select><br>
+        <label class="input_labels" for="">Property Sections</label>
+        <input class="property_inputs" type="text" id="values" name="sections" pattern="[^ ]*" title="No spaces allowed, use commas instead of spaces" multiple><br>
+        <label class="input_labels" for="">Overall Property Value</label>
+        <input class="property_inputs" type="number" min="100000" name="property_value" required><br>
+        <label class="input_labels" for="">Late payment day</label>
+        <input class="property_inputs" type="number" min="6" name="late_payment_day" required><br>
+        <label class="input_labels" for="">Property Address</label>
+        <input class="property_inputs" type="text" name="address" required><br>
+        <label class="input_labels" for="">City</label>
+        <input class="property_inputs" type="text" name="city" required><br>
+        <label class="input_labels" for="">State/Province</label>
+        <input class="property_inputs" type="text" name="state" required><br>
+        <label class="input_labels" for="">County/Parish</label>
+        <input class="property_inputs" type="text" name="parish" required><br>
+        <label class="input_labels" for="">Owner Name</label>
+        <input class="property_inputs" type="text" name="owner_name" required><br>
+        <label class="input_labels" for="">Email Address</label>
+        <input class="property_inputs" type="email" name="owner_email" required><br>
+        <label class="input_labels" for="">Phone Number</label>
+        <input class="property_inputs" type="tel" name="owner_phone" required><br>
+        <label class="input_labels" for="">Residence</label>
+        <input class="property_inputs" type="text" name="owner_residence" required>
+        <input required type="submit" class="btn" value="Submit">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+    <!-- ADD TENANT FORM -->
+    <div class="tenant-form">
+      <form id="myForm1" action="{{url_for('add_tenant')}}" method="POST" enctype="multipart/form-data">
+        <h4>Add new tenant</h4>
+        <label class="input_labels" for="">Tenant Name</label>
+        <input class="property_inputs" type="text" name="tenantName" required><br>
+        <label class="input_labels" for="">Gender</label>
+        <select class="property_inputs" name="gender" required>
+          <option value="none" disabled selected>Select</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select><br>
+        <label class="input_labels" for="">Marital Status</label>
+        <select class="property_inputs" name="marital_status" required>
+          <option value="none" disabled selected>Select</option>
+          <option value="Single">Single</option>
+          <option value="Married">Married</option>
+          <option value="Widowed">Widowed</option>
+          <option value="Separated">Separated</option>
+        </select><br>
+        <label class="input_labels" for="">Age group</label>
+        <select class="property_inputs" name="age" required>
+          <option value="none" disabled selected>Select</option>
+          <option value="18-25">18-25</option>
+          <option value="26-35">26-35</option>
+          <option value="36-45">36-45</option>
+          <option value="46-55">46-55</option>
+          <option value="56+">56+</option>
+        </select><br>
+        <label class="input_labels" for="">Tenant Email</label>
+        <input class="property_inputs" type="email" name="tenantEmail" required><br>
+        <label class="input_labels" for="">Tenant Phone</label>
+        <input class="property_inputs" type="tel" name="tenantPhone" required><br>
+        <label class="input_labels" for="">Attach To Property</label>
+        <select class="property_inputs" name="propertyName" id="property" required>
+            <option value="none" disabled selected>Select Property</option>
+            {% if property_data%}
+              {% for property in property_data.keys() %}
+                <option value="{{ property }}">{{ property }}</option>
+              {% endfor %}
+            {% endif %}
+        </select><br>
+        <label class="input_labels" for="">Tenant Section On Property</label>
+        <select class="property_inputs" name="selected_section" id="section" required>
+            <!-- Options will be populated by JavaScript -->
+        </select><br>
+        <label class="input_labels" for="">Section Value</label>
+        <input class="property_inputs" type="number" min="100000" name="section_value" required><br>
+        <label class="input_labels" for="">Payment Type</label>
+        <select class="property_inputs" name="payment_type" id="payment_type" required>
+            <option value="none" disabled selected>Select type</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Quarterly">Quarterly</option>
+            <option value="Annualy">Annualy</option>
+        </select><br>
+        <label class="input_labels" for="">Payment period</label>
+        <select class="property_inputs" name="months_paid" id="months_paid" required>
+          <option value="none" disabled selected>Select period</option>
+          <option value="January">January</option>
+          <option value="February">February</option>
+          <option value="March">March</option>
+          <option value="April">April</option>
+          <option value="May">May</option>
+          <option value="June">June</option>
+          <option value="July">July</option>
+          <option value="August">August</option>
+          <option value="September">September</option>
+          <option value="October">October</option>
+          <option value="November">November</option>
+          <option value="December">December</option>
+        </select><br>
+        <label class="input_labels" for="">Date</label>
+        <input class="property_inputs" type="date" name="date_last_paid" required><br>
+        <label class="input_labels" for="">Amount Paid</label>
+        <input class="property_inputs" type="number" min="5000" name="amount" required><span><select name="currency" id="" required>
+            <option value="UGX">UGX</option>
+            <option value="USD">USD</option>
+        </select></span><br>
+        <label class="input_labels" for="">Mode Of Payment</label>
+        <select class="property_inputs" name="payment_mode" id="" required>
+            <option value="none" disabled selected>Select payment mode</option>
+            <option value="Cash">Cash</option>
+            <option value="Mobile Money">Mobile Money</option>
+            <option value="Bank">Bank</option>
+            <option value="PayPal">PayPal</option>
+            <option value="MasterCard">MasterCard</option>
+            <option value="Momo Pay">Momo Pay</option>
+        </select><br>
+        <label class="input_labels" for="">Upload Payment Receipt</label>
+        <input type="file" accept="image/*" name="payment_receipt" id="imageUpload" required><br>
+        <input required type="submit" class="btn" value="Submit">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+    <!-- EXPORT DATA -->
+    <div class="export-form">
+      <form action="{{url_for('download')}}" method="POST">
+        <label class="input_labels" for="">From date</label>
+        <input class="property_inputs" type="date" name="startdate" id="" placeholder="enter start date" required><br>
+        <label class="input_labels" for="">To date</label>
+        <input class="property_inputs" type="date" name="enddate" id="" placeholder="enter end date" required>
+        <input required type="submit" class="btn" value="Export">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+
+    <div class="container-fluid page-body-wrapper">
+      <!-- partial:partials/_settings-panel.html -->
+      <div class="theme-setting-wrapper">
+        <div id="settings-trigger"><i class="typcn typcn-cog-outline"></i></div>
+        <div id="theme-settings" class="settings-panel">
+          <i class="settings-close typcn typcn-times"></i>
+          <p class="settings-heading">SIDEBAR SKINS</p>
+          <div class="sidebar-bg-options selected" id="sidebar-light-theme"><div class="img-ss rounded-circle bg-light border mr-3"></div>Light</div>
+          <div class="sidebar-bg-options" id="sidebar-dark-theme"><div class="img-ss rounded-circle bg-dark border mr-3"></div>Dark</div>
+          <p class="settings-heading mt-2">HEADER SKINS</p>
+          <div class="color-tiles mx-0 px-4">
+            <div class="tiles success"></div>
+            <div class="tiles warning"></div>
+            <div class="tiles danger"></div>
+            <div class="tiles info"></div>
+            <div class="tiles dark"></div>
+            <div class="tiles default"></div>
+          </div>
+        </div>
+      </div>
+      <!-- partial -->
+      <!-- partial:partials/_sidebar.html -->
+      <nav class="sidebar sidebar-offcanvas" id="sidebar">
+        <ul class="nav">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
+              <i class="typcn typcn-device-desktop menu-icon"></i>
+              <span class="menu-title">Overview</span>
+              <div class="badge badge-danger">new</div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="add-property">
+              <i class="typcn typcn-document-text menu-icon"></i>
+              <span class="menu-title">Add property</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="add-tenant">
+              <i class="typcn typcn-film menu-icon"></i>
+              <span class="menu-title">Add Tenants</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('update_tenant_info') }}">
+              <i class="typcn typcn-chart-pie-outline menu-icon"></i>
+              <span class="menu-title">Tenants</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('view_property_info') }}">
+              <i class="typcn typcn-th-small-outline menu-icon"></i>
+              <span class="menu-title">Properties</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('resolve_complaints') }}">
+              <i class="typcn typcn-compass menu-icon"></i>
+              <span class="menu-title">Complaints</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="export">
+              <i class="typcn typcn-mortar-board menu-icon"></i>
+              <span class="menu-title">Export</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <!-- partial -->
+      <div class="main-panel">
+        <div>
+          {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
+          <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
+          {% endfor %} {% endif %} {% endwith %}
+        </div>
+        <div class="content-wrapper">
+          <form class="dashboard-form-form" action="{{url_for('load_dashboard_page')}}" method="POST">
+            <label class="dashboard-form" for="">From</label>
+            <input class="dashboard-form" type="date" name="startdate" required>
+            <label class="dashboard-form" for="">To</label>
+            <input class="dashboard-form" type="date" name="enddate" required>
+            <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Apply">
+          </form>
+          <p class="display-date">Display date: {{ month_name }}</p>
+          <div class="row">
+            <div class="col-md-4 grid-margin stretch-card">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between justify-content-md-center justify-content-xl-between flex-wrap mb-4">
+                    <div>
+                      <p class="mb-2 text-md-center text-lg-left">Properties</p>
+                      <h1 class="mb-0"><span id="count-properties"></span></h1>
+                    </div>
+                    <i class="typcn typcn-briefcase icon-xl text-secondary"></i>
+                  </div>
+                  <canvas id="expense-chart" height="80"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 grid-margin stretch-card">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between justify-content-md-center justify-content-xl-between flex-wrap mb-4">
+                    <div>
+                      <p class="mb-2 text-md-center text-lg-left">Tenants</p>
+                      <h1 class="mb-0"><span id="count-tenants"></span></h1>
+                    </div>
+                    <i class="typcn typcn-clipboard icon-xl text-secondary"></i>
+                  </div>
+                  <canvas id="balance-chart" height="80"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 grid-margin stretch-card">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between justify-content-md-center justify-content-xl-between flex-wrap mb-4">
+                    <div>
+                      <p class="mb-2 text-md-center text-lg-left">Total rent collected (Ugx)</p>
+                      <h4 class="mb-0"><span id="count-available-amount"></span></h4>
+                    </div>
+                    <i class="typcn typcn-chart-pie icon-xl text-secondary"></i>
+                  </div>
+                  <canvas id="budget-chart" height="80"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="chart-container">
+            <div class="row">
+              <div class="col-md-6 segment">
+                <div id="linechart"></div>
+              </div>
+              <div class="col-md-6 segment">
+                  <div id="property_performance_bar_chart"></div>
+              </div>
+              <div class="col-md-6 segment">
+                  <div id="property_type_bar_chart"></div>
+              </div>
+              {% if overdue_tenants %}
+              <div class="col-md-6 segment">
+                <p style="text-align: center;">Top 10 due tenants</p>
+                <table class="tenant_table">
+                  <tr>
+                    <!-- <th>Property Name</th> -->
+                    <th>No.</th>
+                    <th>Name</th>
+                    <th>Property</th>
+                    <th>Section</th>
+                    <th>Due period</th>
+                  </tr>
+                  {% for tenantName, propertyName, selected_section, remaining_days, time_unit, overdue_status in overdue_tenants %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td>{{ tenantName }}</td>
+                      <td>{{ propertyName }}</td>
+                      <td>{{ selected_section }}</td>
+                      <td>{{overdue_status}} {{ remaining_days }} {{time_unit}}</td>
+                    </tr>
+                  {% endfor %}
+                </table>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        <!-- content-wrapper ends -->
+        <!-- partial:partials/_footer.html -->
+        <footer class="footer">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-sm-flex justify-content-center justify-content-sm-between">
+                      <p>
+                        &copy; <span id="displayYear"></span> All Rights Reserved By
+                        <a href="#">Mich Manage</a>
+                      </p>
+                    </div>
+                </div>    
+            </div>        
+        </footer>
+        <!-- partial -->
+      </div>
+      <!-- main-panel ends -->
+    </div>
+    <!-- page-body-wrapper ends -->
+  </div>
+  <!-- container-scroller -->
+
+  <!-- CHARTS JAVASCRIPTS -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script type="text/javascript">
+    // Your existing code...
+    var config = {
+        responsive: true, 
+        displayModeBar: true, 
+        staticPlot: false,
+        modeBarButtonsToRemove: ['zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'toImage', 'drag2d']
+    };
+
+    // Modify the layout for each chart
+    var updateLayout = {
+        xaxis: {
+            showgrid: false,  // Remove grid lines
+            tickmode: "linear",
+            dtick: 1
+        },
+        yaxis: {
+            showgrid: false  // Remove grid lines
+        },
+        plot_bgcolor: 'white',  // Set background color to white for a classic look
+        paper_bgcolor: 'white'  // Set paper color to white for a classic look
+    };
+
+    // Merge the new layout with the existing layout
+    var property_type_bar_chart = {{ property_type_bar_chart | safe }};
+    property_type_bar_chart.layout = {...property_type_bar_chart.layout, ...updateLayout};
+    Plotly.newPlot('property_type_bar_chart', property_type_bar_chart.data, property_type_bar_chart.layout, config);
+
+    var property_performance_bar_chart = {{ property_performance_bar_chart | safe }};
+    property_performance_bar_chart.layout = {...property_performance_bar_chart.layout, ...updateLayout};
+    Plotly.newPlot('property_performance_bar_chart', property_performance_bar_chart.data, property_performance_bar_chart.layout, config);
+
+    var line_chartData = {{ line_chart | safe }};
+    line_chartData.layout = {...line_chartData.layout, ...updateLayout};
+    Plotly.newPlot('linechart', line_chartData.data, line_chartData.layout, config);
+  </script>
+
+  <script>
+      document.addEventListener("DOMContentLoaded", function () {
+      // Hide the alert after 5 seconds
+      setTimeout(function() {
+          document.getElementById("alert").style.display = "none";
+      }, 5000);
+      });
+  </script>
+  
+  <script>
+    $(document).ready(function() {
+      if ($("#expense-chart").length) {
+        var expenseChartCanvas = $("#expense-chart").get(0).getContext("2d");
+        var expenseChart = new Chart(expenseChartCanvas, {
+          type: 'bar',
+          data: {
+              labels: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
+              datasets: [
+                  {
+                      label: 'In',
+                      data: [35, 38, 29, 35, 37, 38, 24, 28, 19, 33, 42, 48, 33, 33, 29, 27, 29, 38, 31, 28, 23, 24],
+                      backgroundColor: '#a43cda',
+                  },
+                  {
+                      label: 'Out',
+                      data: [35, 38, 29, 35, 37, 38, 24, 28, 19, 33, 42, 48, 33, 33, 29, 27, 29, 38, 31, 28, 23, 24],
+                      backgroundColor: '#e1e1e2',
+                  }
+              ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            layout: {
+              padding: {
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0
+              }
+            },
+            scales: {
+              yAxes: [{
+                  display: false,
+                  stacked: true,
+                  gridLines: {
+                      drawBorder: false,
+                      color: '#f1f3f9',
+                      zeroLineColor: '#f1f3f9'
+                  },
+                  ticks: {
+                      display: false,
+                      fontColor: "#9fa0a2",
+                      padding: 0,
+                      stepSize: 10,
+                      min: 0,
+                      max: 100
+                  }
+              }],
+              xAxes: [{
+                  display: false,
+                  stacked: true,
+                  categoryPercentage: 1,
+                  ticks: {
+                      display: false,
+                      beginAtZero: false,
+                      display: true,
+                      padding: 10,
+                      fontSize: 11
+                  },
+                  gridLines: {
+                      color: "rgba(0, 0, 0, 0)",
+                      display: false
+                  },
+                  position: 'bottom',
+                  barPercentage: 0.4
+              }]
+            },
+            legend: {
+              display: false
+            },
+            animation: {
+              duration: 5000, // Set the duration for the animation (in milliseconds)
+              easing: 'easeInOutQuart', // Choose an easing function (e.g., easeInOutQuart, linear)
+              onProgress: function(animation) {
+                // Update the chart during animation (optional)
+                expenseChart.update();
+              }
+            },
+            elements: {
+              point: {
+                radius: 0
+              }
+            }
+          }
+        });
+      }
+
+      if ($("#budget-chart").length) {
+        var expenseChartCanvas = $("#budget-chart").get(0).getContext("2d");
+        var expenseChart = new Chart(expenseChartCanvas, {
+          type: 'bar',
+          data: {
+            labels: ["A", "B", "C", "D", "E","F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
+            datasets: [
+              {
+                label: 'In',
+                data: [35, 38, 29, 35, 37, 38, 24, 28, 19, 33, 42, 48, 33, 33, 29, 27, 29, 38, 31, 28, 23, 24],
+                backgroundColor: '#21bf06'
+              },
+              {
+                label: 'Out',
+                data: [35, 38, 29, 35, 37, 38, 24, 28, 19, 33, 42, 48, 33, 33, 29, 27, 29, 38, 31, 28, 23, 24],
+                backgroundColor: '#e1e1e2'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            layout: {
+              padding: {
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 0
+              }
+            },
+            scales: {
+              yAxes: [{
+                display: false,
+                stacked: true,
+                gridLines: {
+                  drawBorder: false,
+                  color: '#f1f3f9',
+                  zeroLineColor: '#f1f3f9'
+                },
+                ticks: {
+                  display: false,
+                  fontColor: "#9fa0a2",
+                  padding: 0,
+                  stepSize: 10,
+                  min: 0,
+                  max: 100
+                }
+              }],
+              xAxes: [{
+                display: false,
+                stacked: true,
+                categoryPercentage: 1,
+                ticks: {
+                  display: false,
+                  beginAtZero: false,
+                  display: true,
+                  padding: 10,
+                  fontSize: 11
+                },
+                gridLines: {
+                  color: "rgba(0, 0, 0, 0)",
+                  display: false
+                },
+                position: 'bottom',
+                barPercentage: 0.4
+              }]
+            },
+            legend: {
+              display: false
+            },
+            animation: {
+              duration: 5000, // Set the duration for the animation (in milliseconds)
+              easing: 'easeInOutQuart', // Choose an easing function (e.g., easeInOutQuart, linear)
+              onProgress: function(animation) {
+                // Update the chart during animation (optional)
+                expenseChart.update();
+              }
+            },
+            elements: {
+              point: {
+                radius: 0
+              }
+            }
+          }
+        });
+      }
+
+      if ($("#balance-chart").length) {
+        var expenseChartCanvas = $("#balance-chart").get(0).getContext("2d");
+        var expenseChart = new Chart(expenseChartCanvas, {
+          type: 'bar',
+          data: {
+            labels: ["A", "B", "C", "D", "E","F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
+            datasets: [
+              {
+                label: 'In',
+                data: [35, 38, 29, 35, 37, 38, 24, 28, 19, 33, 42, 48, 33, 33, 29, 27, 29, 38, 31, 28, 23, 24],
+                backgroundColor: '#dc3545'
+              },
+              {
+                label: 'Out',
+                data: [35, 38, 29, 35, 37, 38, 24, 28, 19, 33, 42, 48, 33, 33, 29, 27, 29, 38, 31, 28, 23, 24],
+                backgroundColor: '#e1e1e2'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            layout: {
+              padding: {
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 0
+              }
+            },
+            scales: {
+              yAxes: [{
+                display: false,
+                stacked: true,
+                gridLines: {
+                  drawBorder: false,
+                  color: '#f1f3f9',
+                  zeroLineColor: '#f1f3f9'
+                },
+                ticks: {
+                  display: false,
+                  fontColor: "#9fa0a2",
+                  padding: 0,
+                  stepSize: 10,
+                  min: 0,
+                  max: 100
+                }
+              }],
+              xAxes: [{
+                display: false,
+                stacked: true,
+                categoryPercentage: 1,
+                ticks: {
+                  display: false,
+                  beginAtZero: false,
+                  display: true,
+                  padding: 10,
+                  fontSize: 11
+                },
+                gridLines: {
+                  color: "rgba(0, 0, 0, 0)",
+                  display: false
+                },
+                position: 'bottom',
+                barPercentage: 0.4
+              }]
+            },
+            legend: {
+              display: false
+            },
+            elements: {
+              point: {
+                radius: 0
+              }
+            }
+          }
+        });
+      }
+    });
+  </script>
+
+  <script>
+    $(document).ready(function(){
+        var data = {{ property_data|default("{}")|tojson|safe }};
+        $('#property').change(function(){
+            var property_name = $(this).val();
+            var sections = data[property_name] || []; // Default to an empty array if sections are not available
+            var select = $('#section');
+            select.empty();
+            $.each(sections, function(index, value) {
+                select.append('<option value="' + value + '">' + value + '</option>');
+            });
+        });
+    });
+  </script>
+
+  <script>
+    document.getElementById('payment_type').addEventListener('change', function() {
+        var months_paid = document.getElementById('months_paid');
+        while(months_paid.options.length) {
+            months_paid.remove(0);
+        }
+        var el = document.createElement("option");
+        el.textContent = "Select period";
+        el.value = "none";
+        el.disabled = true;
+        el.selected = true;
+        months_paid.appendChild(el);
+
+        var options;
+        if(this.value === 'Monthly') {
+            options = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        } else if(this.value === 'Quarterly') {
+            options = ['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'];
+        } else if(this.value === 'Annualy') {
+            var currentYear = new Date().getFullYear();
+            options = [currentYear, currentYear+1, currentYear+2, currentYear+3, currentYear+4, currentYear+5];
+        }
+        options.forEach(function(option) {
+            var el = document.createElement("option");
+            el.textContent = option;
+            el.value = option;
+            months_paid.appendChild(el);
+        });
+    });
+  </script>
+
+  <script>
+    // Available amount
+    const countAvailableAmount = document.getElementById('count-available-amount');
+    const availableAmount = {{ available_amount }}; // Replace with your actual available amount
+
+    let currentAvailableCount = 0;
+    function updateAvailableCount(timestamp) {
+        const increment = Math.ceil((availableAmount - currentAvailableCount) / 20); // Adjust the increment as needed
+        currentAvailableCount += increment;
+
+        if (currentAvailableCount <= availableAmount) {
+            countAvailableAmount.textContent = currentAvailableCount.toLocaleString(); // Format with commas
+            requestAnimationFrame(updateAvailableCount);
+        }
+    }
+
+    requestAnimationFrame(updateAvailableCount);
+
+    // Number of tenants
+    const countTenants = document.getElementById('count-tenants');
+    const tenants = {{ count_current_tenants }}; // Replace with your actual tenant count
+
+    let currentTenantCount = 0;
+    function updateTenantCount(timestamp) {
+        const increment = Math.ceil((tenants - currentTenantCount) / 120); // Adjust the increment as needed
+        currentTenantCount += increment;
+
+        if (currentTenantCount <= tenants) {
+            countTenants.textContent = currentTenantCount.toLocaleString(); // Format with commas
+            requestAnimationFrame(updateTenantCount);
+        }
+    }
+
+    requestAnimationFrame(updateTenantCount);
+
+    // Number of properties
+    const countProperties = document.getElementById('count-properties');
+    const properties = {{ count_property }}; // Replace with your actual property count
+
+    let currentPropertyCount = 0;
+    function updatePropertyCount(timestamp) {
+        const increment = Math.ceil((properties - currentPropertyCount) / 120); // Adjust the increment as needed
+        currentPropertyCount += increment;
+
+        if (currentPropertyCount <= properties) {
+            countProperties.textContent = currentPropertyCount.toLocaleString(); // Format with commas
+            requestAnimationFrame(updatePropertyCount);
+        }
+    }
+
+    requestAnimationFrame(updatePropertyCount);
+  </script>
+
+  <script>
+    document.getElementById('myForm').addEventListener('submit', function(event) {
+        var radios = document.getElementsByTagName('input');
+        var allAnswered = true;
+        for (var i = 0; i < radios.length; i++) {
+            if (radios[i].type === 'radio' && !radios[i].checked) {
+                allAnswered = false;
+                break;
+            }
+        }
+        if (!allAnswered) {
+            if (!confirm('Confirm submission')) {
+                event.preventDefault();
+            }
+        } else {
+            if (!confirm('Confirm submission')) {
+                event.preventDefault();
+            }
+        }
+    });
+  </script>
+
+  <script>
+    document.getElementById('myForm1').addEventListener('submit', function(event) {
+        var radios = document.getElementsByTagName('input');
+        var allAnswered = true;
+        for (var i = 0; i < radios.length; i++) {
+            if (radios[i].type === 'radio' && !radios[i].checked) {
+                allAnswered = false;
+                break;
+            }
+        }
+        if (!allAnswered) {
+            if (!confirm('Confirm submission')) {
+                event.preventDefault();
+            }
+        } else {
+            if (!confirm('Confirm submission')) {
+                event.preventDefault();
+            }
+        }
+    });
+  </script>
+
+  <script>
+    window.onload = function(){
+      var date = new Date();
+      var day = date.getDate();
+      var month = date.getMonth() + 1;
+      var year = date.getFullYear();
+
+      if(month < 10) month = "0" + month;
+      if(day < 10) day = "0" + day;
+
+      var today = year + "-" + month + "-" + day;
+
+      var startdateFields = document.getElementsByName("startdate");
+      for(var i = 0; i < startdateFields.length; i++){
+        startdateFields[i].setAttribute("max", today);
+      }
+
+      var enddateFields = document.getElementsByName("enddate");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+
+      document.getElementsByName("date_last_paid")[0].setAttribute("max", today);
+    }
+  </script>
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <!-- base:js -->
+  <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
+  <!-- endinject -->
+  <!-- Plugin js for this page-->
+  <script src="{{ url_for('static', filename='js/Chart.min.js') }}"></script>
+  <!-- End plugin js for this page-->
+  <!-- inject:js -->
+  <script src="{{ url_for('static', filename='js/off-canvas.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/hoverable-collapse.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/template.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
+  <!-- endinject -->
+
+  <!-- End custom js for this page-->
+</body>
+
+</html>

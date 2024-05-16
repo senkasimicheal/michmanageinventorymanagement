@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Basic -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- Mobile Metas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <!-- Site Metas -->
+  <meta name="keywords" content="" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+
+  <title>Privacy Policy</title>
+
+
+   <!-- bootstrap core css -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+   <!-- fonts style -->
+   <link href="https://fonts.googleapis.com/css?family=Poppins:400,700|Raleway:400,700&display=swap" rel="stylesheet">
+   <!-- Custom styles for this template -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   <!-- responsive style -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+   <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+</head>
+
+<body class="sub_page">
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".hero_area1").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
+  <div class="hero_area1">
+    <!-- header section strats -->
+    <header class="header_section">
+      <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg custom_nav-container">
+          <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="" />
+          </a>
+          <div class="navbar-collapse" id="">
+            <div class="custom_menu-btn">
+              <button onclick="openNav()">
+                <span class="s-1">
+
+                </span>
+                <span class="s-2">
+
+                </span>
+                <span class="s-3">
+
+                </span>
+              </button>
+            </div>
+            <div id="myNav" class="overlay">
+              <div class="overlay-content">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('contact') }}">Contact Us</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <!-- end header section -->
+  </div>
+
+
+  <!-- about section -->
+
+  <section>
+    <div class="policy_content">
+        <h3>Privacy Policy</h3>
+        <p>1. Introduction: This Privacy Policy outlines our commitment to protecting the privacy of personal information provided by property managers, tenants and clients using our property management system.</p>
+        <p>2. Collection of Information: We collect personal information necessary for the effective management of tenant payments and property maintenance. This may include names, contact details, payment history, and other relevant data.</p>
+        <p>3. Use of Information: The information collected will be used solely for the purposes of property management, including rent collection, maintenance requests, and communication regarding tenancy matters.</p>
+        <p>4. Communication: We may use your contact information to send you updates, newsletters, marketing communications, or respond to your inquiries.</p>
+        <p>5. Disclosure of Information: Personal information will not be disclosed to third parties without consent, except where required by law or to provide necessary services related to property management or with your explicit consent.</p>
+        <p>6. Data Security: We implement robust security measures to protect personal information from unauthorized access, alteration, disclosure, or destruction.</p>
+        <p>7. Access and Correction: Property managers and clients have the right to access and correct their personal information held by us.</p>
+        <p>8. Changes to the Policy: We reserve the right to modify this privacy policy at any time, so please review it frequently. Any changes will be posted on our website with the effective date.</p>
+        <p>9. Your Privacy Choices: Please contact us at the email provided in the contact info for any inquiries or requests regarding your data.</p>
+        <p>10. Contact Us: If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us using the contact information provided on the homepage.</p>
+    </div> <!-- end about-wrap  -->
+  </section>
+
+  <!-- end about section -->
+
+
+  <!-- info section -->
+  <section class="info_section ">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="info_contact">
+            <h5>
+              About Mich Manage
+            </h5>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/location.png" width="18px" alt="">
+              </div>
+              <p>
+                Kampala, Uganda
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/phone.png" width="12px" alt="">
+              </div>
+              <p>
+                +256772726380
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/mail.png" width="18px" alt="">
+              </div>
+              <p>
+                michpmts@gmail.com
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_info">
+            <h5>
+              Information
+            </h5>
+            <p>
+              Mich Manage Is One Of The Most Trusted Management Systems
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info_links">
+            <h5>
+              Useful Link
+            </h5>
+            <ul>
+              <li>
+                <a href="{{ url_for('index') }}">Home</a>
+              </li>
+              <li>
+                <a href="{{ url_for('about') }}">About</a>
+              </li>
+              <li>
+                <a href="#">Documentation</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_form ">
+            <div class="social_box">
+              <a href="https://wa.me/?text=Faster and secure property management software, visit us on https://michmanage.onrender.com for our services">
+                <img class="whatsapp" src="/static/images/whatsapp.png" alt="">
+              </a>
+              <a href="https://www.linkedin.com/in/micheal-senkasi-846182233?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3B4C%2BpIaMvTRSAomy%2BjqXrbQ%3D%3D"">
+                <img src="/static/images/linkedin.png" alt="">
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- end info_section -->
+
+
+  <!-- footer section -->
+  <section class="container-fluid footer_section ">
+    <div class="container">
+      <p>
+        &copy; <span id="displayYear"></span> All Rights Reserved By
+        <a href="#">Mich Manage</a>
+      </p>
+    </div>
+  </section>
+  <!-- end  footer section -->
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+  
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
+</body>
+</body>
+
+</html>

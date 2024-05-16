@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Basic -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- Mobile Metas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <!-- Site Metas -->
+  <meta name="keywords" content="" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+
+  <title>Terms of Service</title>
+
+
+   <!-- bootstrap core css -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+   <!-- fonts style -->
+   <link href="https://fonts.googleapis.com/css?family=Poppins:400,700|Raleway:400,700&display=swap" rel="stylesheet">
+   <!-- Custom styles for this template -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   <!-- responsive style -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+   <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+</head>
+
+<body class="sub_page">
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".hero_area1").addClass('visible');
+      }, 1000);
+    });
+  </script>
+  
+  <div class="hero_area1">
+    <!-- header section strats -->
+    <header class="header_section">
+      <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg custom_nav-container">
+          <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="" />
+          </a>
+          <div class="navbar-collapse" id="">
+            <div class="custom_menu-btn">
+              <button onclick="openNav()">
+                <span class="s-1">
+
+                </span>
+                <span class="s-2">
+
+                </span>
+                <span class="s-3">
+
+                </span>
+              </button>
+            </div>
+            <div id="myNav" class="overlay">
+              <div class="overlay-content">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('contact') }}">Contact Us</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <!-- end header section -->
+  </div>
+
+
+  <!-- about section -->
+
+  <section>
+    <div class="policy_content">
+        <h3>Terms of Service</h3>
+        <p>1. These Terms of Service ("TOS") govern your use of the services provided by Mich Manage. By accessing or using our website or services, you agree to comply with these Terms. If you do not agree to these Terms, please refrain from using our services.</p>
+        <p>2. Description of Services: Mich Manage offers data management services which include storage of property data</p>
+        <p>3. User Responsibilities: You agree to use Mich Manage' services in compliance with applicable laws and regulations. You are responsible for the accuracy of information provided and for maintaining the confidentiality of your account credentials.</p>
+        <p>4. Privacy: Your use of our services is also governed by our Privacy Policy. By using our services, you consent to the collection and use of your data as described in the Privacy Policy.</p>
+        <p>5. Intellectual Property: The content, trademarks, logos, and materials provided by Property Management Systems are protected by intellectual property laws. You agree not to reproduce, modify, distribute, or exploit any content without prior authorization.</p>
+        <p>6. Termination: Mich Manage reserves the right to suspend or terminate access to our services at our discretion, without notice, for any violation of these Terms.</p>
+        <p>7. Limitation of Liability: Mich Manage shall not be liable for any indirect, incidental, or consequential damages arising from the use of our free services or inability to access them.</p>
+        <p>8. Changes to Terms: We reserve the right to update or modify these Terms at any time. Any changes will be posted on our website, and your continued use of our services constitutes acceptance of these changes.</p>
+        <p>9. Contact Information: If you have any questions or concerns regarding these Terms, please contact us using the contact information provided on the homepage.</p>
+    </div> <!-- end about-wrap  -->
+  </section>
+
+  <!-- end about section -->
+
+
+  <!-- info section -->
+  <section class="info_section ">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="info_contact">
+            <h5>
+              About Mich Manage
+            </h5>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/location.png" width="18px" alt="">
+              </div>
+              <p>
+                Kampala, Uganda
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/phone.png" width="12px" alt="">
+              </div>
+              <p>
+                +256772726380
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/mail.png" width="18px" alt="">
+              </div>
+              <p>
+                michpmts@gmail.com
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_info">
+            <h5>
+              Information
+            </h5>
+            <p>
+              Mich Manage Is One Of The Most Trusted Management Systems
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info_links">
+            <h5>
+              Useful Link
+            </h5>
+            <ul>
+              <li>
+                <a href="{{ url_for('index') }}">Home</a>
+              </li>
+              <li>
+                <a href="{{ url_for('about') }}">About</a>
+              </li>
+              <li>
+                <a href="#">Documentation</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_form ">
+            <div class="social_box">
+              <a href="https://wa.me/?text=Faster and secure property management software, visit us on https://michmanage.onrender.com for our services">
+                <img class="whatsapp" src="/static/images/whatsapp.png" alt="">
+              </a>
+              <a href="https://www.linkedin.com/in/micheal-senkasi-846182233?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3B4C%2BpIaMvTRSAomy%2BjqXrbQ%3D%3D"">
+                <img src="/static/images/linkedin.png" alt="">
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- end info_section -->
+
+
+  <!-- footer section -->
+  <section class="container-fluid footer_section ">
+    <div class="container">
+      <p>
+        &copy; <span id="displayYear"></span> All Rights Reserved By
+        <a href="#">Mich Manage</a>
+      </p>
+    </div>
+  </section>
+  <!-- end  footer section -->
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+  
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
+</body>
+
+</html>

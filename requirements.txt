@@ -1,0 +1,13 @@
+flask
+flask_mail
+flask_apscheduler
+docx
+python-docx
+gunicorn
+pymongo
+bcrypt
+pandas
+xlsxwriter
+plotly
+Pillow
+flask_socketio

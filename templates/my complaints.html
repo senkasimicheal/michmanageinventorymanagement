@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Basic -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- Mobile Metas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <!-- Site Metas -->
+  <meta name="keywords" content="" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+
+  <title>Make a reply to complaints</title>
+
+
+   <!-- bootstrap core css -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+   <!-- fonts style -->
+   <link href="https://fonts.googleapis.com/css?family=Poppins:400,700|Raleway:400,700&display=swap" rel="stylesheet">
+   <!-- Custom styles for this template -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   <!-- responsive style -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+   <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+</head>
+
+<body class="sub_page">
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".hero_area1").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
+  <div class="hero_area1">
+    <!-- header section strats -->
+    <header class="header_section">
+      <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg custom_nav-container">
+          <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="images/logo.png" alt="" />
+          </a>
+          <div class="navbar-collapse" id="">
+            <div class="custom_menu-btn">
+              <button onclick="openNav()">
+                <span class="s-1">
+
+                </span>
+                <span class="s-2">
+
+                </span>
+                <span class="s-3">
+
+                </span>
+              </button>
+            </div>
+            <div id="myNav" class="overlay">
+              <div class="overlay-content">
+                <a href="{{ url_for('tenant_data') }}">Payment Info</a>
+                <a href="{{ url_for('complaint_form') }}">Make A Complaint</a>
+                <a href="{{ url_for('my_complaints') }}">My Complaints</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <!-- end header section -->
+  </div>
+
+  <!-- about section -->
+  <h2 class="complaint-heading" style="text-align: center;">Your Complaints Appear Here</h2>
+  <section class="sale_section layout_padding">
+    <div class="complaints" style="margin-top: -90px !important;">
+        {% for complaint in complaints %}
+        <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('tenant_reply_complaint') }}">
+            <div class="complaint-card">
+                <span>From {{ complaint.tenant_name }}</span>
+                <h2 class="complaint-heading">{{ complaint.complaint_heading }}</h2>
+                <p class="complaint-details">{{ complaint.details }}</p>
+                <div class="complaint-footer">
+                  <span class="complaint-date">Filed on {{ complaint.complained_on.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <textarea placeholder="Your reply goes here" class="complaint_details_reply" name="Reply_{{ complaint._id }}" required></textarea>
+                <input type="hidden" id="clientTime" name="client_time">
+                <input type="hidden" id="timeZoneOffset" name="time_zone_offset">
+                <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
+                <input type="submit" value="Reply" style="background:none;border:none;color:blue; width: 60px !important;">
+                <div class="replies-section">
+                  <h2>Replies</h2>
+                  {% for reply in complaint.replies %}
+                      <div class="reply">
+                          <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
+                          <p class="reply-message">{{ reply.Reply }}</p>
+                      </div>
+                  {% endfor %}
+              </div>
+            </div>
+        </form>
+    {% endfor %}
+    </div>    
+  </section>
+
+  <!-- end about section -->
+
+  <script>
+    $(document).ready(function() {
+        let now = new Date();
+        let timeZoneOffset = -now.getTimezoneOffset() / 60;  // timezone offset in hours
+
+        $('#clientTime').val(now.toISOString());
+        $('#timeZoneOffset').val(timeZoneOffset);
+
+        $('#timeForm').submit(function(event) {
+            $.ajax({
+                url: '/your-endpoint',
+                method: 'POST',
+                data: {
+                    'client_time': $('#clientTime').val(),
+                    'time_zone_offset': $('#timeZoneOffset').val()
+                },
+                success: function(response) {
+                    // Handle the server's response here
+                }
+            });
+
+            event.preventDefault();  // Prevent the form from being submitted normally
+        });
+    });
+  </script>
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
+</body>
+</html>

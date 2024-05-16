@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Basic -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- Mobile Metas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <!-- Site Metas -->
+  <meta name="keywords" content="" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+
+  <title>Admin Login</title>
+
+
+   <!-- bootstrap core css -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+   <!-- fonts style -->
+   <link href="https://fonts.googleapis.com/css?family=Poppins:400,700|Raleway:400,700&display=swap" rel="stylesheet">
+   <!-- Custom styles for this template -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   <!-- responsive style -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+   <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+</head>
+
+<body class="sub_page">
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".hero_area1").addClass('visible');
+      }, 1000);
+    });
+  </script>
+  
+  <div class="hero_area1">
+    <!-- header section strats -->
+    <header class="header_section">
+      <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg custom_nav-container">
+          <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="" />
+          </a>
+          <div class="navbar-collapse" id="">
+            <div class="custom_menu-btn">
+              <button onclick="openNav()">
+                <span class="s-1">
+
+                </span>
+                <span class="s-2">
+
+                </span>
+                <span class="s-3">
+
+                </span>
+              </button>
+            </div>
+            <div id="myNav" class="overlay">
+              <div class="overlay-content">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('about') }}">About</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <!-- end header section -->
+  </div>
+
+  <div class="container-fluid-form">
+    <form class="property_forn" action="{{url_for('adminlogin')}}" method="POST">
+      <div>
+        {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
+        <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
+      </div>
+      <h6>LogIn</h6>
+      <label class="input_labels" for="">Email</label>
+      <input class="property_inputs" type="text" name="email" required><br>
+      <label class="input_labels" for="">Password</label>
+      <input class="property_inputs" type="password" name="password" required><br>
+      <input required type="submit" class="btn" value="Submit">
+    </form>
+ </div>
+  
+ <script>
+  let counter = 0;
+  const spinner = document.getElementById('spinner');
+
+  const intervalId = setInterval(() => {
+    counter++;
+    spinner.textContent = `${counter}%`;
+
+    if (counter === 100) {
+      clearInterval(intervalId);
+    }
+  }, 100); // Adjust this value to control the speed of the counter
+</script>
+<script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+<script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
+</body>
+</body>
+
+</html>
