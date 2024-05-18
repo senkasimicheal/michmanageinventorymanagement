@@ -25912,3 +25912,7 @@ form .btn{
 .alert-danger{
   background: none;
 }
+
+table td {
+  white-space: nowrap;
+}

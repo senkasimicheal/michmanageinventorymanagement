@@ -1593,3 +1593,7 @@ form h4, label {
 .slogan{
   color: white;
 }
+
+table td {
+  white-space: nowrap;
+}

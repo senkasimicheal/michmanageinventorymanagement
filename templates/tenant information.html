@@ -213,6 +213,20 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('manage_contracts') }}">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Contracts</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Add Contracts</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
         </ul>
       </nav>
       <!-- partial -->
@@ -239,6 +253,8 @@
                     <th>Section Value</th>
                     <th>Last Paid</th>
                     <th>Remaining Period</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
                 </tr>
                 {% for tenantName, tenantPhone, tenantEmail, propertyName,selected_section,
                     payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid,

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response
+from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, send_file
 from flask_mail import Mail, Message
 from flask_apscheduler import APScheduler
 from docx import Document
@@ -7,7 +7,7 @@ import secrets
 import bcrypt
 from datetime import datetime, timedelta
 import pytz
-import pandas as pd
+import pandas as pd 
 from io import BytesIO
 import plotly
 import plotly.graph_objs as go
@@ -22,14 +22,15 @@ import calendar
 import random
 import os
 from docx import Document
-from flask_socketio import SocketIO
+from werkzeug.utils import secure_filename
+from gridfs import GridFS
 
 app = Flask(__name__, static_folder='static')
-socketio = SocketIO(app)
 app.secret_key = secrets.token_hex(16)
 client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
 # client = MongoClient('mongodb://localhost:27017/')
 db = client.PropertyManagement
+fs = GridFS(db, collection='contracts')
 
 app.config['MAIL_SERVER']='smtp.sendgrid.net'
 app.config['MAIL_PORT'] = 587
@@ -308,6 +309,53 @@ def send_payment_reminders():
                 mail.send(msg)
 
 scheduler.add_job('send_payment_reminders', send_payment_reminders, trigger='cron', day_of_week='wed', hour=9)
+
+##########SEND CONTRACT EXPIRY REMINDERS###########
+def send_contract_expiry_reminders():
+    managers = list(db.managers.find())
+    for manager in managers:
+        contracts = list(db.contracts.find({'company_name': manager['name']}))
+        tenants = []
+        if len(contracts) != 0:
+            for contract in contracts:
+                end_date = contract['end_date']
+                now = datetime.now()
+                # Calculate the remaining period from now
+                remaining_seconds = int((end_date - now).total_seconds())
+                remaining_minutes, remaining_seconds = divmod(remaining_seconds, 60)
+                remaining_hours, remaining_minutes = divmod(remaining_minutes, 60)
+                remaining_days, remaining_hours = divmod(remaining_hours, 24)
+                remaining_days += 1
+                if remaining_days <= 15:
+                    tenants.append(contract['receiver'])
+
+        manager_email = manager['email']
+        # Prepare the list of tenants as a string
+        tenants_str = ', '.join(tenants)
+
+        # Sending reminder message
+        msg = Message('Contract Expiry Reminder - Mich Manage', 
+        sender='michpmts@gmail.com', 
+        recipients=[manager_email])
+        msg.html = f"""
+        <html>
+        <body>
+        <p>Dear {manager['name']},</p>
+        <p>I hope this message finds you well. This is a reminder that the contracts for the following tenants are due to expire in 15 days or less:</p>
+        <p><b style="font-size: 20px;">{tenants_str}</b></p>
+        <p>Please take the necessary actions to renew these contracts if needed.</p>
+        <p>If you have any questions or concerns, feel free to reach out to us.</p>
+        <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Visit Our Website</a></b></p>
+        <p>Best Regards,</p>
+        <p>Mich Manage</p>
+        </body>
+        </html>
+        """
+        # Send the email
+        with app.app_context():
+            mail.send(msg)
+
+scheduler.add_job('send_contract_expiry_reminders', send_contract_expiry_reminders, trigger='cron', day_of_week='fri', hour=9)
     
 @app.route("/")
 def index():
@@ -2411,7 +2459,6 @@ def load_dashboard_page():
             user_query  = {'company_name': company['company_name']}
             special_user_query = {'company_name': company['company_name'],'status': {'$ne': 'deleted'}}
         projection = {'payment_receipt': 0, 'username': 0, 'company_name': 0, 'tenantEmail': 0, 'tenantPhone': 0, 'payment_mode': 0}
-
         if startdate_on_str and enddate_on_str:
             startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
             enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
@@ -2425,7 +2472,6 @@ def load_dashboard_page():
             old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
 
             month_name = f"{startdate_on_str} to {enddate_on_str}"
-
         else:
             latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)])
             if latest_document is None:
@@ -2441,7 +2487,6 @@ def load_dashboard_page():
                     tenant_data_cursor = db.tenants.find(user_query)
                     
                     property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_cursor}        
-                    print(property_data_dict)
                     for tenant_exists in tenant_data_cursor:
                         tenant_property_name = tenant_exists.get('propertyName', '').strip()
                         selected_section = tenant_exists.get('selected_section', '').strip()
@@ -2467,7 +2512,7 @@ def load_dashboard_page():
             old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
 
             month_name = f"{startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}"
-
+        
         overdue_tenants = []
         count_current_tenants = db.tenants.count_documents(special_user_query)
         overdue_current_tenant_data = list(db.tenants.find(special_user_query))
@@ -2513,7 +2558,6 @@ def load_dashboard_page():
             tenant_data_cursor = db.tenants.find(user_query)
             
             property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_cursor}        
-            print(property_data_dict)
             for tenant_exists in tenant_data_cursor:
                 tenant_property_name = tenant_exists.get('propertyName', '').strip()
                 selected_section = tenant_exists.get('selected_section', '').strip()
@@ -2663,6 +2707,207 @@ def tenant_download():
 
             return response
 
+####MANAGE CONTRACTS
+@app.route('/manage-contracts')
+def manage_contracts():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        is_manager = db.managers.find_one({'manager_email': company['email']})
+        ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
+        if is_manager is None:
+            user_querry = {'username': login_data, 'company_name': company['company_name']}
+        else:
+            user_querry = {'company_name': company['company_name']}
+
+        contracts = list(db.contracts.find(user_querry))
+        if len(contracts)==0:
+            flash('You are not managing any contracts!')
+            return redirect('/load-dashboard-page')
+        else:
+            tenant_contracts = []
+            for contract in contracts:
+                end_date = contract['end_date']
+                now = datetime.now()
+                # Calculate the remaining period from now
+                remaining_seconds = int((end_date - now).total_seconds())
+                remaining_minutes, remaining_seconds = divmod(remaining_seconds, 60)
+                remaining_hours, remaining_minutes = divmod(remaining_minutes, 60)
+                remaining_days, remaining_hours = divmod(remaining_hours, 24)
+                remaining_days += 1
+
+                if remaining_days < 0:
+                    contract['remaining'] = 'Expired'
+                elif remaining_days < 7:
+                    contract['remaining'] = f"In {remaining_days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                elif 7 <= remaining_days < 30:
+                    weeks, days = divmod(remaining_days, 7)
+                    contract['remaining'] = f"In {weeks} weeks, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                elif 30 <= remaining_days < 365:
+                    months, days = divmod(remaining_days, 30)
+                    contract['remaining'] = f"In {months} months, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                else:
+                    years, days = divmod(remaining_days, 365)
+                    contract['remaining'] = f"In {years} years, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                tenant_contracts.append(contract)
+            return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp_str=dp_str)
+        
+@app.route('/upload-contract-page')
+def upload_contract_page():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        is_manager = db.managers.find_one({'manager_email': company['email']})
+        ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
+        if is_manager is None:
+            user_querry = {'username': login_data, 'company_name': company['company_name']}
+        else:
+            user_querry = {'company_name': company['company_name']}
+        
+        tenants = list(db.tenants.find(user_querry))
+
+        if len(tenants) == 0:
+            flash('No tenant data found')
+            return redirect('/load-dashboard-page')
+        else:
+            tenant_names = []
+            for tenant in tenants:
+                tenant_names.append(tenant['tenantName'])
+        return render_template('add contracts.html',tenant_names=tenant_names, dp_str=dp_str)
+
+@app.route('/upload-contract', methods=['POST'])
+def upload_contract():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        if 'contract_document' not in request.files:
+            flash("No file part")
+            return redirect('/upload-contract-page')
+        file = request.files['contract_document']
+        if file.filename == '':
+            flash("No file selected")
+            return redirect('/upload-contract-page')
+        if file:
+            filename = secure_filename(file.filename)
+            file_id = fs.put(file.read(), filename=filename)
+            company = db.registered_managers.find_one({'username': login_data})
+            receiver = request.form.get('receiver')
+            start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
+            end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
+
+            contract = {
+                'username': login_data,
+                'company_name': company['company_name'],
+                'file_id': file_id,
+                'issuer': company['name'],
+                'receiver': receiver,
+                'start_date': start_date,
+                'end_date': end_date
+            }
+
+            db.contracts.insert_one(contract)
+            flash("Contract was uploaded successfully")
+            return redirect('/upload-contract-page')
+
+########DELETE CONTRACTS################
+@app.route('/delete-contract/<contractID>')
+def delete_contract(contractID):
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        contract = db.contracts.find_one({'_id': ObjectId(contractID)})
+        # Remove the _id field
+        if '_id' in contract:
+            del contract['_id']
+        db.old_contracts.insert_one(contract)
+        db.contracts.delete_one({'_id': ObjectId(contractID)})
+        return redirect('/manage-contracts')
+
+##UPDATE CONTRACTS
+@app.route('/update-contract/<contractID>/<company_name>/<receiver>')
+def selected_contract(contractID, company_name, receiver):
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+    return render_template('update contract.html',contractID=contractID,company_name=company_name,receiver=receiver,dp=dp_str)
+
+@app.route('/updated-contract', methods=['POST'])
+def updated_contract():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        if 'contract_document' not in request.files:
+            flash("No file part")
+            return redirect('/manage-contracts')
+        file = request.files['contract_document']
+        if file.filename == '':
+            flash("No file selected")
+            return redirect('/manage-contracts')
+        if file:
+            filename = secure_filename(file.filename)
+            file_id = fs.put(file.read(), filename=filename)
+            end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
+            contractID = request.form.get('contractID')
+
+            contract = db.contracts.find_one({'_id': ObjectId(contractID)})
+            print(contract)
+            if contract:
+                # If a contract exists, update the document and end date
+                fs.delete(contract['file_id'])
+                db.contracts.update_one(
+                    {'_id': ObjectId(contractID)},
+                    {'$set': {'file_id': file_id, 'end_date': end_date}}
+                )
+                flash("Contract was updated successfully")
+                return redirect('/manage-contracts')
+            else:
+                flash("Contract was not found")
+                return redirect('/manage-contracts')
+            
+@app.route('/download-contract/<fileID>')
+def download_contract(fileID):
+    file = fs.get(ObjectId(fileID))
+    response = make_response(file.read())
+    response.mimetype = 'application/octet-stream'
+    response.headers.set('Content-Disposition', 'attachment', filename=file.filename)
+    return response
+
 if __name__ == '__main__':
     scheduler.start()
-    socketio.run(app)
+    app.run(debug=True)

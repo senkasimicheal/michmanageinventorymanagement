@@ -213,6 +213,20 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('manage_contracts') }}">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Contracts</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Add Contracts</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
         </ul>
       </nav>
       <!-- partial -->
@@ -230,7 +244,7 @@
         
           <div id="pending">
             <div class="complaints">
-                <h2 class="complaint-heading1">Pending Complaints</h2>
+                <h2 class="complaint-heading1">Unresolved Issues</h2>
                 {% for complaint in complaints %}
                 <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('update_complaint') }}">
                     <div class="complaint-card">
@@ -267,7 +281,7 @@
         
           <div id="resolved">
             <div class="complaints">
-                <h2 class="complaint-heading1">Resolved Complaints</h2>
+                <h2 class="complaint-heading1">Resolved Issues</h2>
                 {% for resolved in resolved_complaints %}
                   <div class="complaint-card">
                       <span>From {{ resolved.tenant_name }}</span>
