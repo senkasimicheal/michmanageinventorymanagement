@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Update Contracts</title>
+  <title>Manage user rights</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -162,7 +162,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Update Contract</h4>
+            <h4 class="mb-0">Manage user rights</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -253,14 +253,25 @@
             <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
             {% endfor %} {% endif %} {% endwith %}
           </div>
-          <form id="myForm" class="property_forn" action="{{url_for('updated_contract')}}" method="POST" enctype="multipart/form-data">
-            <h6 class="tenant_name">Btn {{company_name}} and {{receiver}}</h6>
-            <input type="hidden" name="contractID" value="{{ contractID }}">
-            <label class="input_labels" for="">Upload Contract Document</label>
-            <input type="file" accept=".pdf,.doc,.docx" name="contract_document" id="docUpload" required><br>
-            <label class="input_labels" for="">Contract End Date</label>
-            <input type="date" name="end_date" id="end_date" required><br>
-            <input required type="submit" class="btn" value="Submit">
+          <form id="myForm" class="property_forn" action="{{url_for('user_rights_initiated')}}" method="POST">
+            <input type="hidden" name="email" value="{{email}}">
+            <input type="hidden" name="company_name" value="{{company_name}}">
+            <label style="margin-top: 5px;" class="input_labels" for="">Add properties</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch1" onclick="updateHiddenInput1()"><br>
+            <input type="hidden" id="hiddenInput1" name="add_properties" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Add tenants</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch2" onclick="updateHiddenInput2()"><br>
+            <input type="hidden" id="hiddenInput2" name="add_tenants" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Update tenant data</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch3" onclick="updateHiddenInput3()"><br>
+            <input type="hidden" id="hiddenInput3" name="update_tenant" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Edit tenant data</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch4" onclick="updateHiddenInput4()"><br>
+            <input type="hidden" id="hiddenInput4" name="edit_tenant" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Manage contracts</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch5" onclick="updateHiddenInput5()"><br>
+            <input type="hidden" id="hiddenInput5" name="manage_contracts" value="no">
+            <input required type="submit" class="btn" value="Save">
           </form>
         </div>
         <!-- content-wrapper ends -->
@@ -287,23 +298,78 @@
 
   <script>
     document.getElementById('myForm').addEventListener('submit', function(event) {
-        var radios = document.getElementsByTagName('input');
-        var allAnswered = true;
-        for (var i = 0; i < radios.length; i++) {
-            if (radios[i].type === 'radio' && !radios[i].checked) {
-                allAnswered = false;
+        var inputs = document.getElementsByClassName('property_inputs');
+        var fileInput = document.getElementById('imageUpload');
+        var allEmpty = true;
+
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].type !== 'file' && inputs[i].value.trim() !== "") {
+                allEmpty = false;
                 break;
             }
         }
-        if (!allAnswered) {
-            if (!confirm('Confirm Contract Update')) {
-                event.preventDefault();
-            }
+
+        // Check if a file is selected
+        if (fileInput.files.length > 0) {
+            allEmpty = false;
+        }
+
+        if (allEmpty) {
+            alert("All fields are empty. Please fill out at least one field.");
+            event.preventDefault();
         } else {
-            if (!confirm('Confirm Contract Update')) {
+            if (!confirm('Confirm Submission')) {
                 event.preventDefault();
             }
         }
+    });
+  </script>
+
+  <script>
+    var data = [
+      {
+        checkbox: document.getElementById("mySwitch1"),
+        hiddenInput: document.getElementById("hiddenInput1"),
+        value: "{{ add_properties }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch2"),
+        hiddenInput: document.getElementById("hiddenInput2"),
+        value: "{{ add_tenants }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch3"),
+        hiddenInput: document.getElementById("hiddenInput3"),
+        value: "{{ update_tenant }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch4"),
+        hiddenInput: document.getElementById("hiddenInput4"),
+        value: "{{ edit_tenant }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch5"),
+        hiddenInput: document.getElementById("hiddenInput5"),
+        value: "{{ manage_contracts }}"
+      }
+    ];
+
+    data.forEach(function(item) {
+      if (item.value === "yes") {
+        item.checkbox.checked = true;
+        item.hiddenInput.value = "yes";
+      } else {
+        item.checkbox.checked = false;
+        item.hiddenInput.value = "no";
+      }
+
+      item.checkbox.addEventListener('change', function() {
+        if (item.checkbox.checked) {
+          item.hiddenInput.value = "yes";
+        } else {
+          item.hiddenInput.value = "no";
+        }
+      });
     });
   </script>
 
@@ -314,41 +380,6 @@
           document.getElementById("alert").style.display = "none";
       }, 5000);
       });
-  </script>
-
-  <script>
-    let counter = 0;
-    const spinner = document.getElementById('spinner');
-
-    const intervalId = setInterval(() => {
-      counter++;
-      spinner.textContent = `${counter}%`;
-
-      if (counter === 100) {
-        clearInterval(intervalId);
-      }
-    }, 100); // Adjust this value to control the speed of the counter
-  </script>
-
-  <script>
-    document.getElementById('docUpload').addEventListener('change', function (e) {
-      var file = e.target.files[0];
-      if(file.size > 200 * 1024) {
-        alert("File size must be less than 200KB.");
-        this.value = '';
-      }
-    });
-  </script>
-
-  <script>
-    document.getElementById('end_date').addEventListener('change', function () {
-        var startDate = new Date(document.getElementById('start_date').value);
-        var endDate = new Date(this.value);
-        if (endDate <= startDate) {
-            alert("End date should be after start date.");
-            this.value = '';
-        }
-    });
   </script>
 
   <!-- base:js -->
@@ -365,6 +396,19 @@
   <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
   <!-- endinject -->
   <!-- Custom js for this page-->
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
   <!-- End custom js for this page-->
 </body>

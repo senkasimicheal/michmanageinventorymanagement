@@ -97,6 +97,7 @@
                   </p>
                 </div>
               </a>
+              {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
               <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
@@ -115,6 +116,16 @@
                   </p>
                 </div>
               </a>
+              <a class="dropdown-item preview-item" href="{{url_for('manage_user_rights')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">User rights
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Manage user rights
+                  </p>
+                </div>
+              </a>
+              {% endif %}
               <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Log Out
@@ -199,6 +210,7 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
+          {% if session.get('add_properties') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('view_property_info') }}">
               <i class="typcn typcn-th-small-outline menu-icon"></i>
@@ -206,6 +218,7 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
+          {% endif %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('resolve_complaints') }}">
               <i class="typcn typcn-compass menu-icon"></i>
@@ -213,6 +226,7 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
+          {% if session.get('add_tenants') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('manage_contracts') }}">
               <i class="typcn typcn-book menu-icon"></i>
@@ -220,6 +234,8 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
+          {% endif %}
+          {% if session.get('add_tenants') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
               <i class="typcn typcn-book menu-icon"></i>
@@ -227,7 +243,7 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
-        </ul>
+          {% endif %}
       </nav>
       <!-- partial -->
       <div class="main-panel">
@@ -244,6 +260,7 @@
                     <th>Name</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Delete</th>
                 </tr>
                 {% for name, email, phone_number, company_name in managers %}
                 <tr title="{{ name }}" style="cursor: pointer;">

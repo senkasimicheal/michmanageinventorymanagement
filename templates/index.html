@@ -76,9 +76,9 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
-                <a href="#" id="login">Manager Login</a>
+                <a href="#" id="login">Login</a>
+                <a href="#" id="signup">Sign Up</a>
                 <a href="#" id="tenant-login">Tenant Login</a>
-                <a href="#" id="signup">Manager Sign Up</a>
                 <a href="#" id="tenant-signup">Tenant Sign Up</a>
                 <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
                 <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
@@ -126,7 +126,7 @@
 
   <div class="login-form">
     <form action="{{url_for('userlogin')}}" method="POST">
-      <h4>Manager login</h4>
+      <h4>Login</h4>
       <label class="input_labels" for="">Username</label>
       <input class="property_inputs" type="text" name="username" oninput="this.value = this.value.replace(/\s/g, '')" required><br>
       <label class="input_labels" for="">Password</label>

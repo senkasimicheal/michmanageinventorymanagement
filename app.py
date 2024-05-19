@@ -497,18 +497,38 @@ def register_account():
     # Generate verification code
     code = generate_code()
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-    manager = {
-        'createdAt': datetime.utcnow(),
-        'code': code,
-        'name': name,
-        'email': email,
-        'phone_number': phone_number,
-        'company_name': company_name,
-        'username': username,
-        'address': address,
-        'registered_on': datetime.now(),
-        'password': hashed_password
-    }
+    is_manager = db.managers.find_one({'manager_email': email})
+    if is_manager:
+        manager = {
+            'createdAt': datetime.utcnow(),
+            'code': code,
+            'name': name,
+            'email': email,
+            'phone_number': phone_number,
+            'company_name': company_name,
+            'username': username,
+            'address': address,
+            'registered_on': datetime.now(),
+            'password': hashed_password
+        }
+    else:
+        manager = {
+            'createdAt': datetime.utcnow(),
+            'code': code,
+            'name': name,
+            'email': email,
+            'phone_number': phone_number,
+            'company_name': company_name,
+            'username': username,
+            'address': address,
+            'registered_on': datetime.now(),
+            'password': hashed_password,
+            'add_properties': 'no',
+            'add_tenants': 'no',
+            'update_tenant': 'no',
+            'edit_tenant': 'no',
+            'manage_contracts': 'no'
+        }
 
     # Delete existing verification code if exists
     db.registration_verification_codes.delete_one({'username': username})
@@ -680,7 +700,7 @@ def userlogin():
     if manager is None:
         flash('Not a manager')
         return redirect('/')
-
+    
     subscription = db.managers.find_one({'name': manager['company_name']})
     stored_password = manager['password']
     if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
@@ -770,6 +790,13 @@ def userlogin():
         session['user_message2'] = remaining_days
         session['login_username'] = login_username
         session['phone_number'] = phone_number
+
+        fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts']
+        for field in fields:
+            value = manager.get(field)
+            if value is not None:
+                session[field] = value
+
         return redirect("/load-dashboard-page")
 
 
@@ -1387,14 +1414,9 @@ def update_tenant_info():
     
     company = db.registered_managers.find_one({'username': login_data})
     dp_str = None
-    is_manager = db.managers.find_one({'manager_email': company['email']})
     
-    if is_manager is None:
-        tenants_query = {'username': login_data, 'company_name': company['company_name']}
-        property_query = {'username': login_data, 'company_name': company['company_name']}
-    else:
-        tenants_query = {'company_name': company['company_name']}
-        property_query = {'company_name': company['company_name']}
+    tenants_query = {'company_name': company['company_name']}
+    property_query = {'company_name': company['company_name']}
     
     tenants = list(db.tenants.find(tenants_query))
     property_managed = list(db.property_managed.find(property_query))
@@ -1501,14 +1523,9 @@ def update():
             dp_str = base64.b64encode(dp).decode()
         else:
             dp_str = None
-        is_manager = db.managers.find_one({'manager_email': company['email']})
-        ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS###
-        if is_manager is None:
-            old_data = db.tenants.find_one({'username': login_data, 'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section})
-            query = {'username': login_data, 'company_name': company['company_name']}
-        else:
-            old_data = db.tenants.find_one({'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section})
-            query = {'company_name': company['company_name']}
+
+        old_data = db.tenants.find_one({'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section})
+        query = {'company_name': company['company_name']}
                  
         old_amount = old_data['available_amount']
         old_date = old_data['date_last_paid']
@@ -1533,10 +1550,7 @@ def update():
             start_date = datetime(date.year, 1, 1)
             end_date = datetime(date.year + 1, 1, 1)
 
-            if is_manager is None:
-                old_data2 = db.old_tenant_data.find_one({'username': login_data, 'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section, 'months_paid': months_paid, 'date_last_paid': {'$gte': start_date,'$lt': end_date}})
-            else:
-                old_data2 = db.old_tenant_data.find_one({'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section, 'months_paid': months_paid, 'date_last_paid': {'$gte': start_date,'$lt': end_date}})
+            old_data2 = db.old_tenant_data.find_one({'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section, 'months_paid': months_paid, 'date_last_paid': {'$gte': start_date,'$lt': end_date}})
 
             if old_data2:
                 flash('Selected period was fully paid')
@@ -2907,6 +2921,92 @@ def download_contract(fileID):
     response.mimetype = 'application/octet-stream'
     response.headers.set('Content-Disposition', 'attachment', filename=file.filename)
     return response
+
+####MANAGE USER RIGHTS
+@app.route('/manage-user-rights')
+def manage_user_rights():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        
+        # Get registered managers data
+        registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': login_data}}))
+        if not registered_managers:
+            flash("We did not find other registered users")
+            return redirect('/load-dashboard-page')
+
+        # Prepare managers data
+        managers = get_managers_data(registered_managers)
+
+        return render_template('user rights.html',managers=managers,dp_str=dp_str)
+    
+@app.route('/manage-user-rights-page/<email>/<company_name>')
+def manage_user_rights_page(email,company_name):
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        manager = db.registered_managers.find_one({'email': email, 'company_name': company_name})
+        add_properties = manager.get('add_properties', "no")
+        add_tenants = manager.get('add_tenants', "no")
+        update_tenant = manager.get('update_tenant', "no")
+        edit_tenant = manager.get('edit_tenant', "no")
+        
+        return render_template('user rights page.html', email=email,company_name=company_name,
+                               add_properties=add_properties,add_tenants=add_tenants,
+                               update_tenant=update_tenant,edit_tenant=edit_tenant,dp_str=dp_str)
+
+@app.route('/user-rights-initiated', methods=["POST"])
+def user_rights_initiated():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        email = request.form.get('email')
+        company_name = request.form.get('company_name')
+        add_properties = request.form.get("add_properties")
+        add_tenants = request.form.get("add_tenants")
+        update_tenant = request.form.get("update_tenant")
+        edit_tenant = request.form.get("edit_tenant")
+        manage_contracts = request.form.get('manage_contracts')
+
+        update_fields = {}
+
+        if add_properties:
+            update_fields['add_properties'] = add_properties
+        if add_tenants:
+            update_fields['add_tenants'] = add_tenants
+        if update_tenant:
+            update_fields['update_tenant'] = update_tenant
+        if edit_tenant:
+            update_fields['edit_tenant'] = edit_tenant
+        if manage_contracts:
+            update_fields['manage_contracts'] = manage_contracts
+
+        # Update the document with the non-empty fields
+        db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
+        flash("User rights were set successfully")
+        return redirect('/manage-user-rights')
 
 if __name__ == '__main__':
     scheduler.start()
