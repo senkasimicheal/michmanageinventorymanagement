@@ -408,7 +408,7 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
-          {% if session.get('add_tenants') != 'no' %}
+          {% if session.get('manage_contracts') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('manage_contracts') }}">
               <i class="typcn typcn-book menu-icon"></i>
@@ -416,8 +416,6 @@
               <i class="menu-arrow"></i>
             </a>
           </li>
-          {% endif %}
-          {% if session.get('add_tenants') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
               <i class="typcn typcn-book menu-icon"></i>
