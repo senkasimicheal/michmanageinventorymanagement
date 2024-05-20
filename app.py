@@ -52,7 +52,6 @@ scheduler.start()
 utc = pytz.UTC
 
 def send_reports():
-    # Get the current year and month
     current_year = datetime.now().year
     current_month = datetime.now().month
     # Query the manager collection for all emails
