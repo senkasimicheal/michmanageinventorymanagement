@@ -31,8 +31,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-# client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+# client = MongoClient('mongodb://localhost:27017/')
 db = client.PropertyManagement
 fs = GridFS(db, collection='contracts')
 
