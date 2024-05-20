@@ -27,13 +27,12 @@ from gridfs import GridFS
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-# client = MongoClient('mongodb://localhost:27017/')
+# client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+client = MongoClient('mongodb://localhost:27017/')
 db = client.PropertyManagement
 fs = GridFS(db, collection='contracts')
 
@@ -1177,10 +1176,14 @@ def resolve_complaints():
         if is_manager is None:
             property_assigned = db.registered_managers.find({'username': login_data})
             property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
-            tenant_accounts = []
-            for property in property_assigned_dict:
-                tenant_account = list(db.tenant_user_accounts.find({'propertyName': property['propertyName']}))
-                tenant_accounts.extend(tenant_account)
+            if not property_assigned_dict:
+                flash('You are not managing any property!')
+                return redirect('/load-dashboard-page')
+            else:
+                tenant_accounts = []
+                for property in property_assigned_dict:
+                    tenant_account = list(db.tenant_user_accounts.find({'propertyName': property['propertyName']}))
+                    tenant_accounts.extend(tenant_account)
         else:
             user_querry = {'company_name': company['company_name']}
             properties = db.property_managed.find(user_querry)
@@ -2869,10 +2872,12 @@ def create_stacked_bar_chart(df, variable_name, title, xaxis_title, yaxis_title)
                     textposition='auto',
                     marker_color='red')
 
-    trace3 = go.Bar(x=df_unique[df_unique['demanded_amount'] == 0][variable_name], 
-                    y=df_unique[df_unique['demanded_amount'] == 0]['total_property_value'], 
-                    name='Amount Collected',
-                    text=df_unique[df_unique['demanded_amount'] == 0]['total_property_value'], 
+    # Modify this part to create a single bar when total_property_value is the same as available_amount
+    df_collected = df_unique[df_unique['demanded_amount'] == 0]
+    trace3 = go.Bar(x=df_collected[variable_name], 
+                    y=df_collected['total_property_value'], 
+                    name='Collected',
+                    text=df_collected['total_property_value'], 
                     textposition='auto',
                     marker_color='green')
 
