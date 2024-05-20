@@ -2437,10 +2437,81 @@ def make_edits():
             tenant = db.tenants.find_one({'propertyName': propertyName, 'selected_section': selected_section, 'tenantEmail': tenantEmail, 'company_name': company['company_name']})
             section_value = tenant['section_value']
 
+        date_last_paid = tenant['date_last_paid']
         amount = request.form.get('amount')
         if amount:
             amount = int(amount)
             fields_to_update['amount'] = amount
+            balance = section_value - (amount+tenant['available_amount'])
+            # Create a payment receipt PDF file
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+            # Create the receipt details
+            data = [
+                ['Rent Payment Receipt - ' + company['company_name'], ''],
+                ['Receipt for:', tenant['tenantName']],
+                ['Property Name:', propertyName],
+                ['Payment Type:', tenant['payment_type']],
+                ['Amount Paid:', f"{tenant['currency']} {amount}"],
+                ['Payment Mode:', payment_mode],
+                ['Month Paid for:', months_paid],
+                ['Date Paid:', date_last_paid.strftime('%Y-%m-%d')],
+                ['Balance:', f"{tenant['currency']} {balance}"],
+                ['Prepared by:', company['name']]
+            ]
+
+            # Create a table with the receipt details
+            table = Table(data)
+
+            # Add a table style
+            table.setStyle(TableStyle([
+                ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0,0), (-1,-1), 1, colors.black),
+                ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+            ]))
+
+            # Build the PDF
+            elements = []
+            elements.append(table)
+            doc.build(elements)
+
+            # Get the PDF data and encode it as base64
+            pdf_data = buffer.getvalue()
+            buffer.close()
+            payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+            fields_to_update['payment_receipt'] = payment_receipt_base64
+
+            # Create the email message
+            msg = Message('Rent Payment Receipt-Mich Manage', 
+                        sender='michpmts@gmail.com', 
+                        recipients=[tenantEmail])
+            msg.html = f"""
+            <html>
+            <body>
+            <p>Dear {tenant['tenantName']},</p>
+            <p>Please find attached your payment receipt for {months_paid} {date_last_paid.year}.</p>
+            <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+            <p>Best Regards,</p>
+            <p>Mich Manage</p>
+            </body>
+            </html>
+            """
+
+            # Attach the PDF receipt to the email
+            msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+            # Send the email
+            mail.send(msg)
 
         payment_mode = request.form.get('payment_mode')
         if payment_mode:
@@ -2454,23 +2525,6 @@ def make_edits():
         if date_last_paid:
             date_last_paid = datetime.strptime(date_last_paid, '%Y-%m-%d')
             fields_to_update['date_last_paid'] = date_last_paid
-
-        payment_receipt = request.files['payment_receipt'].read()
-        if payment_receipt:
-            # Open the image file with PIL
-            img = Image.open(io.BytesIO(payment_receipt))
-
-            # Convert the image to RGB mode
-            rgb_img = img.convert('RGB')
-
-            # Adjust the quality of the image
-            output_io = io.BytesIO()
-            rgb_img.save(output_io, format='JPEG', quality=10)  # Adjust the quality until you reach desired size
-
-            # Convert the image data to base64
-            payment_receipt_base64 = base64.b64encode(output_io.getvalue())
-           
-            fields_to_update['payment_receipt'] = payment_receipt_base64
 
         if amount and section_value:
             if amount < section_value:
