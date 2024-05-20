@@ -2454,8 +2454,8 @@ def make_edits():
                 ['Property Name:', propertyName],
                 ['Payment Type:', tenant['payment_type']],
                 ['Amount Paid:', f"{tenant['currency']} {amount}"],
-                ['Payment Mode:', payment_mode],
-                ['Month Paid for:', months_paid],
+                ['Payment Mode:', tenant['payment_mode']],
+                ['Month Paid for:', tenant['months_paid']],
                 ['Date Paid:', date_last_paid.strftime('%Y-%m-%d')],
                 ['Balance:', f"{tenant['currency']} {balance}"],
                 ['Prepared by:', company['name']]
@@ -2499,7 +2499,7 @@ def make_edits():
             <html>
             <body>
             <p>Dear {tenant['tenantName']},</p>
-            <p>Please find attached your payment receipt for {months_paid} {date_last_paid.year}.</p>
+            <p>Please find attached your payment receipt for {tenant['months_paid']} {date_last_paid.year}.</p>
             <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
