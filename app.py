@@ -3093,7 +3093,7 @@ def assign_properties_page(name,email,company_name):
             dp_str = base64.b64encode(dp).decode()
         else:
             dp_str = None
-        properties = db.tenants.find({'company_name': company['company_name']}, {"propertyName": 1})
+        properties = db.property_managed.find({'company_name': company['company_name']}, {"propertyName": 1})
         property_names = [property['propertyName'] for property in properties]
         
         return render_template('assign properties page.html', property_names=property_names,name=name,email=email,company_name=company_name,dp_str=dp_str)
