@@ -2874,17 +2874,8 @@ def create_stacked_bar_chart(df, variable_name, title, xaxis_title, yaxis_title)
                     textposition='auto',
                     marker_color='red')
 
-    # Only include cases where demanded amount is 0 or less
-    df_collected = df_unique[df_unique['demanded_amount'] <= 0]
-    trace3 = go.Bar(x=df_collected[variable_name], 
-                    y=df_collected['total_property_value'], 
-                    name='Collected',
-                    text=df_collected['total_property_value'], 
-                    textposition='auto',
-                    marker_color='green')
-
     # Create a figure with layout
-    fig = go.Figure(data=[trace1, trace2, trace3],
+    fig = go.Figure(data=[trace1, trace2],
                     layout=go.Layout(
                         title={
                             'text': title,
