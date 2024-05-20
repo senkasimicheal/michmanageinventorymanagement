@@ -281,40 +281,40 @@
             <input class="property_inputs" type="number" min="5000" name="amount"><br>
             <label class="input_labels" for="">Mode Of Payment</label>
             <select class="property_inputs" name="payment_mode" id="">
-                <option value="none" disabled selected>Select payment mode</option>
-                <option value="Cash">Cash</option>
-                <option value="Mobile Money">Mobile Money</option>
-                <option value="Bank">Bank</option>
-                <option value="PayPal">PayPal</option>
-                <option value="MasterCard">MasterCard</option>
-                <option value="Momo Pay">Momo Pay</option>
+              <option value="" disabled selected>Select payment mode</option>
+              <option value="Cash">Cash</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Bank">Bank</option>
+              <option value="PayPal">PayPal</option>
+              <option value="MasterCard">MasterCard</option>
+              <option value="Momo Pay">Momo Pay</option>
             </select><br>
             <label class="input_labels" for="">Upload Payment Receipt</label>
             <input type="file" accept="image/*" name="payment_receipt" id="imageUpload" required><br>
             <label class="input_labels" for="">Payment Period</label>
             <select class="property_inputs" name="months_paid" id="">
-              <option value="none" disabled selected>Select Period</option>
+              <option value="" disabled selected>Select period</option>
               {% if payment_type == 'Monthly' %}
-                  <option value="January">January</option>
-                  <option value="February">February</option>
-                  <option value="March">March</option>
-                  <option value="April">April</option>
-                  <option value="May">May</option>
-                  <option value="June">June</option>
-                  <option value="July">July</option>
-                  <option value="August">August</option>
-                  <option value="September">September</option>
-                  <option value="October">October</option>
-                  <option value="November">November</option>
-                  <option value="December">December</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
               {% elif payment_type == 'Quarterly' %}
-                  <option value="Quarter 1">Quarter 1</option>
-                  <option value="Quarter 2">Quarter 2</option>
-                  <option value="Quarter 3">Quarter 3</option>
-                  <option value="Quarter 4">Quarter 4</option>
+                <option value="Quarter 1">Quarter 1</option>
+                <option value="Quarter 2">Quarter 2</option>
+                <option value="Quarter 3">Quarter 3</option>
+                <option value="Quarter 4">Quarter 4</option>
               {% elif payment_type == 'Annualy' %}
                 {% for year in range(current_year, current_year + 5) %}
-                    <option value="{{ year }}">{{ year }}</option>
+                  <option value="{{ year }}">{{ year }}</option>
                 {% endfor %}
               {% endif %}
             </select><br>

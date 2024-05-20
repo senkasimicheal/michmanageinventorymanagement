@@ -150,7 +150,7 @@
 
   <div class="signup-form">
     <form id="myForm" action="{{url_for('register_account')}}" method="POST">
-      <h4>Register manager account</h4>
+      <h4>Manager account</h4>
       <label class="input_labels" for="">Name</label>
       <input class="property_inputs" type="text" name="name" required><br>
       <label class="input_labels" class="input_labels" for="">Email</label>
@@ -159,10 +159,10 @@
       <input class="property_inputs" type="tel" name="phone_number" required><br>
       <label class="input_labels" for="">Your Company</label>
       <select class="property_inputs" name="company_name" id="property" required>
-          <option value="none" disabled selected>Select Company</option>
-          {% for name in company_names %}
-          <option value="{{ name }}">{{ name }}</option>
-          {% endfor %}
+        <option value="" disabled selected>Select company</option>
+        {% for name in company_names %}
+        <option value="{{ name }}">{{ name }}</option>
+        {% endfor %}
       </select><br>
       <label class="input_labels" for="">Desired Username</label>
       <input class="property_inputs" type="text" name="username" oninput="this.value = this.value.replace(/\s/g, '')" pattern="[a-z]*" title="Lowercase letters only, no spaces allowed, no numbers or punctuation marks" required><br>
@@ -179,17 +179,17 @@
 
   <div class="tenant-signup-form">
     <form id="myForm" action="{{url_for('tenant_register_account')}}" method="POST">
-      <h4>Register An Account</h4>
+      <h4>Tenant Account</h4>
       <label class="input_labels" for="">Tenant Email</label>
       <input class="property_inputs" type="email" name="email" required><br>
       <label class="input_labels" for="">Username</label>
       <input class="property_inputs" type="text" name="username" pattern="[a-z]*" title="Lowercase letters only, no spaces allowed, no numbers or punctuation marks" required><br>
       <label class="input_labels" for="">Property Of Attachment</label>
       <select class="property_inputs" name="propertyName" id="property" required>
-          <option value="none" disabled selected>Select Property</option>
-          {% for property in property_data %}
-          <option value="{{ property }}">{{ property }}</option>
-          {% endfor %}
+        <option value="" disabled selected>Select property</option>
+        {% for property in property_data %}
+        <option value="{{ property }}">{{ property }}</option>
+        {% endfor %}
       </select><br>
       <label class="input_labels" for="">Create Password</label>
       <input required type="password" name="password" class="property_inputs" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 6 or more characters"><br>

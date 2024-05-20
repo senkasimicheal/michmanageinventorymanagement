@@ -24,11 +24,16 @@ import os
 from docx import Document
 from werkzeug.utils import secure_filename
 from gridfs import GridFS
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-# client = MongoClient('mongodb://localhost:27017/')
+# client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+client = MongoClient('mongodb://localhost:27017/')
 db = client.PropertyManagement
 fs = GridFS(db, collection='contracts')
 
@@ -958,32 +963,46 @@ def tenant_data():
     else:
         current_tenant_data = list(db.tenants.find({'tenantEmail': tenantEmail, 'propertyName': propertyName}))
         if len(current_tenant_data) == 0:
-            flash('We found no data about you')
-            return redirect('/tenant-login-page')
+            flash('We found no amount demanded')
+            return redirect('/complaint-form')
         else:
-            old_tenant_data = list(db.old_tenant_data.find({'tenantEmail': tenantEmail, 'propertyName': propertyName, 'status': {'$ne': 'deleted'}}))
-            old_tenant_data.extend(current_tenant_data)
 
             tenant_data = []
-
+            current_month = datetime.now().strftime('%B')
             # Loop through each tenant in the old tenant data
-            for tenant in old_tenant_data:
+            for tenant in current_tenant_data:
                 # Extract the required information
                 name = tenant.get('tenantName')
                 phone = tenant.get('tenantPhone')
                 propertyName = tenant.get('propertyName')
-                amount = tenant.get('amount')
-                payment_completion = tenant.get('payment_completion')
+                amount_demanded = tenant.get('section_value')-tenant.get('available_amount')
+                months_paid = tenant.get('months_paid')
                 date_paid = tenant.get('date_last_paid')
+                if amount_demanded > 0:
+                    # Append the extracted information to the tenant_data list
+                    tenant_data.append({
+                        'name': name,
+                        'phone': phone,
+                        'propertyName': propertyName,
+                        'amount_demanded': amount_demanded,
+                        'months_paid': months_paid,
+                        'date_paid': date_paid.strftime("%Y-%m-%d")
+                    })
+            for tenant in current_tenant_data:
+                name = tenant.get('tenantName')
+                phone = tenant.get('tenantPhone')
+                propertyName = tenant.get('propertyName')
+                amount_demanded = tenant.get('section_value')
+                months_paid = current_month
+                date_paid = 'None'
 
-                # Append the extracted information to the tenant_data list
                 tenant_data.append({
                     'name': name,
                     'phone': phone,
                     'propertyName': propertyName,
-                    'amount': amount,
-                    'payment_completion': payment_completion,
-                    'date_paid': date_paid.strftime("%Y-%m-%d")
+                    'amount_demanded': amount_demanded,
+                    'months_paid': months_paid,
+                    'date_paid': date_paid
                 })
 
             session['tenant_data'] = tenant_data
@@ -1395,6 +1414,7 @@ def add_property():
                                     'owner_phone': owner_phone,
                                     'owner_residence': owner_residence}
                 db.property_managed.insert_one(property_details)
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add property data', 'propertyName':propertyName, 'timestamp': datetime.now()})
                 flash('Property was added successfully')
                 return redirect('/load-dashboard-page')
             else:
@@ -1506,7 +1526,6 @@ def update():
         payment_mode = request.form.get('payment_mode')
         months_paid = request.form.get('months_paid')
         date = request.form.get('date')
-        payment_receipt = request.files['payment_receipt'].read()
         tenantEmail = request.form.get('tenantEmail')
         propertyName = request.form.get('propertyName')
         selected_section = request.form.get('selected_section')
@@ -1514,19 +1533,6 @@ def update():
         # Convert the date string to a datetime object
         date = datetime.strptime(date, '%Y-%m-%d')
         current_year = datetime.now().year
-        errors = []
-
-        img = Image.open(io.BytesIO(payment_receipt))
-
-        # Convert the image to RGB mode
-        rgb_img = img.convert('RGB')
-
-        # Adjust the quality of the image
-        output_io = io.BytesIO()
-        rgb_img.save(output_io, format='JPEG', quality=10)  # Adjust the quality until you reach desired size
-
-        # Convert the image data to base64
-        payment_receipt_base64 = base64.b64encode(output_io.getvalue())
 
         section_tenant = db.tenants.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section})
         section_value = section_tenant['section_value']
@@ -1576,6 +1582,55 @@ def update():
                     flash('First fully update current/previous period')
                 else:
                     available_amount = new_amount
+
+                    balance = section_value - available_amount
+                    # Create a payment receipt PDF file
+                    buffer = BytesIO()
+                    doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+                    # Create the receipt details
+                    data = [
+                        ['Rent Payment Receipt - ' + company['company_name'], ''],
+                        ['Receipt for:', section_tenant['tenantName']],
+                        ['Property Name:', propertyName],
+                        ['Payment Type:', section_tenant['payment_type']],
+                        ['Amount Paid:', f"{section_tenant['currency']} {new_amount}"],
+                        ['Payment Mode:', payment_mode],
+                        ['Month Paid for:', months_paid],
+                        ['Date Paid:', date.strftime('%Y-%m-%d')],
+                        ['Balance:', f"{section_tenant['currency']} {balance}"],
+                        ['Prepared by:', company['name']]
+                    ]
+
+                    # Create a table with the receipt details
+                    table = Table(data)
+
+                    # Add a table style
+                    table.setStyle(TableStyle([
+                        ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0,0), (-1,-1), 1, colors.black),
+                        ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+                    ]))
+
+                    # Build the PDF
+                    elements = []
+                    elements.append(table)
+                    doc.build(elements)
+
+                    # Get the PDF data and encode it as base64
+                    pdf_data = buffer.getvalue()
+                    buffer.close()
+                    payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+                    
                     new_data = {
                         'username': login_data,
                         'company_name': company['company_name'],
@@ -1604,21 +1659,110 @@ def update():
                         if date.year == old_date.year:
                             if field_month > months_paid_selected:
                                 db.old_tenant_data.insert_one(new_data)
+                                # Create the email message
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
+
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                                # Send the email
+                                mail.send(msg)
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                                # Create the email message
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
+
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                                # Send the email
+                                mail.send(msg)
+
                                 if '_id' in old_data:
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
+                            # Create the email message
+                            msg = Message('Rent Payment Receipt-Mich Manage', 
+                                        sender='michpmts@gmail.com', 
+                                        recipients=[tenantEmail])
+                            msg.html = f"""
+                            <html>
+                            <body>
+                            <p>Dear {section_tenant['tenantName']},</p>
+                            <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                            <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                            <p>Best Regards,</p>
+                            <p>Mich Manage</p>
+                            </body>
+                            </html>
+                            """
+
+                            # Attach the PDF receipt to the email
+                            msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                            # Send the email
+                            mail.send(msg)
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                            # Create the email message
+                            msg = Message('Rent Payment Receipt-Mich Manage', 
+                                        sender='michpmts@gmail.com', 
+                                        recipients=[tenantEmail])
+                            msg.html = f"""
+                            <html>
+                            <body>
+                            <p>Dear {section_tenant['tenantName']},</p>
+                            <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                            <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                            <p>Best Regards,</p>
+                            <p>Mich Manage</p>
+                            </body>
+                            </html>
+                            """
+
+                            # Attach the PDF receipt to the email
+                            msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                            # Send the email
+                            mail.send(msg)
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                     elif available_amount > section_value:
                         flash('Payment should not exceed section value')
@@ -1629,21 +1773,109 @@ def update():
                         if date.year == old_date.year:
                             if field_month > months_paid_selected:
                                 db.old_tenant_data.insert_one(new_data)
+                                # Create the email message
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
+
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                                # Send the email
+                                mail.send(msg)
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                                # Create the email message
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
+
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                                # Send the email
+                                mail.send(msg)
                                 if '_id' in old_data:
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
+                            # Create the email message
+                            msg = Message('Rent Payment Receipt-Mich Manage', 
+                                        sender='michpmts@gmail.com', 
+                                        recipients=[tenantEmail])
+                            msg.html = f"""
+                            <html>
+                            <body>
+                            <p>Dear {section_tenant['tenantName']},</p>
+                            <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                            <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                            <p>Best Regards,</p>
+                            <p>Mich Manage</p>
+                            </body>
+                            </html>
+                            """
+
+                            # Attach the PDF receipt to the email
+                            msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                            # Send the email
+                            mail.send(msg)
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                            # Create the email message
+                            msg = Message('Rent Payment Receipt-Mich Manage', 
+                                        sender='michpmts@gmail.com', 
+                                        recipients=[tenantEmail])
+                            msg.html = f"""
+                            <html>
+                            <body>
+                            <p>Dear {section_tenant['tenantName']},</p>
+                            <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                            <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                            <p>Best Regards,</p>
+                            <p>Mich Manage</p>
+                            </body>
+                            </html>
+                            """
+
+                            # Attach the PDF receipt to the email
+                            msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                            # Send the email
+                            mail.send(msg)
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
 
         elif field_month == months_paid_selected:
@@ -1651,6 +1883,55 @@ def update():
                 flash('Period selected is fully paid')
             else:
                 available_amount = new_amount + old_amount
+
+                balance = section_value - available_amount
+                # Create a payment receipt PDF file
+                buffer = BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+                # Create the receipt details
+                data = [
+                    ['Rent Payment Receipt - ' + company['company_name'], ''],
+                    ['Receipt for:', section_tenant['tenantName']],
+                    ['Property Name:', propertyName],
+                    ['Payment Type:', section_tenant['payment_type']],
+                    ['Amount Paid:', f"{section_tenant['currency']} {new_amount}"],
+                    ['Payment Mode:', payment_mode],
+                    ['Month Paid for:', months_paid],
+                    ['Date Paid:', date.strftime('%Y-%m-%d')],
+                    ['Balance:', f"{section_tenant['currency']} {balance}"],
+                    ['Prepared by:', company['name']]
+                ]
+
+                # Create a table with the receipt details
+                table = Table(data)
+
+                # Add a table style
+                table.setStyle(TableStyle([
+                    ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('GRID', (0,0), (-1,-1), 1, colors.black),
+                    ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+                ]))
+
+                # Build the PDF
+                elements = []
+                elements.append(table)
+                doc.build(elements)
+
+                # Get the PDF data and encode it as base64
+                pdf_data = buffer.getvalue()
+                buffer.close()
+                payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+                
                 new_data = {
                     'username': login_data,
                     'company_name': company['company_name'],
@@ -1678,15 +1959,81 @@ def update():
                     new_data['payment_completion'] = payment_completion
                     if date.year == old_date.year:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        # Create the email message
+                        msg = Message('Rent Payment Receipt-Mich Manage', 
+                                    sender='michpmts@gmail.com', 
+                                    recipients=[tenantEmail])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear {section_tenant['tenantName']},</p>
+                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+
+                        # Attach the PDF receipt to the email
+                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                        # Send the email
+                        mail.send(msg)
+                        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful")
                     elif date.year < old_date.year:
                         db.old_tenant_data.insert_one(new_data)
+                        # Create the email message
+                        msg = Message('Rent Payment Receipt-Mich Manage', 
+                                    sender='michpmts@gmail.com', 
+                                    recipients=[tenantEmail])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear {section_tenant['tenantName']},</p>
+                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+
+                        # Attach the PDF receipt to the email
+                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                        # Send the email
+                        mail.send(msg)
+                        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful")
                     else:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        # Create the email message
+                        msg = Message('Rent Payment Receipt-Mich Manage', 
+                                    sender='michpmts@gmail.com', 
+                                    recipients=[tenantEmail])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear {section_tenant['tenantName']},</p>
+                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+
+                        # Attach the PDF receipt to the email
+                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                        # Send the email
+                        mail.send(msg)
                         if '_id' in old_data:
                             del old_data['_id']
                         db.old_tenant_data.insert_one(old_data)
+                        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful")
                 elif available_amount > section_value:
                     flash('Payment should not exceed section value')
@@ -1695,15 +2042,81 @@ def update():
                     new_data['payment_completion'] = payment_completion
                     if date.year == old_date.year:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        # Create the email message
+                        msg = Message('Rent Payment Receipt-Mich Manage', 
+                                    sender='michpmts@gmail.com', 
+                                    recipients=[tenantEmail])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear {section_tenant['tenantName']},</p>
+                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+
+                        # Attach the PDF receipt to the email
+                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                        # Send the email
+                        mail.send(msg)
+                        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful")
                     elif date.year < old_date.year:
                         db.old_tenant_data.insert_one(new_data)
+                        # Create the email message
+                        msg = Message('Rent Payment Receipt-Mich Manage', 
+                                    sender='michpmts@gmail.com', 
+                                    recipients=[tenantEmail])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear {section_tenant['tenantName']},</p>
+                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+
+                        # Attach the PDF receipt to the email
+                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                        # Send the email
+                        mail.send(msg)
+                        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful")
                     else:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        # Create the email message
+                        msg = Message('Rent Payment Receipt-Mich Manage', 
+                                    sender='michpmts@gmail.com', 
+                                    recipients=[tenantEmail])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear {section_tenant['tenantName']},</p>
+                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+
+                        # Attach the PDF receipt to the email
+                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                        # Send the email
+                        mail.send(msg)
                         if '_id' in old_data:
                             del old_data['_id']
                         db.old_tenant_data.insert_one(old_data)
+                        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful")
                 
         tenant_data = []
@@ -1911,6 +2324,7 @@ def delete_manager(company_name,email):
             if email == manager:
                 db.managers.update_one({'name': company_name}, {'$pull': {'managers': email}})
                 db.registered_managers.delete_one({'company_name': company_name, 'email': email})
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete manager', 'email':email, 'timestamp': datetime.now()})
         return redirect('/view-user-accounts')
     
 ########ADD NEW MANAGER EMAIL################
@@ -1952,6 +2366,7 @@ def update_new_manager_email():
                 flash('This email already exists')
                 return redirect('/add-new-manager-email')
         db.managers.update_one({'name': manager_found['company_name']}, {'$push': {'managers': email}})
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new manager', 'email':email, 'timestamp': datetime.now()})
         flash('New manager email was successfully added')
         return redirect('/add-new-manager-email')
 
@@ -2072,32 +2487,26 @@ def make_edits():
                                 {'$set': fields_to_update})
 
         flash('Tenant was successfully edited')
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Edit tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
         return redirect('/update-tenant-info')
         
 ###########VIEW TENANT RECEIPT###############
 @app.route('/view-receipt/<tenant_email>/<property_name>/<selected_section>', methods=["GET"])
 def view_receipt(tenant_email, property_name, selected_section):
     login_data = session.get('login_username')
-    company = db.registered_managers.find_one({'username': login_data})
-    if 'dp' in company:
-        # Convert the base64 data back to bytes
-        dp = base64.b64decode(company['dp'])
-        # Convert bytes to string for HTML rendering
-        dp_str = base64.b64encode(dp).decode()
-    else:
-        dp_str = None
     # Retrieve the tenant document using tenant_id
     tenant = db.tenants.find_one({'username': login_data, 'propertyName': property_name, 'selected_section': selected_section, 'tenantEmail': tenant_email})
 
     if tenant is not None and 'payment_receipt' in tenant:
-        # Convert the base64 data back to bytes
+        # Convert the base64 string back to bytes
         payment_receipt = base64.b64decode(tenant['payment_receipt'])
 
-        # Convert bytes to string for HTML rendering
-        payment_receipt_str = base64.b64encode(payment_receipt).decode()
+        # Create a BytesIO object from the PDF data
+        pdf_io = io.BytesIO(payment_receipt)
 
-        # Render the image.html template and pass the image data
-        return render_template('image.html', image_data=payment_receipt_str, dp=dp_str)
+        # Send the PDF file to the client
+        return send_file(pdf_io, mimetype='application/pdf', as_attachment=False)
+
     else:
         return "No receipt found for this tenant", 404
                 
@@ -2127,23 +2536,58 @@ def add_tenant():
         months_paid = request.form.get('months_paid')
         date_last_paid = request.form.get('date_last_paid')
         date_last_paid = datetime.strptime(date_last_paid, '%Y-%m-%d')
-        # Read the uploaded image file
-        payment_receipt = request.files['payment_receipt'].read()
 
-        # Open the image file with PIL
-        img = Image.open(io.BytesIO(payment_receipt))
-
-        # Convert the image to RGB mode
-        rgb_img = img.convert('RGB')
-
-        # Adjust the quality of the image
-        output_io = io.BytesIO()
-        rgb_img.save(output_io, format='JPEG', quality=10)  # Adjust the quality until you reach desired size
-
-        # Convert the image data to base64
-        payment_receipt_base64 = base64.b64encode(output_io.getvalue())
+        balance = section_value - amount
 
         company = db.registered_managers.find_one({'username': login_data})
+
+        # Create a payment receipt PDF file
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+        # Create the receipt details
+        data = [
+            ['Rent Payment Receipt - ' + company['company_name'], ''],
+            ['Receipt for:', tenantName],
+            ['Property Name:', propertyName],
+            ['Payment Type:', payment_type],
+            ['Amount Paid:', f"{currency} {amount}"],
+            ['Payment Mode:', payment_mode],
+            ['Month Paid for:', months_paid],
+            ['Date Paid:', date_last_paid.strftime('%Y-%m-%d')],
+            ['Balance:', f"{currency} {balance}"],
+            ['Prepared by:', company['name']]
+        ]
+
+        # Create a table with the receipt details
+        table = Table(data)
+
+        # Add a table style
+        table.setStyle(TableStyle([
+            ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+        ]))
+
+        # Build the PDF
+        elements = []
+        elements.append(table)
+        doc.build(elements)
+
+        # Get the PDF data and encode it as base64
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
         is_manager = db.managers.find_one({'manager_email': company['email']})
         num_tenants = db.tenants.count_documents({'company_name': company['company_name']})
         if is_manager['amount_per_month'] == 100000 and num_tenants>=50:
@@ -2189,6 +2633,29 @@ def add_tenant():
                                     'payment_receipt': payment_receipt_base64}
                 
                 db.tenants.insert_one(tenant_details)
+
+                # Create the email message
+                msg = Message('Rent Payment Receipt-Mich Manage', 
+                            sender='michpmts@gmail.com', 
+                            recipients=[tenantEmail])
+                msg.html = f"""
+                <html>
+                <body>
+                <p>Dear {tenantName},</p>
+                <p>Please find attached your payment receipt for {months_paid} {date_last_paid.year}.</p>
+                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                <p>Best Regards,</p>
+                <p>Mich Manage</p>
+                </body>
+                </html>
+                """
+
+                # Attach the PDF receipt to the email
+                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                # Send the email
+                mail.send(msg)
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                 flash('Tenant was successfully added')
                 return redirect('/load-dashboard-page')
             else:
@@ -2211,6 +2678,7 @@ def delete_tenant(tenantEmail, propertyName, selected_section):
         db.old_tenant_data.insert_one(tenants)
         db.old_tenant_data.update_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section}, {'$set': {'status': 'deleted'}})
         db.tenants.delete_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section})
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete tenant', 'tenantEmail': tenantEmail, 'timestamp': datetime.now()})
         return redirect('/update-tenant-info')
 
 @app.route('/admin')
@@ -2384,21 +2852,33 @@ def create_stacked_bar_chart(df, variable_name, title, xaxis_title, yaxis_title)
     df_grouped = df.groupby(variable_name)['available_amount'].sum().reset_index()
     df_unique = df.drop_duplicates(variable_name)[[variable_name, 'total_property_value']]
 
+    # Calculate demanded amount
+    df_unique['demanded_amount'] = df_unique['total_property_value'] - df_grouped['available_amount']
+
     # Create traces
     trace1 = go.Bar(x=df_grouped[variable_name], 
                     y=df_grouped['available_amount'], 
-                    name='Paid On Property',
+                    name='Collected',
                     text=df_grouped['available_amount'], 
-                    textposition='auto')
+                    textposition='auto',
+                    marker_color='purple')
 
     trace2 = go.Bar(x=df_unique[variable_name], 
-                    y=df_unique['total_property_value'], 
-                    name='Property Value',
-                    text=df_unique['total_property_value'], 
-                    textposition='auto')
+                    y=df_unique['demanded_amount'], 
+                    name='Demanded',
+                    text=df_unique['demanded_amount'], 
+                    textposition='auto',
+                    marker_color='red')
+
+    trace3 = go.Bar(x=df_unique[df_unique['demanded_amount'] == 0][variable_name], 
+                    y=df_unique[df_unique['demanded_amount'] == 0]['total_property_value'], 
+                    name='Amount Collected',
+                    text=df_unique[df_unique['demanded_amount'] == 0]['total_property_value'], 
+                    textposition='auto',
+                    marker_color='green')
 
     # Create a figure with layout
-    fig = go.Figure(data=[trace1, trace2],
+    fig = go.Figure(data=[trace1, trace2, trace3],
                     layout=go.Layout(
                         title={
                             'text': title,
@@ -2415,7 +2895,8 @@ def create_stacked_bar_chart(df, variable_name, title, xaxis_title, yaxis_title)
                             y=0.99,
                             xanchor="left",
                             x=0.01
-                        )
+                        ),
+                        barmode='stack'
                     ))
 
     # Convert the figure to JSON
@@ -2884,6 +3365,7 @@ def upload_contract():
             }
 
             db.contracts.insert_one(contract)
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new contract', 'file_id':file_id, 'timestamp': datetime.now()})
             flash("Contract was uploaded successfully")
             return redirect('/upload-contract-page')
 
@@ -2901,6 +3383,7 @@ def delete_contract(contractID):
             del contract['_id']
         db.old_contracts.insert_one(contract)
         db.contracts.delete_one({'_id': ObjectId(contractID)})
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete contract', 'contractID':contractID, 'timestamp': datetime.now()})
         return redirect('/manage-contracts')
 
 ##UPDATE CONTRACTS
@@ -2942,7 +3425,6 @@ def updated_contract():
             contractID = request.form.get('contractID')
 
             contract = db.contracts.find_one({'_id': ObjectId(contractID)})
-            print(contract)
             if contract:
                 # If a contract exists, update the document and end date
                 fs.delete(contract['file_id'])
@@ -2950,6 +3432,7 @@ def updated_contract():
                     {'_id': ObjectId(contractID)},
                     {'$set': {'file_id': file_id, 'end_date': end_date}}
                 )
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update contract', 'file_id':file_id, 'timestamp': datetime.now()})
                 flash("Contract was updated successfully")
                 return redirect('/manage-contracts')
             else:
@@ -3047,6 +3530,7 @@ def user_rights_initiated():
 
         # Update the document with the non-empty fields
         db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Change of user rights', 'email':email, 'timestamp': datetime.now()})
         flash("User rights were set successfully")
         return redirect('/manage-user-rights')
     
@@ -3115,6 +3599,7 @@ def assign_properties_initiated():
             {'$addToSet': {'properties': propertyName}},
             upsert=True
         )
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Assign property', 'email':email, 'timestamp': datetime.now()})
         flash(f"{propertyName} was assigned to {name}")
         return redirect('/assign-properties')
 
@@ -3182,6 +3667,7 @@ def unassign_properties_initiated():
             {'email': email, 'company_name': company_name}, 
             {'$pull': {'properties': propertyName}}
         )
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Unassign property', 'email':email, 'timestamp': datetime.now()})
         flash(f"{propertyName} was unassigned from {name}")
         return redirect('/unassign-properties')
 

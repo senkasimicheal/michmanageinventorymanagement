@@ -99,9 +99,8 @@
                     <th>Tenant Name</th>
                     <th>Telephone</th>
                     <th>Property Name</th>
-                    <th>Amount Paid</th>
-                    <th>Payment Status</th>
-                    <th>Date Last Paid</th>
+                    <th>Amount Demanded</th>
+                    <th>Month</th>
                 </tr>
                 {% for tenant in tenant_data %}
                 <tr>
@@ -109,8 +108,8 @@
                     <td>{{ tenant.name }}</td>
                     <td>{{ tenant.phone }}</td>
                     <td>{{ tenant.propertyName }}</td>
-                    <td>{{ tenant.amount }}</td>
-                    <td>{{ tenant.payment_completion }}</td>
+                    <td>{{ tenant.amount_demanded }}</td>
+                    <td>{{ tenant.months_paid }}</td>
                     <td>{{ tenant.date_paid }}</td>
                 </tr>
                 {% endfor %}

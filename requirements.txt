@@ -10,3 +10,4 @@ pandas
 xlsxwriter
 plotly
 Pillow
+reportlab
