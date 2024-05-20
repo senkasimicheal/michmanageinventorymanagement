@@ -2442,7 +2442,8 @@ def make_edits():
         if amount:
             amount = int(amount)
             fields_to_update['amount'] = amount
-            balance = section_value - (amount+tenant['available_amount'])
+            fields_to_update['available_amount'] = amount + tenant['available_amount'] - tenant['amount']
+            balance = section_value - (amount + tenant['available_amount'] - tenant['amount'])
             # Create a payment receipt PDF file
             buffer = BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -2535,9 +2536,6 @@ def make_edits():
             else:
                 payment_completion = 'Full'
             fields_to_update['payment_completion'] = payment_completion
-
-        if amount:
-            fields_to_update['available_amount'] = amount
 
         db.tenants.update_one({'propertyName': propertyName, 'selected_section': selected_section, 'tenantEmail':tenantEmail, 'company_name': company['company_name']},
                                 {'$set': fields_to_update})
