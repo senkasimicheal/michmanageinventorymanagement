@@ -87,14 +87,14 @@
     <!-- slider section -->
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
-          <form id="myForm" class="property_forn" action="{{url_for('verifying_your_account')}}" method="POST">
+          <form id="myForm" action="{{url_for('verifying_your_account')}}" method="POST">
               <h3>Verify Your Account</h3>
               <h6>Enter 6 digit code sent to your email</h6>
               <label class="input_labels" for="">Email</label>
               <input class="property_inputs" type="email" name="email" required><br>
               <label class="input_labels" for="">Code</label>
               <input class="property_inputs" type="number" name="code" required><br>
-              <input required type="submit" class="btn" value="Submit">
+              <input required type="submit" class="btn" value="Verify">
           </form>
       </div>
     </section>
