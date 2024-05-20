@@ -125,6 +125,24 @@
                   </p>
                 </div>
               </a>
+              <a class="dropdown-item preview-item" href="{{url_for('assign_properties')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Assign properties
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Assign properties to managers
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('unassign_properties')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Unassign properties
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Unassign properties from managers
+                  </p>
+                </div>
+              </a>
               {% endif %}
               <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
                 <div class="preview-item-content flex-grow">

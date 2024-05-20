@@ -370,12 +370,6 @@ def index():
         property_data = []
 
     resp = make_response(render_template("index.html", property_data=property_data, company_names=company_names))
-    # if 'visited' not in request.cookies:
-    #     visitor = {
-    #         'timestamp': datetime.utcnow()
-    #     }
-    #     db.visitors.insert_one(visitor)
-    #     resp.set_cookie('visited', 'true')
     return resp
     
 ###########SEND US A MESSAGE###############
@@ -1163,46 +1157,50 @@ def resolve_complaints():
         is_manager = db.managers.find_one({'manager_email': company['email']})
         ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
         if is_manager is None:
-            user_querry = {'username': login_data, 'company_name': company['company_name']}
-        else:
-            user_querry = {'company_name': company['company_name']}
-
-        properties = db.property_managed.find(user_querry)
-        if db.property_managed.count_documents(user_querry)==0:
-            flash('You are not managing any property!')
-            return redirect('/load-dashboard-page')
-        else:
+            property_assigned = db.registered_managers.find({'username': login_data})
+            property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
             tenant_accounts = []
-            for property in properties:
+            for property in property_assigned_dict:
                 tenant_account = list(db.tenant_user_accounts.find({'propertyName': property['propertyName']}))
                 tenant_accounts.extend(tenant_account)
+        else:
+            user_querry = {'company_name': company['company_name']}
+            properties = db.property_managed.find(user_querry)
+            if db.property_managed.count_documents(user_querry)==0:
+                flash('You are not managing any property!')
+                return redirect('/load-dashboard-page')
+            else:
+                tenant_accounts = []
+                for property in properties:
+                    tenant_account = list(db.tenant_user_accounts.find({'propertyName': property['propertyName']}))
+                    tenant_accounts.extend(tenant_account)
 
-            complaints = []
-            resolved_complaints=[]
-            for tenant in tenant_accounts:
-                tenant_id = tenant['_id']
-                found_complaints = db.tenant_complaints.find({'tenantID': tenant_id})
-                found_resolved_complaints = db.resolved_complaints.find({'tenantID': tenant_id})
-                for found_resolved in found_resolved_complaints:
-                    resolved_complaints.append(found_resolved)
-                for complaint in found_complaints:
-                    replies = list(db.tenant_complaints_replies.find({'complaintID': complaint['_id']}))
-                    if len(replies) == 0:
-                        replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
-                    else:
-                        # Sort replies by date, most recent first
-                        replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
-                    complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
-                    complaint_copy['_id'] = str(complaint['_id'])
-                    complaint_copy['tenantID'] = str(complaint['tenantID'])
-                    complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
-                    complaints.append(complaint_copy)
-            # Sort complaints by date, most recent first
-            complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
-            # Remove duplicates
-            complaints = list({v['_id']: v for v in complaints}.values())
-            session['complaints'] = complaints
-            return render_template('resolve complaints.html',complaints=complaints,resolved_complaints=resolved_complaints, dp=dp_str)
+        complaints = []
+        resolved_complaints=[]
+        for tenant in tenant_accounts:
+            tenant_id = tenant['_id']
+            found_complaints = db.tenant_complaints.find({'tenantID': tenant_id})
+            found_resolved_complaints = db.resolved_complaints.find({'tenantID': tenant_id})
+            for found_resolved in found_resolved_complaints:
+                resolved_complaints.append(found_resolved)
+            for complaint in found_complaints:
+                replies = list(db.tenant_complaints_replies.find({'complaintID': complaint['_id']}))
+                if len(replies) == 0:
+                    replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
+                else:
+                    # Sort replies by date, most recent first
+                    replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
+                complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
+                complaint_copy['_id'] = str(complaint['_id'])
+                complaint_copy['tenantID'] = str(complaint['tenantID'])
+                complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
+                complaints.append(complaint_copy)
+        # Sort complaints by date, most recent first
+        complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
+        # Remove duplicates
+        complaints = list({v['_id']: v for v in complaints}.values())
+        session['complaints'] = complaints
+        return render_template('resolve complaints.html',complaints=complaints,resolved_complaints=resolved_complaints, dp=dp_str)
             
 ############RESOLVE COMPLAINTS BY MANAGER###########
 @app.route('/update-complaint', methods=['POST'])
@@ -1414,12 +1412,31 @@ def update_tenant_info():
     
     company = db.registered_managers.find_one({'username': login_data})
     dp_str = None
-    
-    tenants_query = {'company_name': company['company_name']}
-    property_query = {'company_name': company['company_name']}
-    
-    tenants = list(db.tenants.find(tenants_query))
-    property_managed = list(db.property_managed.find(property_query))
+
+    is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
+
+    if not is_manager:
+        property_assigned = db.registered_managers.find({'username': login_data})
+        property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
+        tenants = []
+        for property in property_assigned_dict:
+            properties_query = {"propertyName": property}
+            tenants_data = list(db.tenants.find(properties_query))
+            if tenants_data:
+                for tenant in tenants_data:
+                    tenants.append(tenant)
+        property_managed = []
+        for property in property_assigned_dict:
+            properties_query = {"propertyName": property}
+            property_data = list(db.property_managed.find(properties_query))
+            if property_data:
+                for property in property_data:
+                    property_managed.append(property)
+    else:
+        tenants_query = {'company_name': company['company_name']}
+        property_query = {'company_name': company['company_name']}
+        tenants = list(db.tenants.find(tenants_query))
+        property_managed = list(db.property_managed.find(property_query))
     
     if not tenants:
         flash('No tenant data found')
@@ -1690,8 +1707,28 @@ def update():
                         flash(f"Updates for {old_data['tenantName']} were successful")
                 
         tenant_data = []
-        new_tenants = list(db.tenants.find(query))
-        property_managed = list(db.property_managed.find(query))
+        is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
+
+        if not is_manager:
+            property_assigned = db.registered_managers.find({'username': login_data})
+            property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
+            new_tenants = []
+            for property in property_assigned_dict:
+                properties_query = {"propertyName": property}
+                new_tenants_data = list(db.tenants.find(properties_query))
+                if new_tenants_data:
+                    for new_tenant in new_tenants_data:
+                        new_tenants.append(new_tenant)
+            property_managed = []
+            for property in property_assigned_dict:
+                properties_query = {"propertyName": property}
+                property_data = list(db.property_managed.find(properties_query))
+                if property_data:
+                    for property in property_data:
+                        property_managed.append(property)
+        else:
+            new_tenants = list(db.tenants.find(query))
+            property_managed = list(db.property_managed.find(query))
         for tenant in new_tenants:
             for property in property_managed:
                 if tenant['propertyName'] == property['propertyName']:
@@ -1753,16 +1790,23 @@ def view_property_info():
 
         properties_query = {'company_name': company['company_name']}
         if not is_manager:
-            properties_query['username'] = username
-
-        properties = list(db.property_managed.find(properties_query))
-        if not properties:
-            flash('We did not find property data')
-            return redirect('/load-dashboard-page')
-
-        property_data = get_property_data(properties)
-        return render_template('property information.html', property_data=property_data, dp=dp_str)
-
+            property_assigned = db.registered_managers.find({'username': username})
+            property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
+            property_data = []
+            for property in property_assigned_dict:
+                properties_query = {"propertyName": property}
+                properties = list(db.property_managed.find(properties_query))
+                if properties:
+                    property_data.extend(get_property_data(properties))
+            return render_template('property information.html', property_data=property_data, dp=dp_str)
+        else:
+            properties = list(db.property_managed.find(properties_query))
+            if not properties:
+                flash('We did not find property data')
+                return redirect('/load-dashboard-page')
+            
+            property_data = get_property_data(properties)
+            return render_template('property information.html', property_data=property_data, dp=dp_str)
 
 #####UPDATE PROPERTY INFO#############
 @app.route('/update-property/<propertyName>')
@@ -2067,8 +2111,7 @@ def add_tenant():
     else:
         tenantName = request.form.get('tenantName')
         gender = request.form.get('gender')
-        marital_status = request.form.get('marital_status')
-        age = request.form.get('age')
+        household_size = request.form.get('household_size')
         tenantEmail = request.form.get('tenantEmail')
         tenantPhone = request.form.get('tenantPhone')
         propertyName = request.form.get('propertyName')
@@ -2126,8 +2169,7 @@ def add_tenant():
                                     'company_name': company['company_name'],
                                     'tenantName': tenantName,
                                     'gender': gender,
-                                    'marital_status': marital_status,
-                                    'age': age,
+                                    'household_size': household_size,
                                     'tenantEmail': tenantEmail,
                                     'tenantPhone': tenantPhone,
                                     'propertyName': propertyName,
@@ -3007,6 +3049,141 @@ def user_rights_initiated():
         db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
         flash("User rights were set successfully")
         return redirect('/manage-user-rights')
+    
+####ASSIGN PROPERTIES TO MANAGERS
+@app.route('/assign-properties')
+def assign_properties():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        
+        # Get registered managers data
+        registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': login_data}}))
+        if not registered_managers:
+            flash("We did not find other registered users")
+            return redirect('/load-dashboard-page')
+
+        # Prepare managers data
+        managers = get_managers_data(registered_managers)
+
+        return render_template('assign properties.html',managers=managers,dp_str=dp_str)
+    
+@app.route('/assign-properties-page/<name>/<email>/<company_name>')
+def assign_properties_page(name,email,company_name):
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        properties = db.tenants.find({'company_name': company['company_name']}, {"propertyName": 1})
+        property_names = [property['propertyName'] for property in properties]
+        
+        return render_template('assign properties page.html', property_names=property_names,name=name,email=email,company_name=company_name,dp_str=dp_str)
+    
+@app.route('/assign-properties-initiated', methods=["POST"])
+def assign_properties_initiated():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        name = request.form.get('name')
+        email = request.form.get('email')
+        company_name = request.form.get('company_name')
+        propertyName = request.form.get("propertyName")
+
+        db.registered_managers.update_one(
+            {'email': email, 'company_name': company_name}, 
+            {'$addToSet': {'properties': propertyName}},
+            upsert=True
+        )
+        flash(f"{propertyName} was assigned to {name}")
+        return redirect('/assign-properties')
+
+####UNASSIGN PROPERTIES FROM MANAGERS
+@app.route('/unassign-properties')
+def unassign_properties():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        
+        # Get registered managers data
+        registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': login_data}}))
+        if not registered_managers:
+            flash("We did not find other registered users")
+            return redirect('/load-dashboard-page')
+
+        # Prepare managers data
+        managers = get_managers_data(registered_managers)
+
+        return render_template('unassign properties.html',managers=managers,dp_str=dp_str)
+    
+@app.route('/unassign-properties-page/<name>/<email>/<company_name>')
+def unassign_properties_page(name,email,company_name):
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            # Convert the base64 data back to bytes
+            dp = base64.b64decode(company['dp'])
+            # Convert bytes to string for HTML rendering
+            dp_str = base64.b64encode(dp).decode()
+        else:
+            dp_str = None
+        property_assigned = db.registered_managers.find({'email': email, 'company_name': company_name})
+        property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
+        
+        return render_template('unassign properties page.html', property_names=property_assigned_dict,name=name,email=email,company_name=company_name,dp_str=dp_str)
+    
+@app.route('/unassign-properties-initiated', methods=["POST"])
+def unassign_properties_initiated():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        name = request.form.get('name')
+        email = request.form.get('email')
+        company_name = request.form.get('company_name')
+        propertyName = request.form.get("propertyName")
+
+        db.registered_managers.update_one(
+            {'email': email, 'company_name': company_name}, 
+            {'$pull': {'properties': propertyName}}
+        )
+        flash(f"{propertyName} was unassigned from {name}")
+        return redirect('/unassign-properties')
 
 if __name__ == '__main__':
     scheduler.start()

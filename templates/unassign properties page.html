@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Update Contracts</title>
+  <title>Unassign Properties</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -180,7 +180,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Update Contract</h4>
+            <h4 class="mb-0">Unassign Properties</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -269,14 +269,18 @@
             <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
             {% endfor %} {% endif %} {% endwith %}
           </div>
-          <form id="myForm" class="property_forn" action="{{url_for('updated_contract')}}" method="POST" enctype="multipart/form-data">
-            <h6 class="tenant_name">Btn {{company_name}} and {{receiver}}</h6>
-            <input type="hidden" name="contractID" value="{{ contractID }}">
-            <label class="input_labels" for="">Upload Contract Document</label>
-            <input type="file" accept=".pdf,.doc,.docx" name="contract_document" id="docUpload" required><br>
-            <label class="input_labels" for="">Contract End Date</label>
-            <input type="date" name="end_date" id="end_date" required><br>
-            <input required type="submit" class="btn" value="Submit">
+          <form id="myForm" class="property_forn" action="{{url_for('unassign_properties_initiated')}}" method="POST">
+            <h6>Unassign from {{name}}</h6>
+            <input type="hidden" name="name" value="{{name}}">
+            <input type="hidden" name="email" value="{{email}}">
+            <input type="hidden" name="company_name" value="{{company_name}}">
+            <select class="property_inputs" name="propertyName" id="property" required>
+              <option value="" disabled selected>Select property</option>
+              {% for name in property_names %}
+              <option value="{{ name }}">{{ name }}</option>
+              {% endfor %}
+            </select><br>
+            <input required type="submit" class="btn" value="Assign">
           </form>
         </div>
         <!-- content-wrapper ends -->
@@ -302,68 +306,11 @@
   <!-- container-scroller -->
 
   <script>
-    document.getElementById('myForm').addEventListener('submit', function(event) {
-        var radios = document.getElementsByTagName('input');
-        var allAnswered = true;
-        for (var i = 0; i < radios.length; i++) {
-            if (radios[i].type === 'radio' && !radios[i].checked) {
-                allAnswered = false;
-                break;
-            }
-        }
-        if (!allAnswered) {
-            if (!confirm('Confirm Contract Update')) {
-                event.preventDefault();
-            }
-        } else {
-            if (!confirm('Confirm Contract Update')) {
-                event.preventDefault();
-            }
-        }
-    });
-  </script>
-
-  <script>
-      document.addEventListener("DOMContentLoaded", function () {
-      // Hide the alert after 5 seconds
-      setTimeout(function() {
-          document.getElementById("alert").style.display = "none";
-      }, 5000);
-      });
-  </script>
-
-  <script>
-    let counter = 0;
-    const spinner = document.getElementById('spinner');
-
-    const intervalId = setInterval(() => {
-      counter++;
-      spinner.textContent = `${counter}%`;
-
-      if (counter === 100) {
-        clearInterval(intervalId);
-      }
-    }, 100); // Adjust this value to control the speed of the counter
-  </script>
-
-  <script>
-    document.getElementById('docUpload').addEventListener('change', function (e) {
-      var file = e.target.files[0];
-      if(file.size > 200 * 1024) {
-        alert("File size must be less than 200KB.");
-        this.value = '';
-      }
-    });
-  </script>
-
-  <script>
-    document.getElementById('end_date').addEventListener('change', function () {
-        var startDate = new Date(document.getElementById('start_date').value);
-        var endDate = new Date(this.value);
-        if (endDate <= startDate) {
-            alert("End date should be after start date.");
-            this.value = '';
-        }
+    document.addEventListener("DOMContentLoaded", function () {
+    // Hide the alert after 5 seconds
+    setTimeout(function() {
+        document.getElementById("alert").style.display = "none";
+    }, 5000);
     });
   </script>
 
@@ -381,6 +328,19 @@
   <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
   <!-- endinject -->
   <!-- Custom js for this page-->
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
   <!-- End custom js for this page-->
 </body>

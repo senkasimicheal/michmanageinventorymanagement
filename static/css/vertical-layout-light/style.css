@@ -22905,6 +22905,11 @@ dl li {
 }
 
 /* Preview */
+.preview-list{
+  overflow-y: auto !important;
+  max-height: 500px;
+}
+
 .preview-list .preview-item {
   display: -webkit-flex;
   display: flex;

@@ -136,6 +136,24 @@
                   </p>
                 </div>
               </a>
+              <a class="dropdown-item preview-item" href="{{url_for('assign_properties')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Assign properties
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Assign properties to managers
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('unassign_properties')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Unassign properties
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Unassign properties from managers
+                  </p>
+                </div>
+              </a>
               {% endif %}
               <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
                 <div class="preview-item-content flex-grow">
@@ -242,22 +260,12 @@
           <option value="Male">Male</option>
           <option value="Female">Female</option>
         </select><br>
-        <label class="input_labels" for="">Marital Status</label>
-        <select class="property_inputs" name="marital_status" required>
+        <label class="input_labels" for="">Household size</label>
+        <select class="property_inputs" name="household_size" required>
           <option value="none" disabled selected>Select</option>
-          <option value="Single">Single</option>
-          <option value="Married">Married</option>
-          <option value="Widowed">Widowed</option>
-          <option value="Separated">Separated</option>
-        </select><br>
-        <label class="input_labels" for="">Age group</label>
-        <select class="property_inputs" name="age" required>
-          <option value="none" disabled selected>Select</option>
-          <option value="18-25">18-25</option>
-          <option value="26-35">26-35</option>
-          <option value="36-45">36-45</option>
-          <option value="46-55">46-55</option>
-          <option value="56+">56+</option>
+          <option value="1-2">1-2 people</option>
+          <option value="3-4">3-4 people</option>
+          <option value="5+">5 or more people</option>
         </select><br>
         <label class="input_labels" for="">Tenant Email</label>
         <input class="property_inputs" type="email" name="tenantEmail" required><br>
@@ -436,6 +444,7 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
+        {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
         <div>
           {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
           <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
@@ -532,6 +541,14 @@
               {% endif %}
             </div>
           </div>
+          {% else %}
+          <div>
+            {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
+            <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
+            {% endfor %} {% endif %} {% endwith %}
+          </div>
+          <p style="padding: 0 1.812rem 1.812rem;">You do not have rights to view the dashboard</p>
+          {% endif %}
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
