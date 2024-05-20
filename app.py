@@ -1182,7 +1182,7 @@ def resolve_complaints():
             else:
                 tenant_accounts = []
                 for property in property_assigned_dict:
-                    tenant_account = list(db.tenant_user_accounts.find({'propertyName': property['propertyName']}))
+                    tenant_account = list(db.tenant_user_accounts.find({'propertyName': property}))
                     tenant_accounts.extend(tenant_account)
         else:
             user_querry = {'company_name': company['company_name']}
