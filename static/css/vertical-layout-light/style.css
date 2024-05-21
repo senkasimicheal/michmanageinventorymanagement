@@ -25660,6 +25660,10 @@ div.tagsinput span.tag a {
   color: #f4e3e3;
 }
 
+.complaint-date{
+  color: black;
+}
+
 .complaint_details_reply{
   height: 50px;
 }
