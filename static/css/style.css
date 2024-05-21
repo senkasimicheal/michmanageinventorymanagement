@@ -771,23 +771,6 @@ a:focus {
   background: #444;
 }
 
-.complaints{
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.complaints admin_body{
-  width: 35rem;
-  background: #fff;
-  margin: 0 2rem;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  border-radius: .5rem;
-  box-shadow: 0 .1rem .3rem #333;
-  position: relative;
-}
-
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
     -webkit-appearance: none;
