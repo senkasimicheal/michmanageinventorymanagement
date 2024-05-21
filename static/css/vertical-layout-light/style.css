@@ -25629,21 +25629,63 @@ div.tagsinput span.tag a {
   box-shadow: 0 2px 5px rgba(0,0,0,0.15);
 }
 
-.complaint-heading1{
-  font-size: 20px;
-  margin-top: 5px;
+.complaint-heading {
+  color: black;
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
-.complaint-heading{
-  font-size: 14px;
+.complaint-heading1 {
+  color: black;
+  font-size: 1.2em;
   font-weight: bold;
+  margin-bottom: 10px;
+  padding-left: 10px;
 }
 
-.replies-section h4{
-  font-size: 18px;
+.complaint-details, .complaint-reply {
+  margin-bottom: 10px;
+}
+
+.complaint-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  color: #f4e3e3;
+}
+
+.complaint-footer1 {
+  font-size: 0.8em;
+  color: #f4e3e3;
+}
+
+.complaint_details_reply{
+  height: 50px;
+}
+
+.replies-section {
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.reply {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.reply-details {
+  color: #333;
+  font-size: 0.9em;
+}
+
+.reply-message {
   margin-top: 5px;
-  font-weight: bold;
-  text-decoration: underline;
+  color: #666;
 }
 
 .price-button{
