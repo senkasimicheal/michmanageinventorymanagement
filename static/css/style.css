@@ -1100,6 +1100,10 @@ h6{
   box-shadow: 0 2px 5px rgba(0,0,0,0.15);
 }
 
+.admin_body{
+  width: 35rem;
+}
+
 .complaint-heading {
   color: black;
   font-size: 1.2em;
