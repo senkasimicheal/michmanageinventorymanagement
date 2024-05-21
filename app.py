@@ -3258,41 +3258,6 @@ def download():
             flash('No tenant data found')
             return redirect('/load-dashboard-page')
 
-#############TENANT DOWNLOAD DATA######################
-@app.route('/tenant_download')
-def tenant_download():
-    login_data = session.get('tenantID')
-    if login_data is None:
-        flash('Login first')
-        return redirect('/tenant-login-page')
-    else:
-        projection = {'username': 0, 'payment_receipt': 0, 'status': 0}
-        tenant_info = db.tenant_user_accounts.find_one({'_id': ObjectId(login_data)})
-        current_tenant_data = list(db.tenants.find({'tenantEmail': tenant_info['tenantEmail'], 'propertyName': tenant_info['propertyName']}, projection))
-        if len(current_tenant_data) == 0:
-            flash('We found no data')
-            return render_template('tenant monitor account.html')
-        else:
-            old_tenant_data = list(db.old_tenant_data.find({'tenantEmail': tenant_info['tenantEmail'], 'propertyName': tenant_info['propertyName']}, projection))
-            df1 = pd.DataFrame(old_tenant_data)
-            df2 = pd.DataFrame(current_tenant_data)
-
-            df_combined_tenants = pd.concat([df1, df2], ignore_index=True)
-            df_combined_tenants.drop(columns=('_id'), inplace=True)
-
-            # Create a BytesIO object and write the dataframes to it using ExcelWriter
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df_combined_tenants.to_excel(writer, sheet_name=tenant_info['tenantEmail'], index=False)
-
-            output.seek(0)
-
-            response = make_response(output.read())
-            response.headers['Content-Disposition'] = 'attachment; filename=your_payment_data.xlsx'
-            response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
-            return response
-
 ####MANAGE CONTRACTS
 @app.route('/manage-contracts')
 def manage_contracts():

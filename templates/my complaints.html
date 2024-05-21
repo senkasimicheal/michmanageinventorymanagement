@@ -12,7 +12,7 @@
   <meta name="description" content="" />
   <meta name="author" content="" />
 
-  <title>Make a reply to complaints</title>
+  <title>My complaints</title>
 
 
    <!-- bootstrap core css -->
@@ -86,7 +86,7 @@
 
   <!-- about section -->
   <h2 class="complaint-heading" style="text-align: center;">Your Unresolved Issues</h2>
-  <section class="sale_section layout_padding">
+  <section>
     <div class="complaints" style="margin-top: -90px !important;">
         {% for complaint in complaints %}
         <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('tenant_reply_complaint') }}">
