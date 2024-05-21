@@ -1093,9 +1093,8 @@ h6{
 }
 
 .complaints{
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .complaint-card {
