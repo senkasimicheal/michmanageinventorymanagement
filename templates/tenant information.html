@@ -337,34 +337,36 @@
                   {% endif %}
               </tr>
               {% for tenantName, tenantPhone, tenantEmail, propertyName,selected_section,
-                  payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid,
-                    remaining_days, time_unit, overdue_status in tenant_data %}
-                <tr title="{{ tenantName }}" style="cursor: pointer;" 
-                {% if session.get('update_tenant') != 'no' %}
-                    onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';"
-                {% endif %}>
-                  <td>{{ loop.index }}</td>
-                  <td>{{ tenantName }}</td>
-                  <td>{{ tenantPhone }}</td>
-                  <td>{{ propertyName }}</td>
-                  <td>{{ selected_section }}</td>
-                  <td>{{ payment_mode }}</td>
-                  <td>{{ months_paid }}</td>
-                  <td>
-                    <a href="{{ url_for('view_receipt', tenant_email=tenantEmail, property_name=propertyName, selected_section=selected_section) }}" class="btn btn-primary">View</a>
-                  </td>
-                  <td>{{ amount_demanded }}</td>
-                  <td>{{ date_last_paid }}</td>
-                  <td>{{overdue_status}} {{ remaining_days }} {{time_unit}}</td>
-                  {% if session.get('edit_tenant') != 'no' %}
-                  <td>
-                    <a href="{{ url_for('edit', tenantName=tenantName, email=tenantEmail, property_name=propertyName, selected_section=selected_section, payment_type=payment_type) }}">Edit</a>
-                  </td>
-                  <td>
-                    <a href="{{ url_for('delete_tenant', tenantEmail=tenantEmail,propertyName=propertyName,selected_section=selected_section) }}" onclick="event.stopPropagation(); return confirmDelete();">Delete</a>
-                  </td>
-                  {% endif %}
-              </tr>
+                payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid,
+                remaining_days, time_unit, overdue_status in tenant_data %}
+                {% if amount_demanded > 0 %}
+                    <tr title="{{ tenantName }}" style="cursor: pointer;" 
+                    {% if session.get('update_tenant') != 'no' %}
+                        onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';"
+                    {% endif %}>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ tenantName }}</td>
+                        <td>{{ tenantPhone }}</td>
+                        <td>{{ propertyName }}</td>
+                        <td>{{ selected_section }}</td>
+                        <td>{{ payment_mode }}</td>
+                        <td>{{ months_paid }}</td>
+                        <td>
+                            <a href="{{ url_for('view_receipt', tenant_email=tenantEmail, property_name=propertyName, selected_section=selected_section) }}" class="btn btn-primary">View</a>
+                        </td>
+                        <td>{{ amount_demanded }}</td>
+                        <td>{{ date_last_paid }}</td>
+                        <td>{{overdue_status}} {{ remaining_days }} {{time_unit}}</td>
+                        {% if session.get('edit_tenant') != 'no' %}
+                        <td>
+                            <a href="{{ url_for('edit', tenantName=tenantName, email=tenantEmail, property_name=propertyName, selected_section=selected_section, payment_type=payment_type) }}">Edit</a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_tenant', tenantEmail=tenantEmail,propertyName=propertyName,selected_section=selected_section) }}" onclick="event.stopPropagation(); return confirmDelete();">Delete</a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                {% endif %}
               {% endfor %}
             </table>
             {% endif %}
