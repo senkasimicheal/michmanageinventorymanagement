@@ -2595,6 +2595,13 @@ def add_tenant():
 
         company = db.registered_managers.find_one({'username': login_data})
 
+        # Calculate the number of full months the payment covers
+        num_full_months = amount // section_value
+        receipt_month = months_paid
+        if num_full_months > 1:
+            number_of_months = num_full_months
+            receipt_month = f"{number_of_months} months starting from {months_paid}"
+            balance = 0
         # Create a payment receipt PDF file
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -2607,7 +2614,7 @@ def add_tenant():
             ['Payment Type:', payment_type],
             ['Amount Paid:', f"{currency} {amount}"],
             ['Payment Mode:', payment_mode],
-            ['Month Paid for:', months_paid],
+            ['Month Paid for:', receipt_month],
             ['Date Paid:', date_last_paid.strftime('%Y-%m-%d')],
             ['Balance:', f"{currency} {balance}"],
             ['Prepared by:', company['name']]
@@ -2658,7 +2665,106 @@ def add_tenant():
             if amount < section_value:
                 payment_completion = 'Partial'
             elif amount > section_value:
-                flash('Amount entered should not exceed section value')
+                # Get the starting month number from the form data
+                months_paid = request.form.get('months_paid')
+                starting_month = list(calendar.month_name).index(months_paid)
+
+                # Calculate the remaining amount after the full months
+                remaining_amount = amount % section_value
+
+                # Create a list to store the data for each month
+                monthly_data = []
+
+                # Add the data for the full months
+                for i in range(num_full_months):
+                    month_number = (starting_month + i - 1) % 12 + 1
+                    year = date_last_paid.year + (starting_month + i - 1) // 12
+                    monthly_data.append({
+                        'username': login_data,
+                        'company_name': company['company_name'],
+                        'tenantName': tenantName,
+                        'gender': gender,
+                        'household_size': household_size,
+                        'tenantEmail': tenantEmail,
+                        'tenantPhone': tenantPhone,
+                        'propertyName': propertyName,
+                        'selected_section': selected_section,
+                        'section_value': section_value,
+                        'payment_type': payment_type,
+                        'amount': section_value,
+                        'payment_mode': payment_mode,
+                        'months_paid': calendar.month_name[month_number],
+                        'year': year,
+                        'available_amount': section_value,
+                        'payment_completion': 'Full',
+                        'currency': currency,
+                        'date_last_paid': date_last_paid,
+                        'payment_status': '',
+                        'status': '',
+                        'payment_receipt': payment_receipt_base64
+                    })
+
+                # If there is a remaining amount, add the data for the partial month
+                if remaining_amount > 0:
+                    month_number = (starting_month + num_full_months - 1) % 12 + 1
+                    year = date_last_paid.year + (starting_month + num_full_months - 1) // 12
+                    monthly_data.append({
+                        'username': login_data,
+                        'company_name': company['company_name'],
+                        'tenantName': tenantName,
+                        'gender': gender,
+                        'household_size': household_size,
+                        'tenantEmail': tenantEmail,
+                        'tenantPhone': tenantPhone,
+                        'propertyName': propertyName,
+                        'selected_section': selected_section,
+                        'section_value': section_value,
+                        'payment_type': payment_type,
+                        'amount': remaining_amount,
+                        'payment_mode': payment_mode,
+                        'months_paid': calendar.month_name[month_number],
+                        'year': year,
+                        'available_amount': remaining_amount,
+                        'payment_completion': 'Partial',
+                        'currency': currency,
+                        'date_last_paid': date_last_paid,
+                        'payment_status': '',
+                        'status': '',
+                        'payment_receipt': payment_receipt_base64
+                    })
+
+                # Now you can store the data for each month separately
+                for i, data in enumerate(monthly_data):
+                    if i < len(monthly_data) - 1:  # If it's not the last record
+                        # Store in 'old_tenant_data'
+                        db.old_tenant_data.insert_one(data)
+                    else:  # If it's the last record
+                        # Store in 'tenants', regardless of whether it's fully paid or not
+                        db.tenants.insert_one(data)
+
+                # Create the email message
+                msg = Message('Rent Payment Receipt-Mich Manage', 
+                            sender='michpmts@gmail.com', 
+                            recipients=[tenantEmail])
+                msg.html = f"""
+                <html>
+                <body>
+                <p>Dear {tenantName},</p>
+                <p>Please find attached your payment receipt for {receipt_month} {date_last_paid.year}.</p>
+                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                <p>Best Regards,</p>
+                <p>Mich Manage</p>
+                </body>
+                </html>
+                """
+
+                # Attach the PDF receipt to the email
+                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                # Send the email
+                mail.send(msg)
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                flash('Tenant was successfully added')
                 return redirect('/load-dashboard-page')
             else:
                 payment_completion = 'Full'
