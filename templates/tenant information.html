@@ -295,7 +295,7 @@
                 <tr title="{{ tenantName }}" style="cursor: pointer;" onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';">
                     <td>{{ loop.index }}</td>
                     <td>{{ tenantName }}</td>
-                    <td>{{ tenantPhone }}</td>
+                    <td>{{ tenantPhone }} <a href="tel:{{ tenantPhone }}" class="btn-primary">&#9742;</a></td>
                     <td>{{ propertyName }}</td>
                     <td>{{ selected_section }}</td>
                     <td>{{ payment_mode }}</td>
@@ -346,7 +346,7 @@
                     {% endif %}>
                         <td>{{ loop.index }}</td>
                         <td>{{ tenantName }}</td>
-                        <td>{{ tenantPhone }}</td>
+                        <td>{{ tenantPhone }} <a href="tel:{{ tenantPhone }}" class="btn-primary">&#9742;</a></td>
                         <td>{{ propertyName }}</td>
                         <td>{{ selected_section }}</td>
                         <td>{{ payment_mode }}</td>
