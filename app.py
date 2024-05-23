@@ -30,8 +30,8 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-# client = MongoClient('mongodb://localhost:27017/')
+# client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+client = MongoClient('mongodb://localhost:27017/')
 db = client.PropertyManagement
 fs = GridFS(db, collection='contracts')
 
@@ -1368,7 +1368,7 @@ def add_property():
         flash('Login first')
         return redirect('/')
     else:
-        propertyName = request.form.get('propertyName')
+        propertyName = request.form.get('propertyName', '').strip()
         type = request.form.get('type')
         sections = request.form.get('sections').split(',')
         property_value = request.form.get('property_value')
