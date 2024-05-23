@@ -24,10 +24,9 @@ import os
 from docx import Document
 from werkzeug.utils import secure_filename
 from gridfs import GridFS
-from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
@@ -3396,20 +3395,27 @@ def load_dashboard_page():
                     flash('No property data found')
                     return render_template('dashboard.html',dp=dp_str)
                 else:
+                    # Fetch data from the database
                     property_data_cursor = db.property_managed.find(user_query)
                     tenant_data_cursor = db.tenants.find(user_query)
-                    
-                    property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_cursor}        
+
+                    # Convert property data to a dictionary
+                    property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_cursor}
+
+                    # Iterate through tenant data to remove sections from property data
                     for tenant_exists in tenant_data_cursor:
                         tenant_property_name = tenant_exists.get('propertyName', '').strip()
                         selected_section = tenant_exists.get('selected_section', '').strip()
+                        
                         # Check if the property exists in updated_property_data and the section is in the property's sections
-                        if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
-                            # Remove the section
-                            property_data_dict[tenant_property_name].remove(selected_section)
-                            # If there are no more sections for this property, remove the property
-                            if not property_data_dict[tenant_property_name]:
-                                del property_data_dict[tenant_property_name]
+                        if tenant_property_name in property_data_dict:
+                            if selected_section in property_data_dict[tenant_property_name]:
+                                # Remove the section
+                                property_data_dict[tenant_property_name].remove(selected_section)
+                                
+                                # If there are no more sections for this property, remove the property
+                                if not property_data_dict[tenant_property_name]:
+                                    del property_data_dict[tenant_property_name]
                     flash('No tenant data found')
                     return render_template('dashboard.html',property_data=property_data_dict, dp=dp_str)
             latest_year = latest_document['date_last_paid'].year
