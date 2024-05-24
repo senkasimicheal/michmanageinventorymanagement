@@ -3568,11 +3568,54 @@ def download():
             df_combined_tenants.drop(columns=('_id'), inplace=True)
             df3.drop(columns=('_id'), inplace=True)
 
+            # Set the multi-level index and sort the DataFrame
+            month_order = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
+            df_combined_tenants['months_paid'] = pd.Categorical(df_combined_tenants['months_paid'], categories=month_order.keys(), ordered=True)
+            df_combined_tenants.sort_values(by=['year', 'months_paid'], inplace=True)
+
             # Create a BytesIO object and write the dataframes to it using ExcelWriter
             output = BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                workbook = writer.book
                 df_combined_tenants.to_excel(writer, sheet_name='Tenants', index=False)
                 df3.to_excel(writer, sheet_name='Property Managed', index=False)
+                
+                worksheet = writer.sheets['Tenants']
+                
+                # Get the number of rows
+                rows = len(df_combined_tenants)
+                
+                # Start at row 2 (row 1 is the header row)
+                row_start = 1
+                
+                # Group by year
+                for year, year_data in df_combined_tenants.groupby('year'):
+                    # Check if year_data has only one record
+                    if len(year_data) == 1:
+                        # If only one record, don't group
+                        row_end = row_start
+                    else:
+                        # If multiple records, perform grouping
+                        row_end = row_start + len(year_data) - 1
+                        worksheet.set_row(row_start, None, None, {'level': 1})
+                        for row in range(row_start + 1, row_end + 1):
+                            worksheet.set_row(row, None, None, {'level': 1, 'hidden': True})
+                        
+                        # Group by month within each year
+                        for month, month_data in year_data.groupby('months_paid'):
+                            m_row_start = row_start + 1
+                            m_row_end = m_row_start + len(month_data) - 1
+                            worksheet.set_row(m_row_start, None, None, {'level': 2})
+                            for row in range(m_row_start + 1, m_row_end + 1):
+                                worksheet.set_row(row, None, None, {'level': 2, 'hidden': True})
+                                
+                            row_start += len(month_data)
+                    
+                    row_start = row_end + 1  # Move to the next row after the group
+                
+                # Set the outline settings to show only the top level
+                worksheet.outline_settings(True, False, True, False)
+                worksheet.freeze_panes(1, 0)  # Freeze the header row
 
             output.seek(0)
 
@@ -3638,7 +3681,7 @@ def manage_contracts():
                     years, days = divmod(remaining_days, 365)
                     contract['remaining'] = f"In {years} years, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
                 tenant_contracts.append(contract)
-            return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp_str=dp_str)
+            return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp=dp_str)
         
 @app.route('/upload-contract-page')
 def upload_contract_page():
@@ -3671,7 +3714,7 @@ def upload_contract_page():
             tenant_names = []
             for tenant in tenants:
                 tenant_names.append(tenant['tenantName'])
-        return render_template('add contracts.html',tenant_names=tenant_names, dp_str=dp_str)
+        return render_template('add contracts.html',tenant_names=tenant_names, dp=dp_str)
 
 @app.route('/upload-contract', methods=['POST'])
 def upload_contract():
@@ -3814,7 +3857,7 @@ def manage_user_rights():
         # Prepare managers data
         managers = get_managers_data(registered_managers)
 
-        return render_template('user rights.html',managers=managers,dp_str=dp_str)
+        return render_template('user rights.html',managers=managers,dp=dp_str)
     
 @app.route('/manage-user-rights-page/<email>/<company_name>')
 def manage_user_rights_page(email,company_name):
@@ -3839,7 +3882,7 @@ def manage_user_rights_page(email,company_name):
         
         return render_template('user rights page.html', email=email,company_name=company_name,
                                add_properties=add_properties,add_tenants=add_tenants,
-                               update_tenant=update_tenant,edit_tenant=edit_tenant,dp_str=dp_str)
+                               update_tenant=update_tenant,edit_tenant=edit_tenant,dp=dp_str)
 
 @app.route('/user-rights-initiated', methods=["POST"])
 def user_rights_initiated():
@@ -3901,7 +3944,7 @@ def assign_properties():
         # Prepare managers data
         managers = get_managers_data(registered_managers)
 
-        return render_template('assign properties.html',managers=managers,dp_str=dp_str)
+        return render_template('assign properties.html',managers=managers,dp=dp_str)
     
 @app.route('/assign-properties-page/<name>/<email>/<company_name>')
 def assign_properties_page(name,email,company_name):
@@ -3921,7 +3964,7 @@ def assign_properties_page(name,email,company_name):
         properties = db.property_managed.find({'company_name': company['company_name']}, {"propertyName": 1})
         property_names = [property['propertyName'] for property in properties]
         
-        return render_template('assign properties page.html', property_names=property_names,name=name,email=email,company_name=company_name,dp_str=dp_str)
+        return render_template('assign properties page.html', property_names=property_names,name=name,email=email,company_name=company_name,dp=dp_str)
     
 @app.route('/assign-properties-initiated', methods=["POST"])
 def assign_properties_initiated():
@@ -3970,7 +4013,7 @@ def unassign_properties():
         # Prepare managers data
         managers = get_managers_data(registered_managers)
 
-        return render_template('unassign properties.html',managers=managers,dp_str=dp_str)
+        return render_template('unassign properties.html',managers=managers,dp=dp_str)
     
 @app.route('/unassign-properties-page/<name>/<email>/<company_name>')
 def unassign_properties_page(name,email,company_name):
@@ -3990,7 +4033,7 @@ def unassign_properties_page(name,email,company_name):
         property_assigned = db.registered_managers.find({'email': email, 'company_name': company_name})
         property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
         
-        return render_template('unassign properties page.html', property_names=property_assigned_dict,name=name,email=email,company_name=company_name,dp_str=dp_str)
+        return render_template('unassign properties page.html', property_names=property_assigned_dict,name=name,email=email,company_name=company_name,dp=dp_str)
     
 @app.route('/unassign-properties-initiated', methods=["POST"])
 def unassign_properties_initiated():
