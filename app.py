@@ -3608,7 +3608,7 @@ def download():
 
             # Create the response
             response = make_response(output.read())
-            response.headers['Content-Disposition'] = f'attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx'
+            response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx"
             response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
             return response
