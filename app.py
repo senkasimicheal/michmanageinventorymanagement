@@ -3582,45 +3582,33 @@ def download():
                 
                 worksheet = writer.sheets['Tenants']
                 
-                # Get the number of rows
-                rows = len(df_combined_tenants)
-                
-                # Start at row 2 (row 1 is the header row)
+                # Initialize row_start
                 row_start = 1
-                
+
                 # Group by year
                 for year, year_data in df_combined_tenants.groupby('year'):
-                    # Check if year_data has only one record
-                    if len(year_data) == 1:
-                        # If only one record, don't group
-                        row_end = row_start
-                    else:
-                        # If multiple records, perform grouping
+                    if len(year_data) > 1:
+                        # Apply grouping only if there are multiple records for the year
                         row_end = row_start + len(year_data) - 1
                         worksheet.set_row(row_start, None, None, {'level': 1})
                         for row in range(row_start + 1, row_end + 1):
                             worksheet.set_row(row, None, None, {'level': 1, 'hidden': True})
-                        
-                        # Group by month within each year
-                        for month, month_data in year_data.groupby('months_paid'):
-                            m_row_start = row_start + 1
-                            m_row_end = m_row_start + len(month_data) - 1
-                            worksheet.set_row(m_row_start, None, None, {'level': 2})
-                            for row in range(m_row_start + 1, m_row_end + 1):
-                                worksheet.set_row(row, None, None, {'level': 2, 'hidden': True})
-                                
-                            row_start += len(month_data)
+                    else:
+                        # Handle single-record years (no grouping)
+                        row_end = row_start
                     
-                    row_start = row_end + 1  # Move to the next row after the group
-                
-                # Set the outline settings to show only the top level
+                    # Update row_start for the next year
+                    row_start = row_end + 1
+
+                # Set outline settings and freeze panes
                 worksheet.outline_settings(True, False, True, False)
                 worksheet.freeze_panes(1, 0)  # Freeze the header row
 
             output.seek(0)
 
+            # Create the response
             response = make_response(output.read())
-            response.headers['Content-Disposition'] = 'attachment; filename=property_management_data.xlsx'
+            response.headers['Content-Disposition'] = f'attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx'
             response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
             return response
