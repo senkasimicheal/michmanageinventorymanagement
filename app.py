@@ -3551,27 +3551,71 @@ def download():
         else:
             company_query = {'company_name': company['company_name']}
             user_query  = {'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
-        projection = {'payment_receipt': 0}
+        projection = {'payment_receipt': 0, '_id': 0, 'marital_status': 0, 'age': 0, 'available_amount': 0, 'payment_completion': 0,
+                      'currency': 0, 'payment_status': 0,	'status': 0,	'household_size': 0}
+        projection2 = {'_id': 0, 'late_payment_day': 0, 'currency': 0   }
     
         current_tenant_data = list(db.tenants.find(user_query, projection))
 
         old_tenant_data = list(db.old_tenant_data.find(user_query, projection))
 
         if len(current_tenant_data) > 0 or len(old_tenant_data) > 0:                
-            property_data = list(db.property_managed.find(company_query))
+            property_data = list(db.property_managed.find(company_query, projection2))
 
             df1 = pd.DataFrame(old_tenant_data)
             df2 = pd.DataFrame(current_tenant_data)
             df3 = pd.DataFrame(property_data)
 
             df_combined_tenants = pd.concat([df1, df2], ignore_index=True)
-            df_combined_tenants.drop(columns=('_id'), inplace=True)
-            df3.drop(columns=('_id'), inplace=True)
+
+            new_column_names = {
+                'username': 'Property manager',
+                'company_name': 'Company',
+                'tenantName': 'Tenant name',
+                'gender': 'Gender',
+                'tenantEmail': 'Tenant email',
+                'tenantPhone': 'Tenant phone',
+                'propertyName': 'Property name',
+                'selected_section': 'Section',
+                'section_value': 'Section value',
+                'payment_type': 'Payment type',
+                'amount': 'Amount paid',
+                'payment_mode': 'Payment mode',
+                'months_paid': 'Month paid',
+                'year': 'Year',
+                'date_last_paid': 'Date paid',
+                'available_amount': 'Available amount',
+                'payment_completion': 'Payment completion',
+                'currency': 'Currency',
+                'payment_status': 'Payment status',
+                'status': 'Status',
+                'household_size': 'Household size'
+            }
+
+            df_combined_tenants.rename(columns=new_column_names, inplace=True)
+
+            new_column_names_property = {
+                'username': 'Property manager',
+                'propertyName': 'Property name',
+                'company_name': 'Company',
+                'type': 'Property type',
+                'sections': 'Property sections',
+                'property_value': 'Property value',
+                'address': 'Property address',
+                'city': 'City',
+                'state': 'State',
+                'parish': 'Parish',
+                'owner_name': 'Property owner',
+                'owner_email': 'Owners email',
+                'owner_phone': 'Owners phone',
+                'owner_residence': 'Owners residence'
+            }
+            df3.rename(columns=new_column_names_property, inplace=True)
 
             # Set the multi-level index and sort the DataFrame
             month_order = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
-            df_combined_tenants['months_paid'] = pd.Categorical(df_combined_tenants['months_paid'], categories=month_order.keys(), ordered=True)
-            df_combined_tenants.sort_values(by=['year', 'months_paid'], inplace=True)
+            df_combined_tenants['Month paid'] = pd.Categorical(df_combined_tenants['Month paid'], categories=month_order.keys(), ordered=True)
+            df_combined_tenants.sort_values(by=['Year', 'Month paid'], inplace=True)
 
             # Create a BytesIO object and write the dataframes to it using ExcelWriter
             output = BytesIO()
@@ -3586,7 +3630,7 @@ def download():
                 row_start = 1
 
                 # Group by year
-                for year, year_data in df_combined_tenants.groupby('year'):
+                for year, year_data in df_combined_tenants.groupby('Year'):
                     if len(year_data) > 1:
                         # Apply grouping only if there are multiple records for the year
                         row_end = row_start + len(year_data) - 1
