@@ -154,6 +154,24 @@
                   </p>
                 </div>
               </a>
+              <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Activities
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('view_login_history')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Login history
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Login history
+                  </p>
+                </div>
+              </a>
               {% endif %}
               <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
                 <div class="preview-item-content flex-grow">

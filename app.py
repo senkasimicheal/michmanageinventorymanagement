@@ -496,7 +496,7 @@ def register_account():
     is_manager = db.managers.find_one({'manager_email': email})
     if is_manager:
         manager = {
-            'createdAt': datetime.utcnow(),
+            'createdAt': datetime.now(),
             'code': code,
             'name': name,
             'email': email,
@@ -509,7 +509,7 @@ def register_account():
         }
     else:
         manager = {
-            'createdAt': datetime.utcnow(),
+            'createdAt': datetime.now(),
             'code': code,
             'name': name,
             'email': email,
@@ -626,7 +626,7 @@ def send_verification_code():
     reset_requested = db.forgot_password_codes.find_one({'username': username})
 
     if reset_requested is None:
-        manager = {'createdAt': datetime.utcnow(), 'code': code, 'username': username, 'email': manager_email}
+        manager = {'createdAt': datetime.now(), 'code': code, 'username': username, 'email': manager_email}
         send_verification_email(manager_email, manager_exists['name'], code)
         db.forgot_password_codes.insert_one(manager)
         flash('A verification code was sent to your email')
@@ -748,7 +748,7 @@ def userlogin():
             session['time_since_last_login_hrs'] = None
         else:
             last_login = last_logged_in_data['timestamp']
-            now = datetime.utcnow()
+            now = datetime.now()
             total_seconds  = (now - last_login).total_seconds()
 
             if total_seconds < 60:  # less than a minute
@@ -775,7 +775,7 @@ def userlogin():
 
         logged_in_data = {
             'username': username,
-            'timestamp': datetime.utcnow()
+            'timestamp': datetime.now()
         }
         db.logged_in_data.insert_one(logged_in_data)
 
@@ -818,7 +818,7 @@ def authentication():
     # Insert logged in data
     logged_in_data = {
         'username': manager['username'],
-        'timestamp': datetime.utcnow()
+        'timestamp': datetime.now()
     }
     try:
         db.logged_in_data.insert_one(logged_in_data)
@@ -1584,14 +1584,6 @@ def update():
                 else:
                     available_amount = new_amount
 
-                    # Calculate the number of full months the payment covers
-                    # num_full_months = available_amount // section_value
-                    # receipt_month = months_paid
-                    # if num_full_months > 1:
-                    #     number_of_months = num_full_months
-                    #     receipt_month = f"{number_of_months} months starting from {months_paid}"
-                    #     balance = 0
-
                     balance = section_value - available_amount
                     # Create a payment receipt PDF file
                     buffer = BytesIO()
@@ -1689,7 +1681,7 @@ def update():
 
                                 # Send the email
                                 mail.send(msg)
-                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
@@ -1718,7 +1710,7 @@ def update():
                                 if '_id' in old_data:
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
-                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
@@ -1743,7 +1735,7 @@ def update():
 
                             # Send the email
                             mail.send(msg)
-                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
@@ -1771,7 +1763,7 @@ def update():
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
-                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                     elif available_amount > section_value:
                         # starting_month = list(calendar.month_name).index(months_paid) + 1
@@ -1903,7 +1895,7 @@ def update():
 
                                 # Send the email
                                 mail.send(msg)
-                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
@@ -1931,7 +1923,7 @@ def update():
                                 if '_id' in old_data:
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
-                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
@@ -1956,7 +1948,7 @@ def update():
 
                             # Send the email
                             mail.send(msg)
-                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
@@ -1984,7 +1976,7 @@ def update():
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
-                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
 
         elif field_month == months_paid_selected:
@@ -2629,7 +2621,7 @@ def edit(tenantName, email, property_name, selected_section, payment_type):
             dp_str = base64.b64encode(dp).decode()
         else:
             dp_str = None
-        tenant = db.tenants.find_one({'propertyName': property_name, 'selected_section': selected_section, 'tenantEmail': email, 'company_name': company['company_name']})
+        tenant = db.tenants.find_one({'propertyName': property_name, 'selected_section': selected_section, 'tenantName': tenantName, 'company_name': company['company_name']})
         if tenant is None:
             return "Tenant not found", 404
         # Pass the tenant's info to the template
@@ -2983,7 +2975,7 @@ def add_tenant():
 
                 # Send the email
                 mail.send(msg)
-                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantName': tenantName, 'timestamp': datetime.now()})
                 flash('Tenant was successfully added')
                 return redirect('/load-dashboard-page')
             else:
@@ -3035,7 +3027,7 @@ def add_tenant():
 
                 # Send the email
                 mail.send(msg)
-                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantName':tenantName, 'timestamp': datetime.now()})
                 flash('Tenant was successfully added')
                 return redirect('/load-dashboard-page')
             else:
@@ -3058,7 +3050,7 @@ def delete_tenant(tenantEmail, propertyName, selected_section):
         db.old_tenant_data.insert_one(tenants)
         db.old_tenant_data.update_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section}, {'$set': {'status': 'deleted'}})
         db.tenants.delete_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section})
-        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete tenant', 'tenantEmail': tenantEmail, 'timestamp': datetime.now()})
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete tenant', 'tenantName': tenants['tenantName'], 'timestamp': datetime.now()})
         return redirect('/update-tenant-info')
 
 @app.route('/admin')
@@ -4086,6 +4078,140 @@ def unassign_properties_initiated():
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Unassign property', 'email':email, 'timestamp': datetime.now()})
         flash(f"{propertyName} was unassigned from {name}")
         return redirect('/unassign-properties')
+
+# Function to rename the fourth field to 'details'
+def rename_fourth_field(doc):
+    keys = list(doc.keys())
+    if len(keys) >= 4:
+        # Fourth field's key (position 3 in zero-indexed list)
+        fourth_key = keys[3]
+        doc['details'] = doc.pop(fourth_key)
+    if 'timestamp' in doc and isinstance(doc['timestamp'], datetime):
+        doc['timestamp'] = doc['timestamp'].strftime('%Y-%m-%d %H:%M')
+    return doc
+
+##AUDIT LOGS
+@app.route('/view-audit-logs')
+def view_audit_logs():
+    username = session.get('login_username')
+    if username is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': username})
+        dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
+        # is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
+        usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
+        renamed_logs = []
+        for user in usernames:
+            audit_logs = db.audit_logs.find({'user': user['username']})
+            for log in audit_logs:
+                renamed_log = rename_fourth_field(log)
+                renamed_logs.append(renamed_log)
+        sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
+        logs_first_40 = sorted_logs[:40]
+        return render_template('audit logs.html', audit_logs=logs_first_40, dp=dp_str)
+
+# Function to rename the fourth field to 'details'
+def format_time(doc):
+    if 'timestamp' in doc and isinstance(doc['timestamp'], datetime):
+        doc['timestamp'] = doc['timestamp'].strftime('%Y-%m-%d %H:%M')
+    return doc
+  
+##LOGIN HISTORY
+@app.route('/view-login-history')
+def view_login_history():
+    username = session.get('login_username')
+    if username is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': username})
+        dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
+        # is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
+        usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
+        logindata = []
+        for user in usernames:
+            login_info = db.logged_in_data.find({'username': user['username']})
+            for login in login_info:
+                formated_time = format_time(login)
+                logindata.append(formated_time)
+        sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
+        logindata_first_40 = sorted_logins[:40]
+        return render_template('login history.html', logindata=logindata_first_40, dp=dp_str)
+
+###DOANLOAD AUDIT DATA   
+@app.route('/download-audit-logs', methods=["POST"])
+def download_audit_logs():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        company = db.registered_managers.find_one({'username': login_data})
+
+        usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
+        renamed_logs = []
+        for user in usernames:
+            audit_logs = db.audit_logs.find({
+                'user': user['username'],
+                'timestamp': {'$gte': startdate, '$lte': enddate}
+            })
+            for log in audit_logs:
+                renamed_log = rename_fourth_field(log)
+                renamed_logs.append(renamed_log)
+        sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
+        df = pd.DataFrame(sorted_logs)
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Audit logs', index=False)
+        output.seek(0)
+
+        # Create the response
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit logs_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        return response
+
+###DOANLOAD LOGIN DATA   
+@app.route('/download-login-data', methods=["POST"])
+def download_login_data():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        company = db.registered_managers.find_one({'username': login_data})
+
+        usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
+        logindata = []
+        for user in usernames:
+            login_info = db.logged_in_data.find({'username': user['username'], 'timestamp': {'$gte': startdate, '$lte': enddate}})
+            for login in login_info:
+                formated_time = format_time(login)
+                logindata.append(formated_time)
+        sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
+        df = pd.DataFrame(sorted_logins)
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Audit logs', index=False)
+        output.seek(0)
+
+        # Create the response
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit logs_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        return response
 
 if __name__ == '__main__':
     scheduler.start()
