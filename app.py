@@ -4090,6 +4090,20 @@ def rename_fourth_field(doc):
         doc['timestamp'] = doc['timestamp'].strftime('%Y-%m-%d %H:%M')
     return doc
 
+# Function to convert timestamp to EAT
+def convert_to_eat(timestamp):
+    # Parse the timestamp (assuming it's in ISO 8601 format)
+    utc_dt = datetime.fromisoformat(timestamp)
+    # Define the UTC and EAT timezones
+    utc = pytz.utc
+    eat = pytz.timezone('Africa/Nairobi')
+    # Localize the datetime to UTC
+    utc_dt = utc.localize(utc_dt)
+    # Convert the datetime to EAT
+    eat_dt = utc_dt.astimezone(eat)
+    # Return the formatted datetime string
+    return eat_dt.strftime('%Y-%m-%d %H:%M')
+
 ##AUDIT LOGS
 @app.route('/view-audit-logs')
 def view_audit_logs():
@@ -4107,6 +4121,8 @@ def view_audit_logs():
             audit_logs = db.audit_logs.find({'user': user['username']})
             for log in audit_logs:
                 renamed_log = rename_fourth_field(log)
+                timestamp = log.get('timestamp')
+                log['timestamp'] = convert_to_eat(timestamp)
                 renamed_logs.append(renamed_log)
         sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
         logs_first_40 = sorted_logs[:40]
@@ -4117,7 +4133,7 @@ def format_time(doc):
     if 'timestamp' in doc and isinstance(doc['timestamp'], datetime):
         doc['timestamp'] = doc['timestamp'].strftime('%Y-%m-%d %H:%M')
     return doc
-  
+
 ##LOGIN HISTORY
 @app.route('/view-login-history')
 def view_login_history():
@@ -4128,13 +4144,14 @@ def view_login_history():
     else:
         company = db.registered_managers.find_one({'username': username})
         dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
-        # is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
         usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
         logindata = []
         for user in usernames:
             login_info = db.logged_in_data.find({'username': user['username']})
             for login in login_info:
                 formated_time = format_time(login)
+                timestamp = login.get('timestamp')
+                login['timestamp'] = convert_to_eat(timestamp)
                 logindata.append(formated_time)
         sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
         logindata_first_40 = sorted_logins[:40]
@@ -4163,6 +4180,8 @@ def download_audit_logs():
             })
             for log in audit_logs:
                 renamed_log = rename_fourth_field(log)
+                timestamp = log.get('timestamp')
+                log['timestamp'] = convert_to_eat(timestamp)
                 renamed_logs.append(renamed_log)
         sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
         df = pd.DataFrame(sorted_logs)
@@ -4198,6 +4217,8 @@ def download_login_data():
             login_info = db.logged_in_data.find({'username': user['username'], 'timestamp': {'$gte': startdate, '$lte': enddate}})
             for login in login_info:
                 formated_time = format_time(login)
+                timestamp = login.get('timestamp')
+                login['timestamp'] = convert_to_eat(timestamp)
                 logindata.append(formated_time)
         sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
         df = pd.DataFrame(sorted_logins)
