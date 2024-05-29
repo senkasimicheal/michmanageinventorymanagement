@@ -2,7 +2,7 @@ from flask import Flask, render_template, url_for, send_from_directory, request,
 from flask_mail import Mail, Message
 from flask_apscheduler import APScheduler
 from docx import Document
-from pymongo import MongoClient
+from pymongo import MongoClient, ASCENDING
 import secrets
 import bcrypt
 from datetime import datetime, timedelta
@@ -547,7 +547,8 @@ def register_account():
     </html>
     """
     mail.send(msg)
-
+    # Create an index on the 'createdAt' field
+    db.registration_verification_codes.create_index([("createdAt", ASCENDING)], expireAfterSeconds=43200)
     # Insert verification code into database
     db.registration_verification_codes.insert_one(manager)
 
@@ -728,7 +729,7 @@ def userlogin():
         </html>
         """
         mail.send(msg)
-
+        db.login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
         db.login_auth.insert_one(user_auth)
         return render_template("authentication.html")
     else:
