@@ -697,104 +697,104 @@ def userlogin():
     if manager is None:
         flash('Not a manager')
         return redirect('/')
-    
-    subscription = db.managers.find_one({'name': manager['company_name']})
-    stored_password = manager['password']
-    if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
-        flash('Wrong Password')
-        return redirect('/')
-
-    remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
-    if remaining_days <= 0:
-        flash('Your subscription has expired, please contact management')
-        return redirect('/')
-
-    if "auth" in manager and manager["auth"] == "yes":
-        code = generate_code()
-        user_auth = {"username": manager['username'], "code": code}
-        db.login_auth.delete_one({"username": manager['username']})
-
-        #Sending verification code
-        msg = Message('Verify Your Identity - Mich Manage', 
-        sender='michpmts@gmail.com', 
-        recipients=[manager["email"]])
-        msg.html = f"""
-        <html>
-        <body>
-        <p>Mich Manage Personal Identification</p>
-        <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
-        <p>Best Regards,</p>
-        <p>Mich Manage</p>
-        </body>
-        </html>
-        """
-        mail.send(msg)
-        db.login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
-        db.login_auth.insert_one(user_auth)
-        return render_template("authentication.html")
     else:
-        user_message1 = f"{manager['name']}"
-        login_username = f"{manager['username']}"
-        phone_number = f"{manager['phone_number']}"
-        is_manager = db.managers.find_one({'manager_email': manager['email']})
-        if is_manager:
-            session['is_manager'] = 'is_manager'
+        subscription = db.managers.find_one({'name': manager['company_name']})
+        stored_password = manager['password']
+        if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
+            flash('Wrong Password')
+            return redirect('/')
 
-        last_logged_in_data = db.logged_in_data.find_one({'username': username}, sort=[('timestamp', -1)])
+        remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
+        if remaining_days <= 0:
+            flash('Your subscription has expired, please contact management')
+            return redirect('/')
 
-        if last_logged_in_data is None:
-            # This is a new user, so we don't have a last login time.
-            session['time_since_last_login_secs'] = None
-            session['time_since_last_login_mins'] = None
-            session['time_since_last_login_hrs'] = None
+        if "auth" in manager and manager["auth"] == "yes":
+            code = generate_code()
+            user_auth = {"username": manager['username'], "code": code}
+            db.login_auth.delete_one({"username": manager['username']})
+
+            #Sending verification code
+            msg = Message('Verify Your Identity - Mich Manage', 
+            sender='michpmts@gmail.com', 
+            recipients=[manager["email"]])
+            msg.html = f"""
+            <html>
+            <body>
+            <p>Mich Manage Personal Identification</p>
+            <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
+            <p>Best Regards,</p>
+            <p>Mich Manage</p>
+            </body>
+            </html>
+            """
+            mail.send(msg)
+            db.login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
+            db.login_auth.insert_one(user_auth)
+            return render_template("authentication.html")
         else:
-            last_login = last_logged_in_data['timestamp']
-            now = datetime.now()
-            total_seconds  = (now - last_login).total_seconds()
+            user_message1 = f"{manager['name']}"
+            login_username = f"{manager['username']}"
+            phone_number = f"{manager['phone_number']}"
+            is_manager = db.managers.find_one({'manager_email': manager['email']})
+            if is_manager:
+                session['is_manager'] = 'is_manager'
 
-            if total_seconds < 60:  # less than a minute
-                time_since_last_login_secs = int(total_seconds)
-                session['time_since_last_login_secs'] = time_since_last_login_secs
-            elif total_seconds < 3600:  # less than an hour
-                time_since_last_login_mins = int(total_seconds / 60)
-                session['time_since_last_login_mins'] = time_since_last_login_mins
-            elif total_seconds < 86400:  # less than a day
-                time_since_last_login_hrs = int(total_seconds / 3600)
-                session['time_since_last_login_hrs'] = time_since_last_login_hrs
-            elif total_seconds < 604800:  # less than a week
-                time_since_last_login_days = int(total_seconds / 86400)
-                session['time_since_last_login_days'] = time_since_last_login_days
-            elif total_seconds < 2629800:  # less than a month
-                time_since_last_login_weeks = int(total_seconds / 604800)
-                session['time_since_last_login_weeks'] = time_since_last_login_weeks
-            elif total_seconds < 31557600:  # less than a year
-                time_since_last_login_months = int(total_seconds / 2629800)
-                session['time_since_last_login_months'] = time_since_last_login_months
-            else:  # more than a year
-                time_since_last_login_years = int(total_seconds / 31557600)
-                session['time_since_last_login_years'] = time_since_last_login_years
+            last_logged_in_data = db.logged_in_data.find_one({'username': username}, sort=[('timestamp', -1)])
 
-        logged_in_data = {
-            'username': username,
-            'timestamp': datetime.now()
-        }
-        db.logged_in_data.insert_one(logged_in_data)
+            if last_logged_in_data is None:
+                # This is a new user, so we don't have a last login time.
+                session['time_since_last_login_secs'] = None
+                session['time_since_last_login_mins'] = None
+                session['time_since_last_login_hrs'] = None
+            else:
+                last_login = last_logged_in_data['timestamp']
+                now = datetime.now()
+                total_seconds  = (now - last_login).total_seconds()
 
-        session.permanent = False
-        session['logged_in'] = True
-        session['user_id'] = str(manager["_id"])
-        session['user_message1'] = user_message1
-        session['user_message2'] = remaining_days
-        session['login_username'] = login_username
-        session['phone_number'] = phone_number
+                if total_seconds < 60:  # less than a minute
+                    time_since_last_login_secs = int(total_seconds)
+                    session['time_since_last_login_secs'] = time_since_last_login_secs
+                elif total_seconds < 3600:  # less than an hour
+                    time_since_last_login_mins = int(total_seconds / 60)
+                    session['time_since_last_login_mins'] = time_since_last_login_mins
+                elif total_seconds < 86400:  # less than a day
+                    time_since_last_login_hrs = int(total_seconds / 3600)
+                    session['time_since_last_login_hrs'] = time_since_last_login_hrs
+                elif total_seconds < 604800:  # less than a week
+                    time_since_last_login_days = int(total_seconds / 86400)
+                    session['time_since_last_login_days'] = time_since_last_login_days
+                elif total_seconds < 2629800:  # less than a month
+                    time_since_last_login_weeks = int(total_seconds / 604800)
+                    session['time_since_last_login_weeks'] = time_since_last_login_weeks
+                elif total_seconds < 31557600:  # less than a year
+                    time_since_last_login_months = int(total_seconds / 2629800)
+                    session['time_since_last_login_months'] = time_since_last_login_months
+                else:  # more than a year
+                    time_since_last_login_years = int(total_seconds / 31557600)
+                    session['time_since_last_login_years'] = time_since_last_login_years
 
-        fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts']
-        for field in fields:
-            value = manager.get(field)
-            if value is not None:
-                session[field] = value
+            logged_in_data = {
+                'username': username,
+                'timestamp': datetime.now()
+            }
+            db.logged_in_data.insert_one(logged_in_data)
 
-        return redirect("/load-dashboard-page")
+            session.permanent = False
+            session['logged_in'] = True
+            session['user_id'] = str(manager["_id"])
+            session['user_message1'] = user_message1
+            session['user_message2'] = remaining_days
+            session['login_username'] = login_username
+            session['phone_number'] = phone_number
+
+            fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts']
+            for field in fields:
+                value = manager.get(field)
+                if value is not None:
+                    session[field] = value
+
+            return redirect("/load-dashboard-page")
 
 
 #USER AUTHENTICATION
@@ -811,32 +811,36 @@ def authentication():
 
     # Get manager and subscription data
     manager = db.registered_managers.find_one({'username': user_auth["username"]})
-    subscription = db.managers.find_one({'name': manager['company_name']})
+    if manager is None:
+        flash('Not a manager')
+        return redirect('/')
+    else:
+        subscription = db.managers.find_one({'name': manager['company_name']})
 
-    # Calculate remaining days
-    remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
+        # Calculate remaining days
+        remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
 
-    # Insert logged in data
-    logged_in_data = {
-        'username': manager['username'],
-        'timestamp': datetime.now()
-    }
-    try:
-        db.logged_in_data.insert_one(logged_in_data)
-    except Exception as e:
-        flash('An error occurred while logging in: ' + str(e))
-        return render_template("authentication.html")
+        # Insert logged in data
+        logged_in_data = {
+            'username': manager['username'],
+            'timestamp': datetime.now()
+        }
+        try:
+            db.logged_in_data.insert_one(logged_in_data)
+        except Exception as e:
+            flash('An error occurred while logging in: ' + str(e))
+            return render_template("authentication.html")
 
-    # Set session data
-    session.permanent = False
-    session['logged_in'] = True
-    session['user_id'] = str(manager["_id"])
-    session['user_message1'] = manager['name']
-    session['user_message2'] = remaining_days
-    session['login_username'] = manager['username']
-    session['phone_number'] = manager['phone_number']
+        # Set session data
+        session.permanent = False
+        session['logged_in'] = True
+        session['user_id'] = str(manager["_id"])
+        session['user_message1'] = manager['name']
+        session['user_message2'] = remaining_days
+        session['login_username'] = manager['username']
+        session['phone_number'] = manager['phone_number']
 
-    return redirect("/load-dashboard-page")
+        return redirect("/load-dashboard-page")
         
 ##ACCOUNT SETTING
 @app.route('/account-setup-page')
