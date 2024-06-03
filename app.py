@@ -27,14 +27,15 @@ from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-import win32com.client as win32
 import tempfile
+from openpyxl import Workbook, load_workbook
+from openpyxl.worksheet.protection import WorkbookProtection
 import string
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-# client = MongoClient('mongodb://localhost:27017/')
+# client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+client = MongoClient('mongodb://localhost:27017/')
 db = client.PropertyManagement
 fs = GridFS(db, collection='contracts')
 
@@ -3625,7 +3626,7 @@ def download():
             output = BytesIO()
 
             # Write the dataframes to the Excel file using pandas
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df_combined_tenants.to_excel(writer, sheet_name='Tenants', index=False)
                 df3.to_excel(writer, sheet_name='Property Managed', index=False)
 
@@ -3637,30 +3638,22 @@ def download():
                 temp_file.write(output.read())
                 temp_file_path = temp_file.name
 
-            # Use win32com to add password protection
-            excel = win32.gencache.EnsureDispatch('Excel.Application')
-            excel.DisplayAlerts = False  # Prevent Excel popups
+            # Add password protection using openpyxl
+            wb = load_workbook(temp_file_path)
+            password = generate_file_password()
+            wb.security.lockStructure = True  # Lock the structure of the workbook (optional)
+            wb.security.set_workbook_password(password)
+            protected_file_path = temp_file_path.replace(".xlsx", "_protected.xlsx")
+            wb.save(protected_file_path)
+            wb.close()
 
-            try:
-                wb = excel.Workbooks.Open(temp_file_path)
-                protected_file_path = temp_file_path.replace(".xlsx", "_protected.xlsx")
-                password = generate_file_password()
-                wb.SaveAs(protected_file_path, None, password)
-                existing_password = db.file_passwords.find_one({'username':login_data})
-                if existing_password:
-                    db.file_passwords.delete_one({'username':login_data})
-                db.file_passwords.insert_one({'username':login_data, 'password': password, 'detail': 'Tenant data file'})
-                wb.Close()
+            # Read the password-protected file
+            with open(protected_file_path, 'rb') as f:
+                protected_data = f.read()
 
-                # Read the password-protected file
-                with open(protected_file_path, 'rb') as f:
-                    protected_data = f.read()
-
-            finally:
-                # Ensure that Excel is properly closed and temporary files are cleaned up
-                excel.Quit()
-                os.remove(temp_file_path)
-                os.remove(protected_file_path)
+            # Clean up temporary files
+            os.remove(temp_file_path)
+            os.remove(protected_file_path)
 
             # Create the response
             response = make_response(protected_data)

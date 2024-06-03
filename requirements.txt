@@ -11,4 +11,5 @@ xlsxwriter
 plotly
 Pillow
 reportlab
+openpyxl
 # pywin32
