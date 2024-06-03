@@ -27,6 +27,9 @@ from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+import win32com.client as win32
+import tempfile
+import string
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
@@ -48,6 +51,10 @@ scheduler.init_app(app)
 scheduler.start()
 
 utc = pytz.UTC
+
+def generate_file_password(length=12):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
 
 def send_reports():
     current_year = datetime.now().year
@@ -3614,41 +3621,49 @@ def download():
             df_combined_tenants['Month paid'] = pd.Categorical(df_combined_tenants['Month paid'], categories=month_order.keys(), ordered=True)
             df_combined_tenants.sort_values(by=['Year', 'Month paid'], inplace=True)
 
-            # Create a BytesIO object and write the dataframes to it using ExcelWriter
+            # Create a BytesIO buffer to write the Excel file
             output = BytesIO()
+
+            # Write the dataframes to the Excel file using pandas
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                workbook = writer.book
                 df_combined_tenants.to_excel(writer, sheet_name='Tenants', index=False)
                 df3.to_excel(writer, sheet_name='Property Managed', index=False)
-                
-                worksheet = writer.sheets['Tenants']
-                
-                # Initialize row_start
-                row_start = 1
 
-                # Group by year
-                for year, year_data in df_combined_tenants.groupby('Year'):
-                    if len(year_data) > 1:
-                        # Apply grouping only if there are multiple records for the year
-                        row_end = row_start + len(year_data) - 1
-                        worksheet.set_row(row_start, None, None, {'level': 1})
-                        for row in range(row_start + 1, row_end + 1):
-                            worksheet.set_row(row, None, None, {'level': 1, 'hidden': True})
-                    else:
-                        # Handle single-record years (no grouping)
-                        row_end = row_start
-                    
-                    # Update row_start for the next year
-                    row_start = row_end + 1
-
-                # Set outline settings and freeze panes
-                worksheet.outline_settings(True, False, True, False)
-                worksheet.freeze_panes(1, 0)  # Freeze the header row
-
+            # Save the pandas ExcelWriter output and close the buffer
             output.seek(0)
 
+            # Create a temporary file for the unprotected Excel file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_file:
+                temp_file.write(output.read())
+                temp_file_path = temp_file.name
+
+            # Use win32com to add password protection
+            excel = win32.gencache.EnsureDispatch('Excel.Application')
+            excel.DisplayAlerts = False  # Prevent Excel popups
+
+            try:
+                wb = excel.Workbooks.Open(temp_file_path)
+                protected_file_path = temp_file_path.replace(".xlsx", "_protected.xlsx")
+                password = generate_file_password()
+                wb.SaveAs(protected_file_path, None, password)
+                existing_password = db.file_passwords.find_one({'username':login_data})
+                if existing_password:
+                    db.file_passwords.delete_one({'username':login_data})
+                db.file_passwords.insert_one({'username':login_data, 'password': password, 'detail': 'Tenant data file'})
+                wb.Close()
+
+                # Read the password-protected file
+                with open(protected_file_path, 'rb') as f:
+                    protected_data = f.read()
+
+            finally:
+                # Ensure that Excel is properly closed and temporary files are cleaned up
+                excel.Quit()
+                os.remove(temp_file_path)
+                os.remove(protected_file_path)
+
             # Create the response
-            response = make_response(output.read())
+            response = make_response(protected_data)
             response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx"
             response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
@@ -3656,6 +3671,27 @@ def download():
         else:
             flash('No tenant data found')
             return redirect('/load-dashboard-page')
+        
+#####FILE PASSWORDS
+@app.route('/view-file-passwords')
+def view_file_passwords():
+    username = session.get('login_username')
+    if username is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': username})
+        dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
+        
+        file_passwords = list(db.file_passwords.find({'username': username}))
+        if len(file_passwords)==0:
+            flash('No encryption keys found')
+            return redirect('/load-dashboard-page')
+        else:
+            found_passwords = []
+            for password in file_passwords:
+                found_passwords.append(password)
+        return render_template('file passwords.html', found_passwords=found_passwords, dp=dp_str)
 
 ####MANAGE CONTRACTS
 @app.route('/manage-contracts')

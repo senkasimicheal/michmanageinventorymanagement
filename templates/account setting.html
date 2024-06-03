@@ -278,6 +278,15 @@
             </a>
           </li>
           {% endif %}
+          {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('view_file_passwords') }}">
+              <i class="typcn typcn-key menu-icon"></i>
+              <span class="menu-title">Passwords</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          {% endif %}
       </nav>
       <!-- partial -->
       <div class="main-panel">
