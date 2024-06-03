@@ -27,7 +27,7 @@ from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 import tempfile
 import string
@@ -3551,14 +3551,11 @@ def download():
         company = db.registered_managers.find_one({'username': login_data})
         is_manager = db.managers.find_one({'manager_email': company['email']})
         if is_manager is None:
-            company_query = {'username': login_data, 'company_name': company['company_name']}
             user_query  = {'username': login_data, 'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
         else:
-            company_query = {'company_name': company['company_name']}
             user_query  = {'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
         projection = {'payment_receipt': 0, '_id': 0, 'marital_status': 0, 'age': 0, 'available_amount': 0, 'payment_completion': 0,
                       'currency': 0, 'payment_status': 0,	'status': 0,	'household_size': 0}
-        projection2 = {'_id': 0, 'late_payment_day': 0, 'currency': 0   }
     
         current_tenant_data = list(db.tenants.find(user_query, projection))
 
@@ -3599,24 +3596,6 @@ def download():
 
             df_combined_tenants.rename(columns=new_column_names, inplace=True)
 
-            # new_column_names_property = {
-            #     'username': 'Property manager',
-            #     'propertyName': 'Property name',
-            #     'company_name': 'Company',
-            #     'type': 'Property type',
-            #     'sections': 'Property sections',
-            #     'property_value': 'Property value',
-            #     'address': 'Property address',
-            #     'city': 'City',
-            #     'state': 'State',
-            #     'parish': 'Parish',
-            #     'owner_name': 'Property owner',
-            #     'owner_email': 'Owners email',
-            #     'owner_phone': 'Owners phone',
-            #     'owner_residence': 'Owners residence'
-            # }
-            # df3.rename(columns=new_column_names_property, inplace=True)
-
             # Set the multi-level index and sort the DataFrame
             month_order = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
             df_combined_tenants['Month paid'] = pd.Categorical(df_combined_tenants['Month paid'], categories=month_order.keys(), ordered=True)
@@ -3625,50 +3604,43 @@ def download():
             # Create a BytesIO buffer to write the Excel file
             output = BytesIO()
 
-            # Write the dataframes to the Excel file using pandas
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df_combined_tenants.to_excel(writer, sheet_name='Tenants', index=False)
-                # df3.to_excel(writer, sheet_name='Property Managed', index=False)
-
-            # Save the pandas ExcelWriter output and close the buffer
-            output.seek(0)
-
-            # Create a temporary file for the Excel file
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_file:
-                temp_file.write(output.read())
-                temp_file_path = temp_file.name
-
-            # Load the Excel file using openpyxl
+            # Write the DataFrame to the Excel file using openpyxl
             wb = Workbook()
-            for sheet in wb.sheetnames:
-                wb.remove(wb[sheet])
+
+            # Create a worksheet
+            ws = wb.active
+            ws.title = "Tenants"
+
+            # Write column names
+            for col_idx, col_name in enumerate(df_combined_tenants.columns, start=2):
+                ws.cell(row=1, column=col_idx, value=col_name)
+
+            # Write data rows
+            for r_idx, row in enumerate(dataframe_to_rows(df_combined_tenants, index=False), start=2):
+                for c_idx, value in enumerate(row, start=1):
+                    ws.cell(row=r_idx, column=c_idx, value=value)
 
             # Set a password
             file_password = generate_file_password()
-
-            # Copy data from the pandas ExcelWriter output to the openpyxl workbook
-            with pd.ExcelFile(temp_file_path) as xls:
-                for sheet_name in xls.sheet_names:
-                    df = pd.read_excel(xls, sheet_name)
-                    ws = wb.create_sheet(title=sheet_name)
-                    for r_idx, row in enumerate(df.iterrows(), start=1):
-                        for c_idx, value in enumerate(row[1], start=1):
-                            ws.cell(row=r_idx, column=c_idx, value=value)
-                    # Set password for each sheet
-                    ws.protection.password = file_password
-
-            wb.security.set_workbook_password(file_password)
-            existing_password = db.file_passwords.find_one({'username':login_data})
-            if existing_password:
-                db.file_passwords.delete_one({'username':login_data})
-            db.file_passwords.insert_one({'username':login_data, 'password': file_password, 'detail': 'Tenant data file'})
+            ws.protection.set_password(file_password)
 
             # Save the workbook with encryption
-            protected_file_path = temp_file_path.replace(".xlsx", "_protected.xlsx")
+            protected_file_path = tempfile.NamedTemporaryFile(delete=False, suffix="_protected.xlsx").name
             wb.save(filename=protected_file_path)
 
             # Clean up temporary file
-            os.remove(temp_file_path)
+            wb.close()
+
+            # Load the workbook again to delete the first row
+            wb = load_workbook(protected_file_path)
+            ws = wb.active
+            ws.delete_rows(1)
+
+            # Save the workbook
+            wb.save(protected_file_path)
+
+            # Clean up temporary file
+            wb.close()
 
             # Read the password-protected file
             with open(protected_file_path, 'rb') as f:
