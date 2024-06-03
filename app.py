@@ -27,15 +27,15 @@ from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 import tempfile
-from openpyxl import Workbook, load_workbook
-from openpyxl.worksheet.protection import WorkbookProtection
 import string
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-# client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+# client = MongoClient('mongodb://localhost:27017/')
 db = client.PropertyManagement
 fs = GridFS(db, collection='contracts')
 
@@ -3633,26 +3633,48 @@ def download():
             # Save the pandas ExcelWriter output and close the buffer
             output.seek(0)
 
-            # Create a temporary file for the unprotected Excel file
+            # Create a temporary file for the Excel file
             with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_file:
                 temp_file.write(output.read())
                 temp_file_path = temp_file.name
 
-            # Add password protection using openpyxl
-            wb = load_workbook(temp_file_path)
-            password = generate_file_password()
-            wb.security.lockStructure = True  # Lock the structure of the workbook (optional)
-            wb.security.set_workbook_password(password)
+            # Load the Excel file using openpyxl
+            wb = Workbook()
+            for sheet in wb.sheetnames:
+                wb.remove(wb[sheet])
+
+            # Set a password
+            file_password = generate_file_password()
+
+            # Copy data from the pandas ExcelWriter output to the openpyxl workbook
+            with pd.ExcelFile(temp_file_path) as xls:
+                for sheet_name in xls.sheet_names:
+                    df = pd.read_excel(xls, sheet_name)
+                    ws = wb.create_sheet(title=sheet_name)
+                    for r_idx, row in enumerate(df.iterrows(), start=1):
+                        for c_idx, value in enumerate(row[1], start=1):
+                            ws.cell(row=r_idx, column=c_idx, value=value)
+                    # Set password for each sheet
+                    ws.protection.password = file_password
+
+            wb.security.set_workbook_password(file_password)
+            existing_password = db.file_passwords.find_one({'username':login_data})
+            if existing_password:
+                db.file_passwords.delete_one({'username':login_data})
+            db.file_passwords.insert_one({'username':login_data, 'password': file_password, 'detail': 'Tenant data file'})
+
+            # Save the workbook with encryption
             protected_file_path = temp_file_path.replace(".xlsx", "_protected.xlsx")
-            wb.save(protected_file_path)
-            wb.close()
+            wb.save(filename=protected_file_path)
+
+            # Clean up temporary file
+            os.remove(temp_file_path)
 
             # Read the password-protected file
             with open(protected_file_path, 'rb') as f:
                 protected_data = f.read()
 
-            # Clean up temporary files
-            os.remove(temp_file_path)
+            # Clean up protected file
             os.remove(protected_file_path)
 
             # Create the response
