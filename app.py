@@ -3565,11 +3565,11 @@ def download():
         old_tenant_data = list(db.old_tenant_data.find(user_query, projection))
 
         if len(current_tenant_data) > 0 or len(old_tenant_data) > 0:                
-            property_data = list(db.property_managed.find(company_query, projection2))
+            # property_data = list(db.property_managed.find(company_query, projection2))
 
             df1 = pd.DataFrame(old_tenant_data)
             df2 = pd.DataFrame(current_tenant_data)
-            df3 = pd.DataFrame(property_data)
+            # df3 = pd.DataFrame(property_data)
 
             df_combined_tenants = pd.concat([df1, df2], ignore_index=True)
 
@@ -3599,23 +3599,23 @@ def download():
 
             df_combined_tenants.rename(columns=new_column_names, inplace=True)
 
-            new_column_names_property = {
-                'username': 'Property manager',
-                'propertyName': 'Property name',
-                'company_name': 'Company',
-                'type': 'Property type',
-                'sections': 'Property sections',
-                'property_value': 'Property value',
-                'address': 'Property address',
-                'city': 'City',
-                'state': 'State',
-                'parish': 'Parish',
-                'owner_name': 'Property owner',
-                'owner_email': 'Owners email',
-                'owner_phone': 'Owners phone',
-                'owner_residence': 'Owners residence'
-            }
-            df3.rename(columns=new_column_names_property, inplace=True)
+            # new_column_names_property = {
+            #     'username': 'Property manager',
+            #     'propertyName': 'Property name',
+            #     'company_name': 'Company',
+            #     'type': 'Property type',
+            #     'sections': 'Property sections',
+            #     'property_value': 'Property value',
+            #     'address': 'Property address',
+            #     'city': 'City',
+            #     'state': 'State',
+            #     'parish': 'Parish',
+            #     'owner_name': 'Property owner',
+            #     'owner_email': 'Owners email',
+            #     'owner_phone': 'Owners phone',
+            #     'owner_residence': 'Owners residence'
+            # }
+            # df3.rename(columns=new_column_names_property, inplace=True)
 
             # Set the multi-level index and sort the DataFrame
             month_order = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
@@ -3628,7 +3628,7 @@ def download():
             # Write the dataframes to the Excel file using pandas
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df_combined_tenants.to_excel(writer, sheet_name='Tenants', index=False)
-                df3.to_excel(writer, sheet_name='Property Managed', index=False)
+                # df3.to_excel(writer, sheet_name='Property Managed', index=False)
 
             # Save the pandas ExcelWriter output and close the buffer
             output.seek(0)
