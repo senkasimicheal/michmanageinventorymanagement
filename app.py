@@ -3624,6 +3624,11 @@ def download():
             file_password = generate_file_password()
             ws.protection.set_password(file_password)
 
+            existing_password = db.file_passwords.find_one({'username':login_data})
+            if existing_password:
+                db.file_passwords.delete_one({'username':login_data})
+            db.file_passwords.insert_one({'username':login_data, 'password': file_password, 'detail': 'Tenant data file'})
+
             # Save the workbook with encryption
             protected_file_path = tempfile.NamedTemporaryFile(delete=False, suffix="_protected.xlsx").name
             wb.save(filename=protected_file_path)
