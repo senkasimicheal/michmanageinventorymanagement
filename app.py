@@ -6,6 +6,7 @@ from pymongo import MongoClient, ASCENDING
 import secrets
 import bcrypt
 from datetime import datetime, timedelta
+import calendar
 import pytz
 import pandas as pd 
 from io import BytesIO
@@ -978,43 +979,68 @@ def tenant_data():
         else:
 
             tenant_data = []
+            month_mapping = {
+                'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+                'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12,
+                'Quarter 1': 3, 'Quarter 2': 6, 'Quarter 3': 9, 'Quarter 4': 12,
+                '2024': 12, '2025': 12, '2026': 12
+            }
             current_month = datetime.now().strftime('%B')
+            current_month_number = datetime.now().month
             # Loop through each tenant in the old tenant data
             for tenant in current_tenant_data:
                 # Extract the required information
                 name = tenant.get('tenantName')
                 phone = tenant.get('tenantPhone')
                 propertyName = tenant.get('propertyName')
-                amount_demanded = tenant.get('section_value')-tenant.get('available_amount')
                 months_paid = tenant.get('months_paid')
                 date_paid = tenant.get('date_last_paid')
-                if amount_demanded > 0:
-                    # Append the extracted information to the tenant_data list
-                    tenant_data.append({
-                        'name': name,
-                        'phone': phone,
-                        'propertyName': propertyName,
-                        'amount_demanded': amount_demanded,
-                        'months_paid': months_paid,
-                        'date_paid': date_paid.strftime("%Y-%m-%d")
-                    })
-            for tenant in current_tenant_data:
-                name = tenant.get('tenantName')
-                phone = tenant.get('tenantPhone')
-                propertyName = tenant.get('propertyName')
-                amount_demanded = tenant.get('section_value')
-                months_paid = current_month
-                date_paid = 'None'
 
-                tenant_data.append({
-                    'name': name,
-                    'phone': phone,
-                    'propertyName': propertyName,
-                    'amount_demanded': amount_demanded,
-                    'months_paid': months_paid,
-                    'date_paid': date_paid
-                })
+                amount_demanded = max(0, tenant['section_value'] - tenant['available_amount'])
 
+                last_payment_month = month_mapping.get(tenant['months_paid'], 0)
+                last_payment_date = datetime(year=tenant["date_last_paid"].year, month=last_payment_month, day=1)
+                next_payment_date = last_payment_date + timedelta(days=30)
+                remaining_days = (next_payment_date - datetime.now()).days
+                remaining_days = abs(remaining_days)
+
+                if amount_demanded == 0:
+                    if last_payment_month < current_month_number:
+                        amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
+                        amount_demanded += (tenant['section_value'] - tenant['available_amount']) + amount_next_month
+
+                        tenant_data.append({
+                            'name': name,
+                            'phone': phone,
+                            'propertyName': propertyName,
+                            'amount_demanded': amount_demanded,
+                            'months_paid': f"From {calendar.month_name[last_payment_month+1]} to {current_month}",
+                            'date_paid': date_paid.strftime("%Y-%m-%d")
+                        })
+                elif amount_demanded < 0:
+                    if last_payment_month < current_month_number:
+                        amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
+                        amount_demanded += (tenant['section_value'] - tenant['available_amount']) + amount_next_month
+
+                        tenant_data.append({
+                            'name': name,
+                            'phone': phone,
+                            'propertyName': propertyName,
+                            'amount_demanded': amount_demanded,
+                            'months_paid': f"From {months_paid} to {current_month}",
+                            'date_paid': date_paid.strftime("%Y-%m-%d")
+                        })
+
+                    elif last_payment_month == current_month_number:
+                        tenant_data.append({
+                            'name': name,
+                            'phone': phone,
+                            'propertyName': propertyName,
+                            'amount_demanded': amount_demanded,
+                            'months_paid': months_paid,
+                            'date_paid': date_paid.strftime("%Y-%m-%d")
+                        })
+        
             session['tenant_data'] = tenant_data
             return render_template('tenant monitor account.html',tenant_data=tenant_data)
 
@@ -1349,7 +1375,7 @@ def resolved_complaints(complaint_id):
         manager_email = manager["email"]
         resolved_time = resolved_complaint["resolved_time"].replace(second=0, microsecond=0)
         complained_on = resolved_complaint["complained_on"].replace(second=0, microsecond=0)
-        days_taken = (resolved_time - complained_on).days
+        days_taken = ((resolved_time - complained_on).days) + 1
 
         msg = Message('Complaint was resolved', 
         sender='michpmts@gmail.com', 
