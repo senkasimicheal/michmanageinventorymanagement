@@ -997,7 +997,6 @@ def tenant_data():
                 date_paid = tenant.get('date_last_paid')
 
                 amount_demanded = max(0, tenant['section_value'] - tenant['available_amount'])
-
                 last_payment_month = month_mapping.get(tenant['months_paid'], 0)
                 last_payment_date = datetime(year=tenant["date_last_paid"].year, month=last_payment_month, day=1)
                 next_payment_date = last_payment_date + timedelta(days=30)
@@ -1017,8 +1016,19 @@ def tenant_data():
                             'months_paid': f"From {calendar.month_name[last_payment_month+1]} to {current_month}",
                             'date_paid': date_paid.strftime("%Y-%m-%d")
                         })
-                elif amount_demanded < 0:
-                    if last_payment_month < current_month_number:
+
+                elif amount_demanded > 0:
+                    if last_payment_month == current_month_number:
+                        tenant_data.append({
+                            'name': name,
+                            'phone': phone,
+                            'propertyName': propertyName,
+                            'amount_demanded': amount_demanded,
+                            'months_paid': months_paid,
+                            'date_paid': date_paid.strftime("%Y-%m-%d")
+                        })
+                    
+                    elif last_payment_month < current_month_number:
                         amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
                         amount_demanded += (tenant['section_value'] - tenant['available_amount']) + amount_next_month
 
@@ -1028,16 +1038,6 @@ def tenant_data():
                             'propertyName': propertyName,
                             'amount_demanded': amount_demanded,
                             'months_paid': f"From {months_paid} to {current_month}",
-                            'date_paid': date_paid.strftime("%Y-%m-%d")
-                        })
-
-                    elif last_payment_month == current_month_number:
-                        tenant_data.append({
-                            'name': name,
-                            'phone': phone,
-                            'propertyName': propertyName,
-                            'amount_demanded': amount_demanded,
-                            'months_paid': months_paid,
                             'date_paid': date_paid.strftime("%Y-%m-%d")
                         })
         
