@@ -467,7 +467,7 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
-        {% if session.get('send_emails_message') %}
+        {% if session['send_emails_message'] %}
           <div class="notification">
             <span class="close-btn">×</span>
             {{session['send_emails_message']}}
