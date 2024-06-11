@@ -755,27 +755,24 @@ def userlogin():
 
             #Sending verification code
             if send_emails is not None:
-                if send_emails["emails"] == "yes":
-                    msg = Message('Verify Your Identity - Mich Manage', 
-                    sender='michpmts@gmail.com', 
-                    recipients=[manager["email"]])
-                    msg.html = f"""
-                    <html>
-                    <body>
-                    <p>Mich Manage Personal Identification</p>
-                    <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
-                    <p>Best Regards,</p>
-                    <p>Mich Manage</p>
-                    </body>
-                    </html>
-                    """
-                    mail.send(msg)
-                else:
-                    session['no_send_emails_code'] = 'no_send_emails_code'
-                    no_send_emails_code = code
+                msg = Message('Verify Your Identity - Mich Manage', 
+                sender='michpmts@gmail.com', 
+                recipients=[manager["email"]])
+                msg.html = f"""
+                <html>
+                <body>
+                <p>Mich Manage Personal Identification</p>
+                <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
+                <p>Best Regards,</p>
+                <p>Mich Manage</p>
+                </body>
+                </html>
+                """
+                mail.send(msg)
             else:
                 session['no_send_emails_code'] = 'no_send_emails_code'
                 no_send_emails_code = code
+
             db.login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
             db.login_auth.insert_one(user_auth)
             return render_template("authentication.html", no_send_emails_code=no_send_emails_code)
@@ -1115,22 +1112,21 @@ def add_complaint():
         db.tenant_complaints.insert_one(compiled_complaint)
         #Sending verification code
         if send_emails is not None:
-            if send_emails["emails"] == "yes":
-                msg = Message('New Complaint On Mich Manage', 
-                sender='michpmts@gmail.com', 
-                recipients=[manager_email])
-                msg.html = f"""
-                <html>
-                <body>
-                <p>Dear Manager,</p>
-                <p>You have a new complaint from {tenant['tenantName']}, please login below to check complaint:</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com/login">Login</a></b></p>
-                <p>Best Regards,</p>
-                <p>Mich Manage</p>
-                </body>
-                </html>
-                """
-                mail.send(msg)
+            msg = Message('New Complaint On Mich Manage', 
+            sender='michpmts@gmail.com', 
+            recipients=[manager_email])
+            msg.html = f"""
+            <html>
+            <body>
+            <p>Dear Manager,</p>
+            <p>You have a new complaint from {tenant['tenantName']}, please login below to check complaint:</p>
+            <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com/login">Login</a></b></p>
+            <p>Best Regards,</p>
+            <p>Mich Manage</p>
+            </body>
+            </html>
+            """
+            mail.send(msg)
         flash('Complaint submitted, we will get back to you')
         return redirect('/complaint-form')
     
@@ -1194,22 +1190,21 @@ def tenant_reply_complaint():
                     manager = db.registered_managers.find_one({'username': tenant_managed['username'], 'company_name': tenant_managed['company_name']})
                     manager_email = manager['email']
                     if send_emails is not None:
-                        if send_emails["emails"] == "yes":
-                            msg = Message('New Reply From Tenant', 
-                            sender='michpmts@gmail.com', 
-                            recipients=[manager_email])
-                            msg.html = f"""
-                            <html>
-                            <body>
-                            <p>Dear Manager,</p>
-                            <p>You have a new reply from {tenant_managed['tenantName']}, please login below to check reply:</p>
-                            <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
-                            <p>Best Regards,</p>
-                            <p>Mich Manage</p>
-                            </body>
-                            </html>
-                            """
-                            mail.send(msg)
+                        msg = Message('New Reply From Tenant', 
+                        sender='michpmts@gmail.com', 
+                        recipients=[manager_email])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear Manager,</p>
+                        <p>You have a new reply from {tenant_managed['tenantName']}, please login below to check reply:</p>
+                        <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+                        mail.send(msg)
             
             found_complaints = db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)})
             complaints = []
@@ -1329,22 +1324,21 @@ def update_complaint():
                     tenant_object_id = db.tenant_user_accounts.find_one({'_id': tenant_complaint_id['tenantID']})
                     tenant_email = tenant_object_id['tenantEmail']
                     if send_emails is not None:
-                        if send_emails["emails"] == "yes":
-                            msg = Message('New Reply From Property Manager', 
-                            sender='michpmts@gmail.com', 
-                            recipients=[tenant_email])
-                            msg.html = f"""
-                            <html>
-                            <body>
-                            <p>Dear tenant,</p>
-                            <p>You have a new reply from manager of {tenant_object_id['propertyName']}, please login below to check reply:</p>
-                            <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
-                            <p>Best Regards,</p>
-                            <p>Mich Manage</p>
-                            </body>
-                            </html>
-                            """
-                            mail.send(msg)
+                        msg = Message('New Reply From Property Manager', 
+                        sender='michpmts@gmail.com', 
+                        recipients=[tenant_email])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear tenant,</p>
+                        <p>You have a new reply from manager of {tenant_object_id['propertyName']}, please login below to check reply:</p>
+                        <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+                        mail.send(msg)
 
             company = db.registered_managers.find_one({'username': login_data})
             if 'dp' in company:
@@ -1422,26 +1416,25 @@ def resolved_complaints(complaint_id):
         days_taken = ((resolved_time - complained_on).days) + 1
 
         if send_emails is not None:
-            if send_emails["emails"] == "yes":
-                msg = Message('Complaint was resolved', 
-                sender='michpmts@gmail.com', 
-                recipients=[tenant_email, manager_email])
-                msg.html = f"""
-                <html>
-                <body>
-                <p>Dear user,</p>
-                <p>The following complaint was resolved by {manager['name']}</p>
-                <p>Heading: {resolved_complaint["complaint_heading"]}</p>
-                <p>Details: {resolved_complaint["details"]}</p>
-                <p>Date filed: {complained_on}</p>
-                <p>Date resolved: {resolved_time}</p>
-                <p>Time taken to resolve: {days_taken} days</p>
-                <p>Best Regards,</p>
-                <p>Mich Manage</p>
-                </body>
-                </html>
-                """
-                mail.send(msg)
+            msg = Message('Complaint was resolved', 
+            sender='michpmts@gmail.com', 
+            recipients=[tenant_email, manager_email])
+            msg.html = f"""
+            <html>
+            <body>
+            <p>Dear user,</p>
+            <p>The following complaint was resolved by {manager['name']}</p>
+            <p>Heading: {resolved_complaint["complaint_heading"]}</p>
+            <p>Details: {resolved_complaint["details"]}</p>
+            <p>Date filed: {complained_on}</p>
+            <p>Date resolved: {resolved_time}</p>
+            <p>Time taken to resolve: {days_taken} days</p>
+            <p>Best Regards,</p>
+            <p>Mich Manage</p>
+            </body>
+            </html>
+            """
+            mail.send(msg)
         flash('Complaint was resolved')
         return redirect('/resolve-complaints')
        
@@ -1747,54 +1740,52 @@ def update():
                                 db.old_tenant_data.insert_one(new_data)
                                 # Create the email message
                                 if send_emails is not None:
-                                    if send_emails["emails"] == "yes":
-                                        msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
-                                                    recipients=[tenantEmail])
-                                        msg.html = f"""
-                                        <html>
-                                        <body>
-                                        <p>Dear {section_tenant['tenantName']},</p>
-                                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                        <p>Best Regards,</p>
-                                        <p>Mich Manage</p>
-                                        </body>
-                                        </html>
-                                        """
+                                    msg = Message('Rent Payment Receipt-Mich Manage', 
+                                                sender='michpmts@gmail.com', 
+                                                recipients=[tenantEmail])
+                                    msg.html = f"""
+                                    <html>
+                                    <body>
+                                    <p>Dear {section_tenant['tenantName']},</p>
+                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                    <p>Best Regards,</p>
+                                    <p>Mich Manage</p>
+                                    </body>
+                                    </html>
+                                    """
 
-                                        # Attach the PDF receipt to the email
-                                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                    # Attach the PDF receipt to the email
+                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                        # Send the email
-                                        mail.send(msg)
+                                    # Send the email
+                                    mail.send(msg)
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                                 # Create the email message
                                 if send_emails is not None:
-                                    if send_emails["emails"] == "yes":
-                                        msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
-                                                    recipients=[tenantEmail])
-                                        msg.html = f"""
-                                        <html>
-                                        <body>
-                                        <p>Dear {section_tenant['tenantName']},</p>
-                                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                        <p>Best Regards,</p>
-                                        <p>Mich Manage</p>
-                                        </body>
-                                        </html>
-                                        """
+                                    msg = Message('Rent Payment Receipt-Mich Manage', 
+                                                sender='michpmts@gmail.com', 
+                                                recipients=[tenantEmail])
+                                    msg.html = f"""
+                                    <html>
+                                    <body>
+                                    <p>Dear {section_tenant['tenantName']},</p>
+                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                    <p>Best Regards,</p>
+                                    <p>Mich Manage</p>
+                                    </body>
+                                    </html>
+                                    """
 
-                                        # Attach the PDF receipt to the email
-                                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                    # Attach the PDF receipt to the email
+                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                        # Send the email
-                                        mail.send(msg)
+                                    # Send the email
+                                    mail.send(msg)
 
                                 if '_id' in old_data:
                                     del old_data['_id']
@@ -1805,54 +1796,52 @@ def update():
                             db.old_tenant_data.insert_one(new_data)
                             # Create the email message
                             if send_emails is not None:
-                                if send_emails["emails"] == "yes":
-                                    msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
-                                                recipients=[tenantEmail])
-                                    msg.html = f"""
-                                    <html>
-                                    <body>
-                                    <p>Dear {section_tenant['tenantName']},</p>
-                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                    <p>Best Regards,</p>
-                                    <p>Mich Manage</p>
-                                    </body>
-                                    </html>
-                                    """
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
 
-                                    # Attach the PDF receipt to the email
-                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                    # Send the email
-                                    mail.send(msg)
+                                # Send the email
+                                mail.send(msg)
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                             # Create the email message
                             if send_emails is not None:
-                                if send_emails["emails"] == "yes":
-                                    msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
-                                                recipients=[tenantEmail])
-                                    msg.html = f"""
-                                    <html>
-                                    <body>
-                                    <p>Dear {section_tenant['tenantName']},</p>
-                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                    <p>Best Regards,</p>
-                                    <p>Mich Manage</p>
-                                    </body>
-                                    </html>
-                                    """
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
 
-                                    # Attach the PDF receipt to the email
-                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                    # Send the email
-                                    mail.send(msg)
+                                # Send the email
+                                mail.send(msg)
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
@@ -1969,54 +1958,52 @@ def update():
                                 db.old_tenant_data.insert_one(new_data)
                                 # Create the email message
                                 if send_emails is not None:
-                                    if send_emails["emails"] == "yes":
-                                        msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
-                                                    recipients=[tenantEmail])
-                                        msg.html = f"""
-                                        <html>
-                                        <body>
-                                        <p>Dear {section_tenant['tenantName']},</p>
-                                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                        <p>Best Regards,</p>
-                                        <p>Mich Manage</p>
-                                        </body>
-                                        </html>
-                                        """
+                                    msg = Message('Rent Payment Receipt-Mich Manage', 
+                                                sender='michpmts@gmail.com', 
+                                                recipients=[tenantEmail])
+                                    msg.html = f"""
+                                    <html>
+                                    <body>
+                                    <p>Dear {section_tenant['tenantName']},</p>
+                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                    <p>Best Regards,</p>
+                                    <p>Mich Manage</p>
+                                    </body>
+                                    </html>
+                                    """
 
-                                        # Attach the PDF receipt to the email
-                                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                    # Attach the PDF receipt to the email
+                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                        # Send the email
-                                        mail.send(msg)
+                                    # Send the email
+                                    mail.send(msg)
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful")
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                                 # Create the email message
                                 if send_emails is not None:
-                                    if send_emails["emails"] == "yes":
-                                        msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
-                                                    recipients=[tenantEmail])
-                                        msg.html = f"""
-                                        <html>
-                                        <body>
-                                        <p>Dear {section_tenant['tenantName']},</p>
-                                        <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                        <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                        <p>Best Regards,</p>
-                                        <p>Mich Manage</p>
-                                        </body>
-                                        </html>
-                                        """
+                                    msg = Message('Rent Payment Receipt-Mich Manage', 
+                                                sender='michpmts@gmail.com', 
+                                                recipients=[tenantEmail])
+                                    msg.html = f"""
+                                    <html>
+                                    <body>
+                                    <p>Dear {section_tenant['tenantName']},</p>
+                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                    <p>Best Regards,</p>
+                                    <p>Mich Manage</p>
+                                    </body>
+                                    </html>
+                                    """
 
-                                        # Attach the PDF receipt to the email
-                                        msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                    # Attach the PDF receipt to the email
+                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                        # Send the email
-                                        mail.send(msg)
+                                    # Send the email
+                                    mail.send(msg)
                                 if '_id' in old_data:
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
@@ -2026,54 +2013,52 @@ def update():
                             db.old_tenant_data.insert_one(new_data)
                             # Create the email message
                             if send_emails is not None:
-                                if send_emails["emails"] == "yes":
-                                    msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
-                                                recipients=[tenantEmail])
-                                    msg.html = f"""
-                                    <html>
-                                    <body>
-                                    <p>Dear {section_tenant['tenantName']},</p>
-                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                    <p>Best Regards,</p>
-                                    <p>Mich Manage</p>
-                                    </body>
-                                    </html>
-                                    """
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
 
-                                    # Attach the PDF receipt to the email
-                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                    # Send the email
-                                    mail.send(msg)
+                                # Send the email
+                                mail.send(msg)
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                             # Create the email message
                             if send_emails is not None:
-                                if send_emails["emails"] == "yes":
-                                    msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
-                                                recipients=[tenantEmail])
-                                    msg.html = f"""
-                                    <html>
-                                    <body>
-                                    <p>Dear {section_tenant['tenantName']},</p>
-                                    <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                                    <p>Best Regards,</p>
-                                    <p>Mich Manage</p>
-                                    </body>
-                                    </html>
-                                    """
+                                msg = Message('Rent Payment Receipt-Mich Manage', 
+                                            sender='michpmts@gmail.com', 
+                                            recipients=[tenantEmail])
+                                msg.html = f"""
+                                <html>
+                                <body>
+                                <p>Dear {section_tenant['tenantName']},</p>
+                                <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
+                                <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
+                                <p>Best Regards,</p>
+                                <p>Mich Manage</p>
+                                </body>
+                                </html>
+                                """
 
-                                    # Attach the PDF receipt to the email
-                                    msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
+                                # Attach the PDF receipt to the email
+                                msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
-                                    # Send the email
-                                    mail.send(msg)
+                                # Send the email
+                                mail.send(msg)
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
@@ -3465,10 +3450,7 @@ def load_dashboard_page():
         flash('Login first')
         return redirect('/')
     else:
-        if send_emails is not None:
-            if send_emails["emails"] == "no":
-                session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
-        else:
+        if send_emails is None:
             session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
                 
         startdate_on_str = request.form.get("startdate")
