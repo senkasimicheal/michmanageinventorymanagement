@@ -76,7 +76,7 @@
       <div class="container-fluid-form">
           <form id="myForm" action="{{url_for('authentication')}}" method="POST">
               <h3>Verify Your Identity</h3>
-              {% if session.get('no_send_emails_code') == 'no_send_emails_code' %}
+              {% if session.get('no_send_emails_code') != 0 %}
               <ul class="code">
                 <li tabindex="0" class="digit" title="{{no_send_emails_code}}"><span>Tap To View Code</span></li>
               </ul>

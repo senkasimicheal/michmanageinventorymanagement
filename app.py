@@ -3465,7 +3465,7 @@ def load_dashboard_page():
         flash('Login first')
         return redirect('/')
     else:
-        send_emails_message = ""
+        send_emails_message = "service is on"
         if send_emails is not None:
             if send_emails["emails"] == "no":
                 send_emails_message = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
