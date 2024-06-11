@@ -4366,6 +4366,26 @@ def download_login_data():
 
         return response
 
+#####ACTIVATE SENDING EMAILS
+@app.route('/activate sending emails/<send_emails>')
+def activate_send_emails(send_emails):
+    send_emails_state = db.send_emails.find_one()
+    if send_emails_state is None:
+        db.send_emails.insert_one({'emails': send_emails})
+        if send_emails == "yes":
+            flash(f"Emails have been activated")
+        else:
+            flash(f"Emails have been deactivated")
+    else:
+        if send_emails == "yes":
+            db.send_emails.update_one({'emails': "no"}, {'$set': {'emails': send_emails}})
+            flash(f"Emails have been activated")
+        else:
+            db.send_emails.update_one({'emails': "yes"}, {'$set': {'emails': send_emails}})
+            flash(f"Emails have been deactivated")
+    session['send_emails'] = send_emails
+    return render_template("managers accounts.html")
+
 if __name__ == '__main__':
     scheduler.start()
     app.run(debug=True)
