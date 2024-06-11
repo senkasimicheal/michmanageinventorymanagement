@@ -467,6 +467,22 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
+        {% if send_emails_message != "" %}
+        <div class="notification">
+          <span class="close-btn">×</span>
+          {{send_emails_message}}
+        </div>
+      
+        <script>
+          const notification = document.querySelector('.notification');
+          const closeBtn = document.querySelector('.close-btn');
+      
+          closeBtn.addEventListener('click', () => {
+              notification.style.display = 'none';
+          });
+        </script>
+        {% endif %}
+
         {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
         <div>
           {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}

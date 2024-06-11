@@ -40,20 +40,28 @@ client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mong
 db = client.PropertyManagement
 fs = GridFS(db, collection='contracts')
 
-send_emails = db.send_emails.find_one({'emails': "yes"})
-if send_emails is not None:
-    if send_emails["emails"] == "yes":
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail = Mail(app)
-
 scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
+
+# Declare send_emails as a global variable
+send_emails = None
+mail = Mail(app)
+
+def update_send_emails():
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        if send_emails["emails"] == "yes":
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
+scheduler.add_job('update_send_emails', update_send_emails, trigger='interval', seconds=20)
 
 utc = pytz.UTC
 
@@ -718,6 +726,7 @@ def password_reset_verifying_user():
 #######PROPERTY MANAGER LOGIN##############
 @app.route("/userlogin", methods=["POST"])
 def userlogin():
+    session.clear()
     username = request.form.get('username')
     password = request.form.get('password')
 
@@ -742,6 +751,8 @@ def userlogin():
             user_auth = {"username": manager['username'], "code": code}
             db.login_auth.delete_one({"username": manager['username']})
 
+            no_send_emails_code = 0
+
             #Sending verification code
             if send_emails is not None:
                 if send_emails["emails"] == "yes":
@@ -759,9 +770,15 @@ def userlogin():
                     </html>
                     """
                     mail.send(msg)
+                else:
+                    session['no_send_emails_code'] = 'no_send_emails_code'
+                    no_send_emails_code = code
+            else:
+                session['no_send_emails_code'] = 'no_send_emails_code'
+                no_send_emails_code = code
             db.login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
             db.login_auth.insert_one(user_auth)
-            return render_template("authentication.html")
+            return render_template("authentication.html", no_send_emails_code=no_send_emails_code)
         else:
             user_message1 = f"{manager['name']}"
             login_username = f"{manager['username']}"
@@ -3448,6 +3465,13 @@ def load_dashboard_page():
         flash('Login first')
         return redirect('/')
     else:
+        send_emails_message = ""
+        if send_emails is not None:
+            if send_emails["emails"] == "no":
+                send_emails_message = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
+        else:
+            send_emails_message = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
+                
         startdate_on_str = request.form.get("startdate")
         enddate_on_str = request.form.get("enddate")
 
@@ -3497,7 +3521,7 @@ def load_dashboard_page():
                 property_data = list(db.property_managed.find(user_query))
                 if len(property_data) == 0:
                     flash('No property data found')
-                    return render_template('dashboard.html',dp=dp_str)
+                    return render_template('dashboard.html',dp=dp_str, send_emails_message=send_emails_message)
                 else:
                     # Fetch data from the database
                     property_data_cursor = db.property_managed.find(user_query)
@@ -3521,7 +3545,7 @@ def load_dashboard_page():
                                 if not property_data_dict[tenant_property_name]:
                                     del property_data_dict[tenant_property_name]
                     flash('No tenant data found')
-                    return render_template('dashboard.html',property_data=property_data_dict, dp=dp_str)
+                    return render_template('dashboard.html',property_data=property_data_dict, dp=dp_str, send_emails_message=send_emails_message)
             latest_year = latest_document['date_last_paid'].year
 
             startdate = datetime(latest_year, 1, 1)
@@ -3569,7 +3593,7 @@ def load_dashboard_page():
         property_data = list(db.property_managed.find(user_query))
         if len(property_data) == 0:
             flash('No property data found')
-            return render_template('dashboard.html',dp=dp_str)
+            return render_template('dashboard.html',dp=dp_str, send_emails_message=send_emails_message)
         else:
             property_data_cursor = db.property_managed.find(user_query)
             tenant_data_cursor = db.tenants.find(user_query)
@@ -3628,12 +3652,11 @@ def load_dashboard_page():
 
                 return render_template('dashboard.html',count_property=count_property,available_amount=available_amount,
                                     count_current_tenants=count_current_tenants, property_data=property_data_dict,
-                                    property_type_bar_chart=property_type_bar_chart,
-                                    property_performance_bar_chart=property_performance_bar_chart,
-                                        line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
+                                    property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
+                                    line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str, send_emails_message=send_emails_message)
             else:
                 flash('No tenant data found')
-                return render_template('dashboard.html', property_data=property_data_dict, dp=dp_str)
+                return render_template('dashboard.html', property_data=property_data_dict, dp=dp_str, send_emails_message=send_emails_message)
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])

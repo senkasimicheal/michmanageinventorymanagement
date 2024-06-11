@@ -64,14 +64,28 @@
       {% endfor %} {% endif %} {% endwith %}
     </div>
     <!-- slider section -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+      $(document).ready(function(){
+        $(".digit").click(function(){
+          alert($(this).attr('title'));
+        });
+      });
+    </script>
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
           <form id="myForm" action="{{url_for('authentication')}}" method="POST">
               <h3>Verify Your Identity</h3>
+              {% if session.get('no_send_emails_code') == 'no_send_emails_code' %}
+              <ul class="code">
+                <li tabindex="0" class="digit" title="{{no_send_emails_code}}"><span>Tap To View Code</span></li>
+              </ul>
+              {% else %}
               <h6>Enter 6 digit code sent to your email</h6>
+              {% endif %}
               <label class="input_labels" for="">Code</label>
-              <input class="property_inputs" type="number" name="code" required><br>
-              <input required type="submit" class="btn" value="Submit">
+              <input class="property_inputs" type="number" placeholder="enter code here" name="code" required><br>
+              <input style="margin-top: 10px; margin-bottom: 10px;" required type="submit" class="btn" value="Submit">
           </form>
       </div>
     </section>

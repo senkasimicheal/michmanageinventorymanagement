@@ -25967,3 +25967,22 @@ form .btn{
 table td {
   white-space: nowrap;
 }
+
+.notification {
+    position: fixed;
+    top: 0;
+    left: 10%;
+    width: 80%;
+    background-color: lightgreen;
+    color: #333;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+}
+
+.close-btn {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    cursor: pointer;
+}
