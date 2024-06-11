@@ -467,10 +467,10 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
-        {% if send_emails_message != "service is on" %}
+        {% if session.get('send_emails_message') %}
           <div class="notification">
             <span class="close-btn">×</span>
-            {{send_emails_message}}
+            {{session['send_emails_message']}}
           </div>
         
           <script>
@@ -481,7 +481,6 @@
                 notification.style.display = 'none';
             });
           </script>
-        {% else %}
         {% endif %}
 
         {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}

@@ -45,7 +45,7 @@ scheduler.init_app(app)
 scheduler.start()
 
 # Declare send_emails as a global variable
-send_emails = None
+send_emails = send_emails = db.send_emails.find_one({'emails': "yes"})
 mail = Mail(app)
 
 def update_send_emails():
@@ -3465,12 +3465,11 @@ def load_dashboard_page():
         flash('Login first')
         return redirect('/')
     else:
-        send_emails_message = "service is on"
         if send_emails is not None:
             if send_emails["emails"] == "no":
-                send_emails_message = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
+                session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
         else:
-            send_emails_message = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
+            session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
                 
         startdate_on_str = request.form.get("startdate")
         enddate_on_str = request.form.get("enddate")
@@ -3521,7 +3520,7 @@ def load_dashboard_page():
                 property_data = list(db.property_managed.find(user_query))
                 if len(property_data) == 0:
                     flash('No property data found')
-                    return render_template('dashboard.html',dp=dp_str, send_emails_message=send_emails_message)
+                    return render_template('dashboard.html',dp=dp_str)
                 else:
                     # Fetch data from the database
                     property_data_cursor = db.property_managed.find(user_query)
@@ -3545,7 +3544,7 @@ def load_dashboard_page():
                                 if not property_data_dict[tenant_property_name]:
                                     del property_data_dict[tenant_property_name]
                     flash('No tenant data found')
-                    return render_template('dashboard.html',property_data=property_data_dict, dp=dp_str, send_emails_message=send_emails_message)
+                    return render_template('dashboard.html',property_data=property_data_dict, dp=dp_str)
             latest_year = latest_document['date_last_paid'].year
 
             startdate = datetime(latest_year, 1, 1)
@@ -3593,7 +3592,7 @@ def load_dashboard_page():
         property_data = list(db.property_managed.find(user_query))
         if len(property_data) == 0:
             flash('No property data found')
-            return render_template('dashboard.html',dp=dp_str, send_emails_message=send_emails_message)
+            return render_template('dashboard.html',dp=dp_str)
         else:
             property_data_cursor = db.property_managed.find(user_query)
             tenant_data_cursor = db.tenants.find(user_query)
@@ -3653,10 +3652,10 @@ def load_dashboard_page():
                 return render_template('dashboard.html',count_property=count_property,available_amount=available_amount,
                                     count_current_tenants=count_current_tenants, property_data=property_data_dict,
                                     property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
-                                    line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str, send_emails_message=send_emails_message)
+                                    line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
             else:
                 flash('No tenant data found')
-                return render_template('dashboard.html', property_data=property_data_dict, dp=dp_str, send_emails_message=send_emails_message)
+                return render_template('dashboard.html', property_data=property_data_dict, dp=dp_str)
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])
