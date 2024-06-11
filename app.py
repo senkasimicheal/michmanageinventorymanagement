@@ -718,6 +718,18 @@ def password_reset_verifying_user():
 @app.route("/userlogin", methods=["POST"])
 def userlogin():
     session.clear()
+
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+
     username = request.form.get('username')
     password = request.form.get('password')
 
