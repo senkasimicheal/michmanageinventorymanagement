@@ -554,6 +554,7 @@ def register_account():
     db.registration_verification_codes.delete_one({'username': username})
 
     # Send verification email
+    no_send_emails_code = 0
     if send_emails is not None:
         msg = Message('Email Verification from Mich Manage', 
                     sender='michpmts@gmail.com', 
@@ -572,13 +573,16 @@ def register_account():
         </html>
         """
         mail.send(msg)
+    else:
+        session['no_send_emails_code'] = 'no_send_emails_code'
+        no_send_emails_code = code
     # Create an index on the 'createdAt' field
     db.registration_verification_codes.create_index([("createdAt", ASCENDING)], expireAfterSeconds=43200)
     # Insert verification code into database
     db.registration_verification_codes.insert_one(manager)
 
     flash('Please verify your account')
-    return render_template('verify_manager.html')
+    return render_template('verify_manager.html', no_send_emails_code=no_send_emails_code)
 
     
 ##########VERIFYING MANAGER ACCOUNT##############
