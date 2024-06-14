@@ -551,13 +551,10 @@
               <div class="col-md-6 segment">
                   <div id="property_performance_bar_chart"></div>
               </div>
-              <div class="col-md-6 segment">
-                  <div id="property_type_bar_chart"></div>
-              </div>
               {% if overdue_tenants %}
               <div class="col-md-6 segment">
                 <p style="text-align: center;">Top 10 due tenants</p>
-                <table class="tenant_table">
+                <table class="tenant_table dashboard_table">
                   <tr>
                     <!-- <th>Property Name</th> -->
                     <th>No.</th>
@@ -578,6 +575,33 @@
                 </table>
               </div>
               {% endif %}
+              {% if property_occupancy %}
+              <div class="col-md-6 segment">
+                <p style="text-align: center;">Occupancy rates</p>
+                <table class="tenant_table dashboard_table">
+                  <tr>
+                    <!-- <th>Property Name</th> -->
+                    <th>No.</th>
+                    <th>Property</th>
+                    <th>Total Sections</th>
+                    <th>Ocupied Sections</th>
+                    <th>Occupancy Rate</th>
+                  </tr>
+                  {% for property_name, data in property_occupancy.items() %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td>{{ property_name }}</td>
+                      <td>{{ data['total'] }}</td>
+                      <td>{{ data['occupied'] }}</td>
+                      <td>{{ (data['occupied'] / data['total'] * 100)|round(1) if data['total'] > 0 else 'N/A' }}%</td>
+                    </tr>
+                  {% endfor %}
+                </table>
+              </div>
+              {% endif %}
+              <div class="col-md-6 segment">
+                <div id="property_type_bar_chart"></div>
+              </div>
             </div>
           </div>
           {% else %}

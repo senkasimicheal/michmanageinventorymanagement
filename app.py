@@ -3498,29 +3498,26 @@ def load_dashboard_page():
                     flash('No property data found')
                     return render_template('dashboard.html',dp=dp_str)
                 else:
-                    # Fetch data from the database
-                    property_data_cursor = db.property_managed.find(user_query)
+                    property_data_list = list(db.property_managed.find(user_query))
                     tenant_data_cursor = db.tenants.find(user_query)
-
-                    # Convert property data to a dictionary
-                    property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_cursor}
-
-                    # Iterate through tenant data to remove sections from property data
+                    
+                    property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
+                    property_occupancy = {doc['propertyName']: {'total': len(doc['sections']), 'occupied': 0} for doc in property_data_list}
                     for tenant_exists in tenant_data_cursor:
                         tenant_property_name = tenant_exists.get('propertyName', '').strip()
                         selected_section = tenant_exists.get('selected_section', '').strip()
-                        
                         # Check if the property exists in updated_property_data and the section is in the property's sections
-                        if tenant_property_name in property_data_dict:
-                            if selected_section in property_data_dict[tenant_property_name]:
-                                # Remove the section
-                                property_data_dict[tenant_property_name].remove(selected_section)
-                                
-                                # If there are no more sections for this property, remove the property
-                                if not property_data_dict[tenant_property_name]:
-                                    del property_data_dict[tenant_property_name]
+                        if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
+                            # Remove the section
+                            property_data_dict[tenant_property_name].remove(selected_section)
+                            # Increase the count of occupied sections
+                            property_occupancy[tenant_property_name]['occupied'] += 1
+                            # If there are no more sections for this property, remove the property
+                            if not property_data_dict[tenant_property_name]:
+                                del property_data_dict[tenant_property_name]
+
                     flash('No tenant data found')
-                    return render_template('dashboard.html',property_data=property_data_dict, dp=dp_str)
+                    return render_template('dashboard.html',property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str)
             latest_year = latest_document['date_last_paid'].year
 
             startdate = datetime(latest_year, 1, 1)
@@ -3570,10 +3567,11 @@ def load_dashboard_page():
             flash('No property data found')
             return render_template('dashboard.html',dp=dp_str)
         else:
-            property_data_cursor = db.property_managed.find(user_query)
+            property_data_list = list(db.property_managed.find(user_query))
             tenant_data_cursor = db.tenants.find(user_query)
             
-            property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_cursor}        
+            property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
+            property_occupancy = {doc['propertyName']: {'total': len(doc['sections']), 'occupied': 0} for doc in property_data_list}
             for tenant_exists in tenant_data_cursor:
                 tenant_property_name = tenant_exists.get('propertyName', '').strip()
                 selected_section = tenant_exists.get('selected_section', '').strip()
@@ -3581,6 +3579,8 @@ def load_dashboard_page():
                 if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
                     # Remove the section
                     property_data_dict[tenant_property_name].remove(selected_section)
+                    # Increase the count of occupied sections
+                    property_occupancy[tenant_property_name]['occupied'] += 1
                     # If there are no more sections for this property, remove the property
                     if not property_data_dict[tenant_property_name]:
                         del property_data_dict[tenant_property_name]
@@ -3626,12 +3626,12 @@ def load_dashboard_page():
                 line_chart = create_line_chart(property_performance_line, f'Rent Payments {enddate.year}', 'Month', 'Amount Paid')
 
                 return render_template('dashboard.html',count_property=count_property,available_amount=available_amount,
-                                    count_current_tenants=count_current_tenants, property_data=property_data_dict,
+                                    count_current_tenants=count_current_tenants, property_data=property_data_dict, property_occupancy=property_occupancy,
                                     property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
                                     line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
             else:
                 flash('No tenant data found')
-                return render_template('dashboard.html', property_data=property_data_dict, dp=dp_str)
+                return render_template('dashboard.html', property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str)
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])

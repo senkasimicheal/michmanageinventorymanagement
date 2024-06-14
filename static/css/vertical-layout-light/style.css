@@ -9281,6 +9281,12 @@ pre code {
     padding-left: 5px;
     padding-right: 5px;
   }
+
+  .dashboard_table td {
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-width: 100px;
+  }
 }
 
 @media (min-width: 992px) {

@@ -351,6 +351,30 @@
   <!-- container-scroller -->
 
   <script>
+    window.onload = function(){
+      var date = new Date();
+      var day = date.getDate();
+      var month = date.getMonth() + 1;
+      var year = date.getFullYear();
+
+      if(month < 10) month = "0" + month;
+      if(day < 10) day = "0" + day;
+
+      var today = year + "-" + month + "-" + day;
+
+      var startdateFields = document.getElementsByName("startdate");
+      for(var i = 0; i < startdateFields.length; i++){
+        startdateFields[i].setAttribute("max", today);
+      }
+
+      var enddateFields = document.getElementsByName("enddate");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+    }
+  </script>
+
+  <script>
       document.addEventListener("DOMContentLoaded", function () {
       // Hide the alert after 5 seconds
       setTimeout(function() {
