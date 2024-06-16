@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, send_file
+from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, send_file, jsonify
 from flask_mail import Mail, Message
 from flask_apscheduler import APScheduler
 from docx import Document
@@ -27,11 +27,12 @@ from werkzeug.utils import secure_filename
 from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 import tempfile
 import string
+import qrcode
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
@@ -445,7 +446,7 @@ def logout_admin():
 
 @app.before_request
 def before_request():
-    if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download',
+    if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'search_apartment', 'authentication'):
         return redirect('/')
@@ -1599,6 +1600,51 @@ def update_tenant_info():
     
     return render_template('tenant information.html', tenant_data=tenant_data, dp=dp_str, current_year=current_year)
 
+@app.route('/get_receipt', methods=['GET'])
+def get_receipt():
+    tenant_email = request.args.get('tenantEmail')
+    property_name = request.args.get('propertyName')
+    selected_section = request.args.get('selected_section')
+    months_paid = request.args.get('months_paid')
+    year = request.args.get('year')
+    year = int(year)
+
+    receipt_data = db.tenants.find_one({
+        'tenantEmail': tenant_email,
+        'propertyName': property_name,
+        'selected_section': selected_section,
+        'months_paid': months_paid,
+        'year': year
+    }, {'payment_receipt': 1, '_id': 0})
+
+    if receipt_data is None:
+        old_receipt_data = db.old_tenant_data.find_one({
+            'tenantEmail': tenant_email,
+            'propertyName': property_name,
+            'selected_section': selected_section,
+            'months_paid': months_paid,
+            'year': year
+        }, {'payment_receipt': 1, '_id': 0})
+
+        # Convert the base64 string back to bytes
+        payment_receipt = base64.b64decode(old_receipt_data['payment_receipt'])
+
+        # Create a BytesIO object from the PDF data
+        pdf_io = io.BytesIO(payment_receipt)
+
+        # Send the PDF file to the client
+        return send_file(pdf_io, mimetype='application/pdf', as_attachment=False)
+
+    else:
+        # Convert the base64 string back to bytes
+        payment_receipt = base64.b64decode(receipt_data['payment_receipt'])
+
+        # Create a BytesIO object from the PDF data
+        pdf_io = io.BytesIO(payment_receipt)
+
+        # Send the PDF file to the client
+        return send_file(pdf_io, mimetype='application/pdf', as_attachment=False)
+
 ###########UPDATE TENANT INFO################
 @app.route('/update', methods=['POST'])
 def update():
@@ -1674,6 +1720,20 @@ def update():
                     buffer = BytesIO()
                     doc = SimpleDocTemplate(buffer, pagesize=letter)
 
+                    # QR Code Generation
+                    url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date.year}'
+                    qr = qrcode.QRCode(
+                        version=1,
+                        error_correction=qrcode.constants.ERROR_CORRECT_L,
+                        box_size=3,
+                        border=4,
+                    )
+                    qr.add_data(url)
+                    qr.make(fit=True)
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    login_data = session.get('login_username')
+                    img.save(f'payment_receipt_qr_{login_data}.png')
+
                     # Create the receipt details
                     data = [
                         ['Rent Payment Receipt - ' + company['company_name'], ''],
@@ -1707,15 +1767,22 @@ def update():
                         ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
                     ]))
 
-                    # Build the PDF
-                    elements = []
-                    elements.append(table)
+                    # Load your QR code image
+                    qr_code_img = f'payment_receipt_qr_{login_data}.png'
+                    qr_code = Image(qr_code_img)
+                    qr_code.hAlign = 'CENTER'
+
+                    # Add the QR code image to the elements list before building the PDF
+                    elements = [table, qr_code]
                     doc.build(elements)
 
                     # Get the PDF data and encode it as base64
                     pdf_data = buffer.getvalue()
                     buffer.close()
                     payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+                    # Delete the QR code image file
+                    os.remove(f'payment_receipt_qr_{login_data}.png')
                     
                     new_data = {
                         'username': login_data,
@@ -2095,6 +2162,19 @@ def update():
                 buffer = BytesIO()
                 doc = SimpleDocTemplate(buffer, pagesize=letter)
 
+                # QR Code Generation
+                url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date.year}'
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=3,
+                    border=4,
+                )
+                qr.add_data(url)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                img.save(f'payment_receipt_qr_{login_data}.png')
+
                 # Create the receipt details
                 data = [
                     ['Rent Payment Receipt - ' + company['company_name'], ''],
@@ -2128,15 +2208,22 @@ def update():
                     ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
                 ]))
 
-                # Build the PDF
-                elements = []
-                elements.append(table)
+                # Load your QR code image
+                qr_code_img = f'payment_receipt_qr_{login_data}.png'
+                qr_code = Image(qr_code_img)
+                qr_code.hAlign = 'CENTER'
+
+                # Add the QR code image to the elements list before building the PDF
+                elements = [table, qr_code]
                 doc.build(elements)
 
                 # Get the PDF data and encode it as base64
                 pdf_data = buffer.getvalue()
                 buffer.close()
                 payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+                # Delete the QR code image file
+                os.remove(f'payment_receipt_qr_{login_data}.png')
                 
                 new_data = {
                     'username': login_data,
@@ -2760,6 +2847,19 @@ def make_edits():
             buffer = BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=letter)
 
+            # QR Code Generation
+            url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={tenant['months_paid']}&year={date_last_paid.year}'
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=3,
+                border=4,
+            )
+            qr.add_data(url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            img.save(f'payment_receipt_qr_{login_data}.png')
+
             # Create the receipt details
             data = [
                 ['Rent Payment Receipt - ' + company['company_name'], ''],
@@ -2793,15 +2893,23 @@ def make_edits():
                 ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
             ]))
 
-            # Build the PDF
-            elements = []
-            elements.append(table)
+            # Load your QR code image
+            qr_code_img = f'payment_receipt_qr_{login_data}.png'
+            qr_code = Image(qr_code_img)
+            qr_code.hAlign = 'CENTER'
+
+            # Add the QR code image to the elements list before building the PDF
+            elements = [table, qr_code]
             doc.build(elements)
 
             # Get the PDF data and encode it as base64
             pdf_data = buffer.getvalue()
             buffer.close()
             payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+            # Delete the QR code image file
+            os.remove(f'payment_receipt_qr_{login_data}.png')
+
             fields_to_update['payment_receipt'] = payment_receipt_base64
 
             # Create the email message
@@ -2919,6 +3027,19 @@ def add_tenant():
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
 
+        # QR Code Generation
+        url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date_last_paid.year}'
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=3,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        img.save(f'payment_receipt_qr_{login_data}.png')
+
         # Create the receipt details
         data = [
             ['Rent Payment Receipt - ' + company['company_name'], ''],
@@ -2952,15 +3073,22 @@ def add_tenant():
             ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
         ]))
 
-        # Build the PDF
-        elements = []
-        elements.append(table)
+        # Load your QR code image
+        qr_code_img = f'payment_receipt_qr_{login_data}.png'
+        qr_code = Image(qr_code_img)
+        qr_code.hAlign = 'CENTER'
+
+        # Add the QR code image to the elements list before building the PDF
+        elements = [table, qr_code]
         doc.build(elements)
 
         # Get the PDF data and encode it as base64
         pdf_data = buffer.getvalue()
         buffer.close()
         payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+        # Delete the QR code image file
+        os.remove(f'payment_receipt_qr_{login_data}.png')
 
         is_manager = db.managers.find_one({'manager_email': company['email']})
         num_tenants = db.tenants.count_documents({'company_name': company['company_name']})
@@ -3295,6 +3423,9 @@ def new_subscription_initiated():
         remaining_days = (company['last_subscribed_on'] + timedelta(days=company['subscribed_days']) - datetime.now()).days
         if remaining_days <= 0:
             subscribed_days = subscribed_days + 0
+            db.managers.update_one({'name': company_name},{'$set': {'last_subscribed_on': last_subscribed_on, 'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month}})
+            flash('New Subscription was added')
+            return render_template("managers accounts.html")
         else:
             if last_subscribed_on <= company['last_subscribed_on']:
                 companies = db.managers.find()

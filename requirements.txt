@@ -12,3 +12,4 @@ plotly
 Pillow
 reportlab
 openpyxl
+qrcode[pil]
