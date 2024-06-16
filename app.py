@@ -2848,7 +2848,7 @@ def make_edits():
             doc = SimpleDocTemplate(buffer, pagesize=letter)
 
             # QR Code Generation
-            url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={tenant['months_paid']}&year={date_last_paid.year}'
+            url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={{{tenant["months_paid"]}}}&year={date_last_paid.year}'
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
