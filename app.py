@@ -2781,7 +2781,7 @@ def view_receipt(tenant_email, property_name, selected_section):
         pdf_io = io.BytesIO(payment_receipt)
 
         # Create the file name
-        file_name = f"{property_name}_{selected_section}_{{{tenant["months_paid"]}}}_{{{tenant["year"]}}}.pdf"
+        file_name = f"{property_name}_{selected_section}_{{tenant['months_paid']}}_{{tenant['year']}}.pdf"
 
         # Create a custom response
         response = make_response(pdf_io.getvalue())
