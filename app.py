@@ -56,7 +56,7 @@ def update_send_emails():
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
         app.config['MAIL_PORT'] = 587
         app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_PASSWORD'] = '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'
         app.config['MAIL_USE_TLS'] = True
         app.config['MAIL_USE_SSL'] = False
         mail.init_app(app)
@@ -744,6 +744,20 @@ def userlogin():
         return redirect('/')
     else:
         subscription = db.managers.find_one({'name': manager['company_name']})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+            # If only 'Enterprise Resource Planning' is present
+            session['account_type'] = 'Enterprise Resource Planning'
+        elif 'Property Management' in account_type and len(account_type) == 1:
+            # If only 'Property Management' is present
+            session['account_type'] = 'Property Management'
+        elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+            # If both are present
+            session['account_type'] = 'all_accounts'
+
         stored_password = manager['password']
         if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
             flash('Wrong Password')
@@ -3218,6 +3232,7 @@ def new_subscription_initiated():
         subscribed_days = request.form.get('subscribed_days')
         subscribed_days = int(subscribed_days)
         amount_per_month_form_data = request.form.get('amount_per_month')
+        account_type = request.form.getlist('account_type')
         amount_per_month = 0
         if amount_per_month_form_data == "100000":
             amount_per_month = 100000
@@ -3231,7 +3246,7 @@ def new_subscription_initiated():
         remaining_days = (company['last_subscribed_on'] + timedelta(days=company['subscribed_days']) - datetime.now()).days
         if remaining_days <= 0:
             subscribed_days = subscribed_days + 0
-            db.managers.update_one({'name': company_name},{'$set': {'last_subscribed_on': last_subscribed_on, 'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month}})
+            db.managers.update_one({'name': company_name},{'$set': {'last_subscribed_on': last_subscribed_on,'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month},'$push': {'account_type': {'$each': account_type}}})
             flash('New Subscription was added')
             return render_template("managers accounts.html")
         else:
@@ -3244,7 +3259,7 @@ def new_subscription_initiated():
                 return render_template("new_subscription.html", company_names=company_names)
             else:
                 subscribed_days = subscribed_days + remaining_days
-                db.managers.update_one({'name': company_name},{'$set': {'last_subscribed_on': last_subscribed_on, 'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month}})
+                db.managers.update_one({'name': company_name},{'$set': {'last_subscribed_on': last_subscribed_on, 'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month},'$push': {'account_type': {'$each': account_type}}})
                 flash('New Subscription was added')
                 return render_template("managers accounts.html")
                 

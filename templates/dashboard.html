@@ -384,6 +384,7 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
+          {% if session['account_type'] == 'Property Management' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
@@ -462,6 +463,13 @@
               <span class="menu-title">Export</span>
             </a>
           </li>
+          {% endif %}
+          {% elif session['account_type'] == 'Enterprise Resource Planning' %}
+          <p>Enterprise Resource Planning</p>
+          {% elif session['account_type'] == 'all_accounts' %}
+          <p>all_accounts</p>
+          {% else %}
+          <p>No Account Type</p>
           {% endif %}
         </ul>
       </nav>
