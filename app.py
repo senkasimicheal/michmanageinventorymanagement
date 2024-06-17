@@ -1632,8 +1632,15 @@ def get_receipt():
         # Create a BytesIO object from the PDF data
         pdf_io = io.BytesIO(payment_receipt)
 
-        # Send the PDF file to the client
-        return send_file(pdf_io, mimetype='application/pdf', as_attachment=False)
+        # Create the file name
+        file_name = f"{property_name}_{selected_section}_{months_paid}_{year}.pdf"
+
+        # Create a custom response
+        response = make_response(pdf_io.getvalue())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
+
+        return response
 
     else:
         # Convert the base64 string back to bytes
@@ -1642,8 +1649,15 @@ def get_receipt():
         # Create a BytesIO object from the PDF data
         pdf_io = io.BytesIO(payment_receipt)
 
-        # Send the PDF file to the client
-        return send_file(pdf_io, mimetype='application/pdf', as_attachment=False)
+        # Create the file name
+        file_name = f"{property_name}_{selected_section}_{months_paid}_{year}.pdf"
+
+        # Create a custom response
+        response = make_response(pdf_io.getvalue())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
+
+        return response
 
 ###########UPDATE TENANT INFO################
 @app.route('/update', methods=['POST'])
@@ -1921,106 +1935,7 @@ def update():
                             db.old_tenant_data.insert_one(old_data)
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful")
-                    elif available_amount > section_value:
-                        # starting_month = list(calendar.month_name).index(months_paid) + 1
-
-                        # # Calculate the remaining amount after the full months
-                        # remaining_amount = new_amount % section_value
-
-                        # # Create a list to store the data for each month
-                        # monthly_data = []
-
-                        # for i in range(num_full_months):
-                        #     month_number = (starting_month + i - 1) % 12 + 1
-                        #     year = date.year + (starting_month + i - 1) // 12
-                        #     monthly_data.append({
-                        #         'username': login_data,
-                        #         'company_name': company['company_name'],
-                        #         'tenantName': old_data['tenantName'],
-                        #         'tenantEmail': tenantEmail,
-                        #         'tenantPhone': old_data['tenantPhone'],
-                        #         'propertyName': propertyName,
-                        #         'selected_section': selected_section,
-                        #         'section_value': old_data['section_value'],
-                        #         'payment_type': old_data['payment_type'],
-                        #         'amount': section_value,
-                        #         'payment_mode': payment_mode,
-                        #         'months_paid': calendar.month_name[month_number],
-                        #         'year': year,
-                        #         'available_amount': section_value,
-                        #         'payment_completion': 'Full',
-                        #         'currency': old_data['currency'],
-                        #         'date_last_paid': date,
-                        #         'payment_status': payment_status,
-                        #         'status': 'updated',
-                        #         'payment_receipt': payment_receipt_base64
-                        #     })
-
-                        # # If there is a remaining amount, add the data for the partial month
-                        # if remaining_amount > 0:
-                        #     month_number = (starting_month + num_full_months - 1) % 12 + 1
-                        #     year = date.year + (starting_month + num_full_months - 1) // 12
-                        #     monthly_data.append({
-                        #         'username': login_data,
-                        #         'company_name': company['company_name'],
-                        #         'tenantName': old_data['tenantName'],
-                        #         'tenantEmail': tenantEmail,
-                        #         'tenantPhone': old_data['tenantPhone'],
-                        #         'propertyName': propertyName,
-                        #         'selected_section': selected_section,
-                        #         'section_value': old_data['section_value'],
-                        #         'payment_type': old_data['payment_type'],
-                        #         'amount': remaining_amount,
-                        #         'payment_mode': payment_mode,
-                        #         'months_paid': calendar.month_name[month_number],
-                        #         'year': year,
-                        #         'available_amount': remaining_amount,
-                        #         'payment_completion': 'Full',
-                        #         'currency': old_data['currency'],
-                        #         'date_last_paid': date,
-                        #         'payment_status': 'Partial',
-                        #         'status': 'updated',
-                        #         'payment_receipt': payment_receipt_base64
-                        #     })
-
-                        # # Now you can store the data for each month separately
-                        # for i, data in enumerate(monthly_data):
-                        #     month_number = (starting_month + i - 1) % 12 + 1
-                        #     year = date.year + (starting_month + i - 1) // 12
-
-                        #     if i < len(monthly_data) - 1:  # If it's not the last record
-                        #         # Store in 'old_tenant_data'
-                        #         db.old_tenant_data.insert_one(data)
-                        #     else:  # If it's the last record
-                        #         # Store in 'tenants', regardless of whether it's fully paid or not
-                        #         if '_id' in old_data:
-                        #             del old_data['_id']
-                        #             db.old_tenant_data.insert_one(old_data)
-                        #             db.tenants.delete_one({'_id':old_data['_id']})
-                        #         db.tenants.insert_one(data)
-
-                        # # Create the email message
-                        # msg = Message('Rent Payment Receipt-Mich Manage', 
-                        #             sender='michpmts@gmail.com', 
-                        #             recipients=[tenantEmail])
-                        # msg.html = f"""
-                        # <html>
-                        # <body>
-                        # <p>Dear {section_tenant['tenantName']},</p>
-                        # <p>Please find attached your payment receipt for {receipt_month} {year}.</p>
-                        # <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                        # <p>Best Regards,</p>
-                        # <p>Mich Manage</p>
-                        # </body>
-                        # </html>
-                        # """
-
-                        # # Attach the PDF receipt to the email
-                        # msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
-
-                        # # Send the email
-                        # mail.send(msg)
-                                
+                    elif available_amount > section_value:  
                         flash("Enter amount that does not exceed section value")
 
                     else:
@@ -2146,18 +2061,6 @@ def update():
                 available_amount = new_amount + old_amount
 
                 balance = section_value - available_amount
-                # Create a payment receipt PDF file
-
-                # Calculate the number of full months the payment covers
-                # if available_amount < section_value:
-                #     amount_demanded = section_value - available_amount
-                #     tobe_allocated = new_amount - amount_demanded
-                #     num_full_months = tobe_allocated // section_value
-                # receipt_month = months_paid
-                # if num_full_months > 1:
-                #     number_of_months = num_full_months
-                #     receipt_month = f"{number_of_months} months starting from {months_paid}"
-                #     balance = 0
 
                 buffer = BytesIO()
                 doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -2331,109 +2234,7 @@ def update():
                         db.old_tenant_data.insert_one(old_data)
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful")
-                elif available_amount > section_value:
-                    # starting_month = list(calendar.month_name).index(months_paid) + 1
-
-                    # # Calculate the remaining amount after the full months
-                    # remaining_amount = new_amount % section_value
-
-                    # # Create a list to store the data for each month
-                    # monthly_data = []
-
-                    # if available_amount < section_value:
-                    #     db.tenants.update_one({'_id': old_data['_id']}, {'$set': {'amount': new_amount, 'available_amount': section_value}})
-                    #     if '_id' in old_data:
-                    #         del old_data['_id']
-                    #     db.old_tenant_data.insert_one(old_data)
-                    #     db.tenants.delete_one({'_id':old_data['_id']})
-
-                    # for i in range(num_full_months):
-                    #     month_number = (starting_month + i - 1) % 12 + 1
-                    #     year = date.year + (starting_month + i - 1) // 12
-                    #     monthly_data.append({
-                    #         'username': login_data,
-                    #         'company_name': company['company_name'],
-                    #         'tenantName': old_data['tenantName'],
-                    #         'tenantEmail': tenantEmail,
-                    #         'tenantPhone': old_data['tenantPhone'],
-                    #         'propertyName': propertyName,
-                    #         'selected_section': selected_section,
-                    #         'section_value': old_data['section_value'],
-                    #         'payment_type': old_data['payment_type'],
-                    #         'amount': section_value,
-                    #         'payment_mode': payment_mode,
-                    #         'months_paid': calendar.month_name[month_number],
-                    #         'year': year,
-                    #         'available_amount': section_value,
-                    #         'payment_completion': 'Full',
-                    #         'currency': old_data['currency'],
-                    #         'date_last_paid': date,
-                    #         'payment_status': payment_status,
-                    #         'status': 'updated',
-                    #         'payment_receipt': payment_receipt_base64
-                    #     })
-
-                    # # If there is a remaining amount, add the data for the partial month
-                    # if remaining_amount > 0:
-                    #     month_number = (starting_month + num_full_months - 1) % 12 + 1
-                    #     year = date.year + (starting_month + num_full_months - 1) // 12
-                    #     monthly_data.append({
-                    #         'username': login_data,
-                    #         'company_name': company['company_name'],
-                    #         'tenantName': old_data['tenantName'],
-                    #         'tenantEmail': tenantEmail,
-                    #         'tenantPhone': old_data['tenantPhone'],
-                    #         'propertyName': propertyName,
-                    #         'selected_section': selected_section,
-                    #         'section_value': old_data['section_value'],
-                    #         'payment_type': old_data['payment_type'],
-                    #         'amount': remaining_amount,
-                    #         'payment_mode': payment_mode,
-                    #         'months_paid': calendar.month_name[month_number],
-                    #         'year': year,
-                    #         'available_amount': remaining_amount,
-                    #         'payment_completion': 'Full',
-                    #         'currency': old_data['currency'],
-                    #         'date_last_paid': date,
-                    #         'payment_status': 'Partial',
-                    #         'status': 'updated',
-                    #         'payment_receipt': payment_receipt_base64
-                    #     })
-
-                    # # Now you can store the data for each month separately
-                    # for i, data in enumerate(monthly_data):
-                    #     month_number = (starting_month + i - 1) % 12 + 1
-                    #     year = date.year + (starting_month + i - 1) // 12
-
-                    #     if i < len(monthly_data) - 1:  # If it's not the last record
-                    #         # Store in 'old_tenant_data'
-                    #         db.old_tenant_data.insert_one(data)
-                    #     else:  # If it's the last record
-                    #         # Store in 'tenants', regardless of whether it's fully paid or not
-                    #         db.tenants.insert_one(data)
-
-                    # # Create the email message
-                    # msg = Message('Rent Payment Receipt-Mich Manage', 
-                    #             sender='michpmts@gmail.com', 
-                    #             recipients=[tenantEmail])
-                    # msg.html = f"""
-                    # <html>
-                    # <body>
-                    # <p>Dear {section_tenant['tenantName']},</p>
-                    # <p>Please find attached your payment receipt for {receipt_month} {year}.</p>
-                    # <p><b><a href="https://michmanage.onrender.com">Visit us on</a></b></p>
-                    # <p>Best Regards,</p>
-                    # <p>Mich Manage</p>
-                    # </body>
-                    # </html>
-                    # """
-
-                    # # Attach the PDF receipt to the email
-                    # msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
-
-                    # # Send the email
-                    # mail.send(msg)
-                            
+                elif available_amount > section_value:        
                     flash("Enter amount that does not exceed section value")
                 else:
                     payment_completion = 'Full'
@@ -2979,8 +2780,15 @@ def view_receipt(tenant_email, property_name, selected_section):
         # Create a BytesIO object from the PDF data
         pdf_io = io.BytesIO(payment_receipt)
 
-        # Send the PDF file to the client
-        return send_file(pdf_io, mimetype='application/pdf', as_attachment=False)
+        # Create the file name
+        file_name = f"{property_name}_{selected_section}_{tenant["months_paid"]}_{tenant["year"]}.pdf"
+
+        # Create a custom response
+        response = make_response(pdf_io.getvalue())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
+
+        return response
 
     else:
         return "No receipt found for this tenant", 404
