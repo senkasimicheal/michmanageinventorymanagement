@@ -3263,7 +3263,21 @@ def new_subscription_initiated():
         remaining_days = (company['last_subscribed_on'] + timedelta(days=company['subscribed_days']) - datetime.now()).days
         if remaining_days <= 0:
             subscribed_days = subscribed_days + 0
-            db.managers.update_one({'name': company_name},{'$set': {'last_subscribed_on': last_subscribed_on,'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month},'$push': {'account_type': {'$each': account_type}}})
+            db.managers.update_one(
+                {'name': company_name},
+                {
+                    '$set': {
+                        'last_subscribed_on': last_subscribed_on,
+                        'subscribed_days': subscribed_days,
+                        'amount_per_month': amount_per_month
+                    },
+                    '$addToSet': {
+                        'account_type': {
+                            '$each': account_type
+                        }
+                    }
+                }
+            )
             flash('New Subscription was added')
             return render_template("managers accounts.html")
         else:
@@ -3276,7 +3290,21 @@ def new_subscription_initiated():
                 return render_template("new_subscription.html", company_names=company_names)
             else:
                 subscribed_days = subscribed_days + remaining_days
-                db.managers.update_one({'name': company_name},{'$set': {'last_subscribed_on': last_subscribed_on, 'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month},'$push': {'account_type': {'$each': account_type}}})
+                db.managers.update_one(
+                    {'name': company_name},
+                    {
+                        '$set': {
+                            'last_subscribed_on': last_subscribed_on,
+                            'subscribed_days': subscribed_days,
+                            'amount_per_month': amount_per_month
+                        },
+                        '$addToSet': {
+                            'account_type': {
+                                '$each': account_type
+                            }
+                        }
+                    }
+                )
                 flash('New Subscription was added')
                 return render_template("managers accounts.html")
                 
