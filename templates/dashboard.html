@@ -360,6 +360,303 @@
       </form>
     </div>
 
+    <!-- NEW STOCK -->
+    <div class="new-stock-form" id="stock-form">
+      <form action="{{url_for('add_new_stock')}}" method="POST">
+        <label class="input_labels" for="">Item Name</label>
+        <input class="property_inputs" type="text" name="item_name">
+        <label class="input_labels" for="">Quantity</label>
+        <input class="property_inputs" type="number" name="quantity" min="1">
+        <label class="input_labels" for="">Unit Of Measurement</label>
+        <select name="unit_of_measurement" id="">
+          <option value="" disabled selected>Select one</option>
+          <option value="Kilogram">Kilogram</option>
+          <option value="Litres">Litres</option>
+          <option value="Pieces">Pieces</option>
+        </select>
+        <label class="input_labels" for="">Unit Price</label>
+        <input class="property_inputs" type="number" name="unit_price" min="1">
+        <label class="input_labels" for="">Stock Date</label>
+        <input class="property_inputs" type="date" name="stockdatee" id="" placeholder="enter start date"><br>
+        <button type="button" id="add-item-button">Add New Item</button>
+        <input type="submit" class="btn" value="Submit">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let itemsArray = [];
+
+        document.getElementById('add-item-button').addEventListener('click', () => {
+          // Get the form values
+          const itemName = document.querySelector('input[name="item_name"]').value;
+          const quantity = document.querySelector('input[name="quantity"]').value;
+          const unitOfMeasurement = document.querySelector('select[name="unit_of_measurement"]').value;
+          const unitPrice = document.querySelector('input[name="unit_price"]').value;
+          const stockDate = document.querySelector('input[name="stockdatee"]').value;
+
+          // Check if any of the fields are empty
+          if (!itemName || !quantity || !unitOfMeasurement || !unitPrice || !stockDate) {
+            alert("Please fill in all fields before adding an item.");
+            return; // Stop here if any field is empty
+          }
+
+          // Create an object with the form data
+          const itemObject = {
+            itemName,
+            quantity,
+            unitOfMeasurement,
+            unitPrice,
+            stockDate
+          };
+
+          // Add the object to the array
+          itemsArray.push(itemObject);       
+
+          // Clear the input fields
+          document.querySelector('input[name="item_name"]').value = '';
+          document.querySelector('input[name="quantity"]').value = '';
+          document.querySelector('select[name="unit_of_measurement"]').selectedIndex = 0;
+          document.querySelector('input[name="unit_price"]').value = '';
+          document.querySelector('input[name="stockdatee"]').value = '';
+        });
+
+        // Handle the form submission
+        document.querySelector('.new-stock-form form').addEventListener('submit', (e) => {
+          e.preventDefault(); // Prevent the default form submission
+
+          if (itemsArray.length === 0) {
+            alert("Please add at least one item.");
+            return; // Stop here if no items have been added
+          }
+
+          // Send the itemsArray to your Flask app using fetch or another method
+          fetch('{{url_for('add_new_stock')}}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: itemsArray })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log(data); // Handle the response from your Flask app
+            // Clear the array after successful submission
+            itemsArray = [];
+            
+            // Optionally, clear all input fields here as well
+            // ...
+            
+            alert(data.message);
+            
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            alert("An error occurred while submitting items.");
+          });
+        });
+      });
+    </script>
+
+    <!-- UPDATE STOCK - NEW ITEMS -->
+    <div class="update-new-stock-form">
+      <form action="{{url_for('update_new_stock')}}" method="POST">
+        <label class="input_labels" for="">Item Name</label>
+        <select name="item_name" id="">
+          <option value="" disabled selected>Select item</option>
+            {% for item in available_itemNames %}
+              <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+        <label class="input_labels" for="">Quantity</label>
+        <input class="property_inputs" type="number" name="update_quantity" min="1">
+        <label class="input_labels" for="">Unit Of Measurement</label>
+        <select name="update_unit_of_measurement" id="">
+          <option value="" disabled selected>Select one</option>
+          <option value="Kilogram">Kilogram</option>
+          <option value="Litres">Litres</option>
+          <option value="Pieces">Pieces</option>
+        </select>
+        <label class="input_labels" for="">Unit Price</label>
+        <input class="property_inputs" type="number" name="update_unit_price" min="1">
+        <label class="input_labels" for="">Stock Date</label>
+        <input class="property_inputs" type="date" name="update_stockdatee" id="" placeholder="enter start date"><br>
+        <button type="button" id="update-item-button">Update Another Item</button>
+        <input type="submit" class="btn" value="Submit">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let itemsArray = [];
+
+        document.getElementById('update-item-button').addEventListener('click', () => {
+          // Get the form values
+          const itemName = document.querySelector('select[name="item_name"]').value;
+          const quantity = document.querySelector('input[name="update_quantity"]').value;
+          const unitOfMeasurement = document.querySelector('select[name="update_unit_of_measurement"]').value;
+          const unitPrice = document.querySelector('input[name="update_unit_price"]').value;
+          const stockDate = document.querySelector('input[name="update_stockdatee"]').value;
+
+          // Check if any of the fields are empty
+          if (!itemName || !quantity || !unitOfMeasurement || !unitPrice || !stockDate) {
+            alert("Please fill in all fields before updating an item.");
+            return; // Stop here if any field is empty
+          }
+
+          // Create an object with the form data
+          const itemObject = {
+            itemName,
+            quantity,
+            unitOfMeasurement,
+            unitPrice,
+            stockDate
+          };
+
+          // Add the object to the array
+          itemsArray.push(itemObject);       
+
+          // Clear the input fields
+          document.querySelector('select[name="item_name"]').selectedIndex = 0;
+          document.querySelector('input[name="update_quantity"]').value = '';
+          document.querySelector('select[name="update_unit_of_measurement"]').selectedIndex = 0;
+          document.querySelector('input[name="update_unit_price"]').value = '';
+          document.querySelector('input[name="update_stockdatee"]').value = '';
+        });
+
+        // Handle the form submission
+        document.querySelector('.update-new-stock-form form').addEventListener('submit', (e) => {
+          e.preventDefault(); // Prevent the default form submission
+
+          if (itemsArray.length === 0) {
+            alert("Please update at least one item.");
+            return; // Stop here if no items have been added
+          }
+
+          // Send the itemsArray to your Flask app using fetch or another method
+          fetch('{{url_for('update_new_stock')}}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: itemsArray })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log(data); // Handle the response from your Flask app
+            // Clear the array after successful submission
+            itemsArray = [];
+            
+            // Optionally, clear all input fields here as well
+            // ...
+            
+            alert(data.message);
+            
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            alert("An error occurred while submitting updates.");
+          });
+        });
+      });
+    </script>
+
+    <!-- UPDATE SALES -->
+    <div class="update-sales-form">
+      <form action="{{url_for('update_sale')}}" method="POST">
+        <label class="input_labels" for="">Item Name Sold</label>
+        <select name="update_sale_item_name" id="">
+          <option value="" disabled selected>Select item</option>
+            {% for item in available_itemNames %}
+              <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+        <label class="input_labels" for="">Quantity Sold</label>
+        <input class="property_inputs" type="number" name="update_sale_quantity" min="1">
+        <label class="input_labels" for="">Unit Selling Price</label>
+        <input class="property_inputs" type="number" name="update_sale_unit_price" min="1">
+        <label class="input_labels" for="">Date</label>
+        <input class="property_inputs" type="date" name="update_sale_date" id="" placeholder="enter start date"><br>
+        <button type="button" id="update-sale-button">Update Another Item</button>
+        <input type="submit" class="btn" value="Submit">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let itemsArray = [];
+
+        document.getElementById('update-sale-button').addEventListener('click', () => {
+          // Get the form values
+          const itemName = document.querySelector('select[name="update_sale_item_name"]').value;
+          const quantity = document.querySelector('input[name="update_sale_quantity"]').value;
+          const unitPrice = document.querySelector('input[name="update_sale_unit_price"]').value;
+          const saleDate = document.querySelector('input[name="update_sale_date"]').value;
+
+          // Check if any of the fields are empty
+          if (!itemName || !quantity || !unitPrice || !saleDate) {
+            alert("Please fill in all fields before updating a sale.");
+            return; // Stop here if any field is empty
+          }
+
+          // Create an object with the form data
+          const itemObject = {
+            itemName,
+            quantity,
+            unitPrice,
+            saleDate
+          };
+
+          // Add the object to the array
+          itemsArray.push(itemObject);       
+
+          // Clear the input fields
+          document.querySelector('select[name="update_sale_item_name"]').selectedIndex = 0;
+          document.querySelector('input[name="update_sale_quantity"]').value = '';
+          document.querySelector('input[name="update_sale_unit_price"]').value = '';
+          document.querySelector('input[name="update_sale_date"]').value = '';
+        });
+
+        // Handle the form submission
+        document.querySelector('.update-sales-form form').addEventListener('submit', (e) => {
+          e.preventDefault(); // Prevent the default form submission
+
+          if (itemsArray.length === 0) {
+            alert("Please update at least one item.");
+            return; // Stop here if no items have been added
+          }
+
+          // Send the itemsArray to your Flask app using fetch or another method
+          fetch('{{url_for('update_sale')}}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: itemsArray })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log(data); // Handle the response from your Flask app
+            // Clear the array after successful submission
+            itemsArray = [];
+            
+            // Optionally, clear all input fields here as well
+            // ...
+            
+            alert(data.message);
+            
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            alert("An error occurred while submitting updates.");
+          });
+        });
+      });
+    </script>
+
     <div class="container-fluid page-body-wrapper">
       <!-- partial:partials/_settings-panel.html -->
       <div class="theme-setting-wrapper">
@@ -465,7 +762,30 @@
           </li>
           {% endif %}
           {% elif session['account_type'] == 'Enterprise Resource Planning' %}
-          <p>Enterprise Resource Planning</p>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="new-stock">
+              <i class="typcn typcn-document-add menu-icon"></i>
+              <span class="menu-title">New Stock</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="update-new-stock">
+              <i class="typcn typcn-briefcase menu-icon"></i>
+              <span class="menu-title">Update Stock</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="update-sale">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Update Sales</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_details') }}">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Stock Info</span>
+            </a>
+          </li>
           {% elif session['account_type'] == 'all_accounts' %}
           <p>all_accounts</p>
           {% else %}

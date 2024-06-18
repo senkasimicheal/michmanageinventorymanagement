@@ -25939,6 +25939,183 @@ input[type="number"] {
   color: #444;
 }
 
+.new-stock-form{
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  top: -120%; left: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.new-stock-form.popup{
+  top: 0;
+}
+
+.new-stock-form form{
+  width: 35rem;
+  background: #fff;
+  margin-left: 2rem;
+  margin-right: 2rem;
+  margin-top: 1rem;
+  padding: 1rem 3rem;
+  border-radius: .5rem;
+  box-shadow: 0 .1rem .3rem #333;
+  position: relative;
+}
+
+.new-stock-form form .box{
+  width: 100%;
+  padding: 1rem 0;
+  margin: 1rem 0;
+  border-bottom: .2rem solid #666;
+  font-size: 1.6rem;
+  color: #333;
+  text-transform: none;
+}
+
+.new-stock-form form .btn{
+  width: 100%;
+  margin: 2rem 0;
+}
+
+.new-stock-form form .btn:hover{
+  background: #444;
+}
+
+.new-stock-form form .fa-times{
+  position: absolute;
+  top: 1rem; right: 2rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.new-stock-form form .fa-times:hover{
+  color: #444;
+}
+
+.update-new-stock-form{
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  top: -120%; left: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.update-new-stock-form.popup{
+  top: 0;
+}
+
+.update-new-stock-form form{
+  width: 35rem;
+  background: #fff;
+  margin-left: 2rem;
+  margin-right: 2rem;
+  margin-top: 1rem;
+  padding: 1rem 3rem;
+  border-radius: .5rem;
+  box-shadow: 0 .1rem .3rem #333;
+  position: relative;
+}
+
+.update-new-stock-form form .box{
+  width: 100%;
+  padding: 1rem 0;
+  margin: 1rem 0;
+  border-bottom: .2rem solid #666;
+  font-size: 1.6rem;
+  color: #333;
+  text-transform: none;
+}
+
+.update-new-stock-form form .btn{
+  width: 100%;
+  margin: 2rem 0;
+}
+
+.update-new-stock-form form .btn:hover{
+  background: #444;
+}
+
+.update-new-stock-form form .fa-times{
+  position: absolute;
+  top: 1rem; right: 2rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.update-new-stock-form form .fa-times:hover{
+  color: #444;
+}
+
+.update-sales-form{
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  top: -120%; left: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.update-sales-form.popup{
+  top: 0;
+}
+
+.update-sales-form form{
+  width: 35rem;
+  background: #fff;
+  margin-left: 2rem;
+  margin-right: 2rem;
+  margin-top: 1rem;
+  padding: 1rem 3rem;
+  border-radius: .5rem;
+  box-shadow: 0 .1rem .3rem #333;
+  position: relative;
+}
+
+.update-sales-form form .box{
+  width: 100%;
+  padding: 1rem 0;
+  margin: 1rem 0;
+  border-bottom: .2rem solid #666;
+  font-size: 1.6rem;
+  color: #333;
+  text-transform: none;
+}
+
+.update-sales-form form .btn{
+  width: 100%;
+  margin: 2rem 0;
+}
+
+.update-sales-form form .btn:hover{
+  background: #444;
+}
+
+.update-sales-form form .fa-times{
+  position: absolute;
+  top: 1rem; right: 2rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.update-sales-form form .fa-times:hover{
+  color: #444;
+}
+
 form input{
   width: 100% !important;
 }

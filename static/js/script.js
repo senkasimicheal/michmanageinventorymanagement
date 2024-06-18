@@ -48,6 +48,9 @@ $(document).ready(function(){
         $('.property-form').addClass('popup');
         $('.tenant-form').removeClass('popup');
         $('.export-form').removeClass('popup');
+        $('.new-stock-form').removeClass('popup');
+        $('.update-new-stock-form').removeClass('popup');
+        $('.update-sales-form').removeClass('popup');
     });
 
     $('.property-form form .fa-times').click(function(){
@@ -58,6 +61,9 @@ $(document).ready(function(){
         $('.tenant-form').addClass('popup');
         $('.property-form').removeClass('popup');
         $('.export-form').removeClass('popup');
+        $('.new-stock-form').removeClass('popup');
+        $('.update-new-stock-form').removeClass('popup');
+        $('.update-sales-form').removeClass('popup');
     });
 
     $('.tenant-form form .fa-times').click(function(){
@@ -68,9 +74,51 @@ $(document).ready(function(){
         $('.export-form').addClass('popup');
         $('.property-form').removeClass('popup');
         $('.tenant-form').removeClass('popup');
+        $('.new-stock-form').removeClass('popup');
+        $('.update-new-stock-form').removeClass('popup');
+        $('.update-sales-form').removeClass('popup');
     });
 
     $('.export-form form .fa-times').click(function(){
         $('.export-form').removeClass('popup');
+    });
+
+    $('#new-stock').click(function(){
+        $('.new-stock-form').addClass('popup');
+        $('.export-form').removeClass('popup');
+        $('.property-form').removeClass('popup');
+        $('.tenant-form').removeClass('popup');
+        $('.update-new-stock-form').removeClass('popup');
+        $('.update-sales-form').removeClass('popup');
+    });
+
+    $('.new-stock-form form .fa-times').click(function(){
+        $('.new-stock-form').removeClass('popup');
+    });
+
+    $('#update-new-stock').click(function(){
+        $('.update-new-stock-form').addClass('popup');
+        $('.new-stock-form').removeClass('popup');
+        $('.export-form').removeClass('popup');
+        $('.property-form').removeClass('popup');
+        $('.tenant-form').removeClass('popup');
+        $('.update-sales-form').removeClass('popup');
+    });
+
+    $('.update-new-stock-form form .fa-times').click(function(){
+        $('.update-new-stock-form').removeClass('popup');
+    });
+
+    $('#update-sale').click(function(){
+        $('.update-sales-form').addClass('popup');
+        $('.update-new-stock-form').removeClass('popup');
+        $('.new-stock-form').removeClass('popup');
+        $('.export-form').removeClass('popup');
+        $('.property-form').removeClass('popup');
+        $('.tenant-form').removeClass('popup');
+    });
+
+    $('.update-sales-form form .fa-times').click(function(){
+        $('.update-sales-form').removeClass('popup');
     });
 });

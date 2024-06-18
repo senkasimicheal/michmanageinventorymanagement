@@ -730,7 +730,7 @@ def userlogin():
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
         app.config['MAIL_PORT'] = 587
         app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_PASSWORD'] = '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'
         app.config['MAIL_USE_TLS'] = True
         app.config['MAIL_USE_SSL'] = False
         mail.init_app(app)
@@ -3412,6 +3412,66 @@ def load_dashboard_page():
         }
 
         company = db.registered_managers.find_one({'username': login_data})
+
+        available_itemNames = []
+        available_items = list(db.inventories.find({'company_name': company['company_name']}))
+        if len(available_items) != 0:
+            for item in available_items:
+                available_itemNames.append(item['itemName'])
+        
+        subscription = db.managers.find_one({'name': company['company_name']})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            pipeline = [
+                {
+                    '$match': {
+                        'company_name': company_name
+                    }
+                },
+                {
+                    '$group': {
+                        '_id': '$itemName',
+                        'totalRevenue': {'$sum': '$revenue'},
+                        'quantitysold': {'$sum': '$quantity'}
+                    }
+                },
+                {
+                    '$lookup': {
+                        'from': 'inventories',
+                        'let': {'itemName': '$_id'},
+                        'pipeline': [
+                            {
+                                '$match': {
+                                    '$expr': {
+                                        '$and': [
+                                            {'$eq': ['$itemName', '$$itemName']},
+                                            {'$eq': ['$company_name', company_name]}
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                '$project': {
+                                    '_id': 0,
+                                    'quantity': 1,
+                                    'unitPrice': 1,
+                                    'stockDate': 1,
+                                    'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                                }
+                            }
+                        ],
+                        'as': 'inventoryDetails'
+                    }
+                }
+            ]
+
+            result = list(db.stock_sales.aggregate(pipeline))
+            # print(result)
+
         if 'dp' in company:
             # Convert the base64 data back to bytes
             dp = base64.b64decode(company['dp'])
@@ -3450,7 +3510,7 @@ def load_dashboard_page():
                 property_data = list(db.property_managed.find(user_query))
                 if len(property_data) == 0:
                     flash('No property data found')
-                    return render_template('dashboard.html',dp=dp_str)
+                    return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames)
                 else:
                     property_data_list = list(db.property_managed.find(user_query))
                     tenant_data_cursor = db.tenants.find(user_query)
@@ -3471,7 +3531,7 @@ def load_dashboard_page():
                                 del property_data_dict[tenant_property_name]
 
                     flash('No tenant data found')
-                    return render_template('dashboard.html',property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str)
+                    return render_template('dashboard.html',property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames)
             latest_year = latest_document['date_last_paid'].year
 
             startdate = datetime(latest_year, 1, 1)
@@ -3519,7 +3579,7 @@ def load_dashboard_page():
         property_data = list(db.property_managed.find(user_query))
         if len(property_data) == 0:
             flash('No property data found')
-            return render_template('dashboard.html',dp=dp_str)
+            return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames)
         else:
             property_data_list = list(db.property_managed.find(user_query))
             tenant_data_cursor = db.tenants.find(user_query)
@@ -3579,13 +3639,13 @@ def load_dashboard_page():
                 property_performance_bar_chart = create_stacked_bar_chart(property_performance, 'propertyName', f'Property Performance', 'Property Name', 'Value')
                 line_chart = create_line_chart(property_performance_line, f'Rent Payments {enddate.year}', 'Month', 'Amount Paid')
 
-                return render_template('dashboard.html',count_property=count_property,available_amount=available_amount,
+                return render_template('dashboard.html',count_property=count_property,available_amount=available_amount, available_itemNames=available_itemNames,
                                     count_current_tenants=count_current_tenants, property_data=property_data_dict, property_occupancy=property_occupancy,
                                     property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
                                     line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
             else:
                 flash('No tenant data found')
-                return render_template('dashboard.html', property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str)
+                return render_template('dashboard.html', property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames)
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])
@@ -4337,6 +4397,208 @@ def activate_send_emails(send_emails):
             flash(f"Emails have been deactivated")
     session['send_emails'] = send_emails
     return render_template("managers accounts.html")
+
+
+###############ENTREPRISE RESOURCE PLANNING (ERP)############################
+@app.route('/add-new-stock', methods=['POST'])
+def add_new_stock():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        all_items = request.json['items']  # Access the JSON data sent from the client
+        skipped_items = []  # List to hold names of items that were not added
+        
+        # Process each item to convert fields and calculate total price
+        for item in all_items:
+            # Convert 'quantity' and 'unitPrice' to integers
+            item['quantity'] = int(item['quantity'])
+            item['unitPrice'] = int(item['unitPrice'])
+
+            # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
+            item['totalPrice'] = item['unitPrice'] * item['quantity']
+            item['company_name'] = company['company_name']
+
+            # Check if the item already exists in the database
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': item['company_name']
+            })
+
+            if existing_item:
+                skipped_items.append(item['itemName'])  # Add the name of the skipped item
+                continue  # Skip this iteration and don't add the existing item
+
+            # Insert the new stock entry into MongoDB
+            db.inventories.insert_one(item)
+        
+        message = 'New stock added successfully'
+        if skipped_items:
+            message += '. The following items were not added because they already exist: ' + ', '.join(skipped_items)
+        
+        return jsonify({'message': message})
+    
+@app.route('/update-new-stock', methods=['POST'])
+def update_new_stock():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        all_items = request.json['items']  # Access the JSON data sent from the client
+        
+        # Process each item to convert fields and calculate total price
+        for item in all_items:
+            # Convert 'quantity' and 'unitPrice' to integers
+            item['quantity'] = int(item['quantity'])
+            item['unitPrice'] = int(item['unitPrice'])
+            item['company_name'] = company['company_name']
+
+            # Check if the item already exists in the database
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': company['company_name']
+            })
+
+            if 'available_quantity' in existing_item:
+                old_total_price = existing_item['available_quantity'] * existing_item['unitPrice']
+                # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
+                item['totalPrice'] = item['unitPrice'] * item['quantity'] + old_total_price
+                new_available_quantity = existing_item['available_quantity'] +  item['quantity']
+                item['available_quantity'] = new_available_quantity
+            else:
+                item['totalPrice'] = item['unitPrice'] * item['quantity'] + existing_item['totalPrice']
+            
+            # Insert the new stock entry into MongoDB
+            db.inventories.insert_one(item)
+            db.inventories.delete_one({'_id': existing_item['_id']})
+            existing_item.pop('_id', None)
+            db.old_inveentories.insert_one(existing_item)
+        
+        message = 'Stock updated successfully'
+        
+        return jsonify({'message': message})
+    
+@app.route('/update-sale', methods=['POST'])
+def update_sale():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        all_items = request.json['items']  # Access the JSON data sent from the client
+        out_of_stock_items = []
+        over_quantified = []
+        # Process each item to convert fields and calculate total price
+        for item in all_items:
+            # Convert 'quantity' and 'unitPrice' to integers
+            item['quantity'] = int(item['quantity'])
+            item['unitPrice'] = int(item['unitPrice'])
+            item['company_name'] = company['company_name']
+
+            # Check if the item already exists in the database
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': company['company_name']
+            })
+
+            if 'available_quantity' in existing_item:
+                if existing_item['available_quantity'] <= 0:
+                    out_of_stock_items.append(item['itemName'])
+                    continue
+                if item['quantity'] > existing_item['available_quantity']:
+                    over_quantified.append(item['itemName'])
+                    continue
+                revenue = item['quantity']*item['unitPrice']
+                available_quantity = existing_item['available_quantity'] - item['quantity']
+                item['revenue'] = revenue
+            else:
+                if item['quantity'] > existing_item['quantity']:
+                    over_quantified.append(item['itemName'])
+                    continue
+                revenue = item['quantity']*item['unitPrice']
+                available_quantity = existing_item['quantity'] - item['quantity']
+                item['revenue'] = revenue
+            
+            
+            # Insert the new stock entry into MongoDB
+            db.stock_sales.insert_one(item)
+            db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
+        
+        message = 'Sales updated successfully'
+
+        if out_of_stock_items:
+            message += '. The following items are out of stock: ' + ', '.join(out_of_stock_items)
+        if over_quantified:
+            message += '. Enter smaller quantities for the following items: ' + ', '.join(over_quantified)
+        
+        return jsonify({'message': message})
+    
+@app.route('/stock-details')
+def stock_details():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        
+        subscription = db.managers.find_one({'name': company['company_name']})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            pipeline = [
+                {
+                    '$match': {
+                        'company_name': company_name
+                    }
+                },
+                {
+                    '$group': {
+                        '_id': '$itemName',
+                        'totalRevenue': {'$sum': '$revenue'},
+                        'quantitysold': {'$sum': '$quantity'}
+                    }
+                },
+                {
+                    '$lookup': {
+                        'from': 'inventories',
+                        'let': {'itemName': '$_id'},
+                        'pipeline': [
+                            {
+                                '$match': {
+                                    '$expr': {
+                                        '$and': [
+                                            {'$eq': ['$itemName', '$$itemName']},
+                                            {'$eq': ['$company_name', company_name]}
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                '$project': {
+                                    '_id': 0,
+                                    'quantity': 1,
+                                    'unitPrice': 1,
+                                    'stockDate': 1,
+                                    'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                                }
+                            }
+                        ],
+                        'as': 'inventoryDetails'
+                    }
+                }
+            ]
+
+            stock_results = list(db.stock_sales.aggregate(pipeline))
+            return render_template('stock info.html', stock_results = stock_results)
 
 if __name__ == '__main__':
     scheduler.start()
