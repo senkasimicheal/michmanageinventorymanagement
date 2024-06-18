@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Stock Information</title>
+  <title>Revenue Information</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -190,7 +190,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Stock Information</h4>
+            <h4 class="mb-0">Revenue Information</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -601,19 +601,29 @@
                 <tr>
                     <th>No.</th>
                     <th>Item Name</th>
-                    <th>Stocked Quantity</th>
-                    <th>Buying Price</th>
-                    <th>Total Buying Price</th>
                     <th>Stock Date</th>
+                    <th>Stocked Quantity</th>
+                    <th>Unit Buying Price</th>
+                    <th>Total Buying Price</th>
+                    <th>Quantity Sold</th>
+                    <th>Revenue</th>
+                    <th>Profit</th>
                 </tr>
-                {% for stock in stock_info %}
-                <tr title="{{ stock['itemName'] }}" style="cursor: pointer;">
+                {% for revenue in revenue_info %}
+                <tr title="{{ revenue['_id'] }}" style="cursor: pointer;">
                     <td>{{ loop.index }}</td>
-                    <td>{{ stock['itemName'] }}</td>
-                    <td>{{ stock['quantity'] }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
-                    <td>{{ stock['stockDate'] }}</td>
+                    <td>{{ revenue['_id']['itemName'] }}</td>
+                    {% for detail in revenue['inventoryDetails'] %}
+                    <td>{{ detail['stockDate'] }}</td>
+                    <td>{{ detail['quantity'] }}</td>
+                    <td>{{ '{:,.0f}'.format(detail['unitPrice']) }}</td>
+                    <td>{{ '{:,.0f}'.format(detail['totalPrice']) }}</td>
+                    {% endfor %}
+                    <td>{{ revenue['quantitysold'] }}</td>
+                    <td>{{ '{:,.0f}'.format(revenue['totalRevenue']) }}</td>
+                    {% for detail in revenue['inventoryDetails'] %}
+                    <td>{{ '{:,.0f}'.format(revenue['totalRevenue'] - detail['totalPrice']) }}</td>
+                    {% endfor %}
                 </tr>
                 {% endfor %}
             </table>

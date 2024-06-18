@@ -744,19 +744,6 @@ def userlogin():
         return redirect('/')
     else:
         subscription = db.managers.find_one({'name': manager['company_name']})
-        account_type = subscription['account_type']
-        # Remove any empty strings from the list
-        account_type = [atype for atype in account_type if atype]
-
-        if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
-            # If only 'Enterprise Resource Planning' is present
-            session['account_type'] = 'Enterprise Resource Planning'
-        elif 'Property Management' in account_type and len(account_type) == 1:
-            # If only 'Property Management' is present
-            session['account_type'] = 'Property Management'
-        elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
-            # If both are present
-            session['account_type'] = 'all_accounts'
 
         stored_password = manager['password']
         if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
@@ -859,8 +846,23 @@ def userlogin():
                 value = manager.get(field)
                 if value is not None:
                     session[field] = value
+            
+            account_type = subscription['account_type']
+            # Remove any empty strings from the list
+            account_type = [atype for atype in account_type if atype]
 
-            return redirect("/load-dashboard-page")
+            if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+                # If only 'Enterprise Resource Planning' is present
+                session['account_type'] = 'Enterprise Resource Planning'
+                return redirect("/stock-overview")
+            elif 'Property Management' in account_type and len(account_type) == 1:
+                # If only 'Property Management' is present
+                session['account_type'] = 'Property Management'
+                return redirect("/load-dashboard-page")
+            elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+                # If both are present
+                session['account_type'] = 'all_accounts'
+                return redirect('/all-accounts-overview')
 
 
 #USER AUTHENTICATION
@@ -906,7 +908,22 @@ def authentication():
         session['login_username'] = manager['username']
         session['phone_number'] = manager['phone_number']
 
-        return redirect("/load-dashboard-page")
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+            # If only 'Enterprise Resource Planning' is present
+            session['account_type'] = 'Enterprise Resource Planning'
+            return redirect("/stock-overview")
+        elif 'Property Management' in account_type and len(account_type) == 1:
+            # If only 'Property Management' is present
+            session['account_type'] = 'Property Management'
+            return redirect("/load-dashboard-page")
+        elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+            # If both are present
+            session['account_type'] = 'all_accounts'
+            return redirect('/all-accounts-overview')
         
 ##ACCOUNT SETTING
 @app.route('/account-setup-page')
@@ -3424,54 +3441,6 @@ def load_dashboard_page():
         # Remove any empty strings from the list
         account_type = [atype for atype in account_type if atype]
 
-        if 'Enterprise Resource Planning' in account_type:
-            company_name = company['company_name']
-            pipeline = [
-                {
-                    '$match': {
-                        'company_name': company_name
-                    }
-                },
-                {
-                    '$group': {
-                        '_id': '$itemName',
-                        'totalRevenue': {'$sum': '$revenue'},
-                        'quantitysold': {'$sum': '$quantity'}
-                    }
-                },
-                {
-                    '$lookup': {
-                        'from': 'inventories',
-                        'let': {'itemName': '$_id'},
-                        'pipeline': [
-                            {
-                                '$match': {
-                                    '$expr': {
-                                        '$and': [
-                                            {'$eq': ['$itemName', '$$itemName']},
-                                            {'$eq': ['$company_name', company_name]}
-                                        ]
-                                    }
-                                }
-                            },
-                            {
-                                '$project': {
-                                    '_id': 0,
-                                    'quantity': 1,
-                                    'unitPrice': 1,
-                                    'stockDate': 1,
-                                    'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
-                                }
-                            }
-                        ],
-                        'as': 'inventoryDetails'
-                    }
-                }
-            ]
-
-            result = list(db.stock_sales.aggregate(pipeline))
-            # print(result)
-
         if 'dp' in company:
             # Convert the base64 data back to bytes
             dp = base64.b64decode(company['dp'])
@@ -4456,6 +4425,7 @@ def update_new_stock():
             item['quantity'] = int(item['quantity'])
             item['unitPrice'] = int(item['unitPrice'])
             item['company_name'] = company['company_name']
+            item['status'] = "updated stock"
 
             # Check if the item already exists in the database
             existing_item = db.inventories.find_one({
@@ -4516,6 +4486,7 @@ def update_sale():
                 revenue = item['quantity']*item['unitPrice']
                 available_quantity = existing_item['available_quantity'] - item['quantity']
                 item['revenue'] = revenue
+                item['stockDate'] = existing_item['stockDate']
             else:
                 if item['quantity'] > existing_item['quantity']:
                     over_quantified.append(item['itemName'])
@@ -4523,6 +4494,7 @@ def update_sale():
                 revenue = item['quantity']*item['unitPrice']
                 available_quantity = existing_item['quantity'] - item['quantity']
                 item['revenue'] = revenue
+                item['stockDate'] = existing_item['stockDate']
             
             
             # Insert the new stock entry into MongoDB
@@ -4538,8 +4510,8 @@ def update_sale():
         
         return jsonify({'message': message})
     
-@app.route('/stock-details')
-def stock_details():
+@app.route('/revenue-details')
+def revenue_details():
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4562,7 +4534,7 @@ def stock_details():
                 },
                 {
                     '$group': {
-                        '_id': '$itemName',
+                        '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
                         'totalRevenue': {'$sum': '$revenue'},
                         'quantitysold': {'$sum': '$quantity'}
                     }
@@ -4570,7 +4542,7 @@ def stock_details():
                 {
                     '$lookup': {
                         'from': 'inventories',
-                        'let': {'itemName': '$_id'},
+                        'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
                         'pipeline': [
                             {
                                 '$match': {
@@ -4597,8 +4569,82 @@ def stock_details():
                 }
             ]
 
-            stock_results = list(db.stock_sales.aggregate(pipeline))
-            return render_template('stock info.html', stock_results = stock_results)
+            revenue_info = list(db.stock_sales.aggregate(pipeline))
+            dp = company.get('dp')
+            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+            return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
+
+@app.route('/sales-details')
+def sales_details():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        
+        subscription = db.managers.find_one({'name': company['company_name']})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            sales_info = list(db.stock_sales.find({'company_name': company_name}))
+            dp = company.get('dp')
+            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+            return render_template('sales info.html', sales_info = sales_info, dp=dp_str)
+
+@app.route('/stock-details')
+def stock_details():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        
+        subscription = db.managers.find_one({'name': company['company_name']})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            stock_info = list(db.inventories.find({'company_name': company_name}))
+            dp = company.get('dp')
+            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+            return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
+
+@app.route('/stock-overview')
+def stock_overview():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+
+        available_itemNames = []
+        available_items = list(db.inventories.find({'company_name': company['company_name']}))
+        if len(available_items) != 0:
+            for item in available_items:
+                available_itemNames.append(item['itemName'])
+        dp = company.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        return render_template('stock dashboard.html',available_itemNames=available_itemNames, dp=dp_str)
+    
+@app.route('/all-accounts-overview')
+def all_accounts_overview():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        dp = company.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        return render_template('all count type overview.html', dp=dp_str)
 
 if __name__ == '__main__':
     scheduler.start()

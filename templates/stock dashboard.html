@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Stock Information</title>
+  <title>Enterprise Resource Planning</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -15,6 +15,7 @@
   <!-- inject:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
   <!-- endinject -->
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
@@ -88,7 +89,7 @@
                     {{session['time_since_last_login_years']}} years ago.
                 {% endif %}
             </p>
-          </li>
+          </li>        
         </ul>
         <ul class="navbar-nav navbar-nav-right">
           <li class="nav-item dropdown">
@@ -190,7 +191,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Stock Information</h4>
+            <h4 class="mb-0">ERP</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -218,7 +219,7 @@
         <label class="input_labels" for="">Unit Price</label>
         <input class="property_inputs" type="number" name="unit_price" min="1">
         <label class="input_labels" for="">Stock Date</label>
-        <input class="property_inputs" type="date" name="stockdatee" id="" placeholder="enter start date"><br>
+        <input class="property_inputs" type="date" name="stockdatee" id="stockdatee" placeholder="enter start date"><br>
         <button type="button" id="add-item-button">Add New Item</button>
         <input type="submit" class="btn" value="Submit">
         <i class="fas fa-times"></i>
@@ -322,7 +323,7 @@
         <label class="input_labels" for="">Unit Price</label>
         <input class="property_inputs" type="number" name="update_unit_price" min="1">
         <label class="input_labels" for="">Stock Date</label>
-        <input class="property_inputs" type="date" name="update_stockdatee" id="" placeholder="enter start date"><br>
+        <input class="property_inputs" type="date" name="update_stockdatee" id="update_stockdatee" placeholder="enter start date"><br>
         <button type="button" id="update-item-button">Update Another Item</button>
         <input type="submit" class="btn" value="Submit">
         <i class="fas fa-times"></i>
@@ -419,7 +420,7 @@
         <label class="input_labels" for="">Unit Selling Price</label>
         <input class="property_inputs" type="number" name="update_sale_unit_price" min="1">
         <label class="input_labels" for="">Date</label>
-        <input class="property_inputs" type="date" name="update_sale_date" id="" placeholder="enter start date"><br>
+        <input class="property_inputs" type="date" name="update_sale_date" id="update_sale_date" placeholder="enter start date"><br>
         <button type="button" id="update-sale-button">Update Another Item</button>
         <input type="submit" class="btn" value="Submit">
         <i class="fas fa-times"></i>
@@ -531,12 +532,6 @@
           </li>
           {% endif %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_overview') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">ERP Overview</span>
-            </a>
-          </li>
-          <li class="nav-item">
             <a class="nav-link" href="#" id="new-stock">
               <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">New Stock</span>
@@ -575,50 +570,65 @@
         </ul>
       </nav>
       <!-- partial -->
-      <div class="notification">
-        <span class="close-btn">×</span>
-        This module is still under test and production !!!
-      </div>
-    
-      <script>
-        const notification = document.querySelector('.notification');
-        const closeBtn = document.querySelector('.close-btn');
-    
-        closeBtn.addEventListener('click', () => {
-            notification.style.display = 'none';
-        });
-      </script>
-
       <div class="main-panel">
-        <div class="content-wrapper">
-          <div>
-            {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-            <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
-            {% endfor %} {% endif %} {% endwith %}
+        <!-- {% if session['send_emails_message'] %}
+          <div class="notification">
+            <span class="close-btn">×</span>
+            {{session['send_emails_message']}}
           </div>
-          <div style="width: 100%; height: 100%; overflow: auto;">
-            <table class="tenant_table">
-                <tr>
-                    <th>No.</th>
-                    <th>Item Name</th>
-                    <th>Stocked Quantity</th>
-                    <th>Buying Price</th>
-                    <th>Total Buying Price</th>
-                    <th>Stock Date</th>
-                </tr>
-                {% for stock in stock_info %}
-                <tr title="{{ stock['itemName'] }}" style="cursor: pointer;">
-                    <td>{{ loop.index }}</td>
-                    <td>{{ stock['itemName'] }}</td>
-                    <td>{{ stock['quantity'] }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
-                    <td>{{ stock['stockDate'] }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-          </div>
+        
+          <script>
+            const notification = document.querySelector('.notification');
+            const closeBtn = document.querySelector('.close-btn');
+        
+            closeBtn.addEventListener('click', () => {
+                notification.style.display = 'none';
+            });
+          </script>
+        {% endif %} -->
+
+        <div class="notification">
+          <span class="close-btn">×</span>
+          This module is still under test and production !!!
         </div>
+      
+        <script>
+          const notification = document.querySelector('.notification');
+          const closeBtn = document.querySelector('.close-btn');
+      
+          closeBtn.addEventListener('click', () => {
+              notification.style.display = 'none';
+          });
+        </script>
+
+        <div>
+          {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
+          <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
+          {% endfor %} {% endif %} {% endwith %}
+        </div>
+        <div class="content-wrapper">
+          <!-- <form class="dashboard-form-form" action="{{url_for('load_dashboard_page')}}" method="POST">
+            <label class="dashboard-form" for="">From</label>
+            <input class="dashboard-form" type="date" name="startdate" required>
+            <label class="dashboard-form" for="">To</label>
+            <input class="dashboard-form" type="date" name="enddate" required>
+            <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Apply">
+          </form>
+          <p class="display-date">Display date: {{ month_name }}</p>           -->
+          <div class="chart-container">
+            <div class="row">
+              <p>Coming Soon</p>
+              <!-- <div class="col-md-6 segment">
+                <div id="revenue_chart"></div>
+              </div> -->
+              <!-- <div class="col-md-6 segment">
+                  <div id="property_performance_bar_chart"></div>
+              </div>
+              <div class="col-md-6 segment">
+                <div id="property_type_bar_chart"></div>
+              </div> -->
+            </div>
+          </div>
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
@@ -641,10 +651,43 @@
   </div>
   <!-- container-scroller -->
 
-  <script>
-    function confirmDelete() {
-        return confirm('This tenant will be deleted from the property?');
-    }
+  <!-- CHARTS JAVASCRIPTS -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script type="text/javascript">
+    // Your existing code...
+    var config = {
+        responsive: true, 
+        displayModeBar: true, 
+        staticPlot: false,
+        modeBarButtonsToRemove: ['zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'toImage', 'drag2d']
+    };
+
+    // Modify the layout for each chart
+    var updateLayout = {
+        xaxis: {
+            showgrid: false,  // Remove grid lines
+            tickmode: "linear",
+            dtick: 1
+        },
+        yaxis: {
+            showgrid: false  // Remove grid lines
+        },
+        plot_bgcolor: 'white',  // Set background color to white for a classic look
+        paper_bgcolor: 'white'  // Set paper color to white for a classic look
+    };
+
+    // Merge the new layout with the existing layout
+    var revenue_chart = {{ revenue_chart | safe }};
+    revenue_chart.layout = {...revenue_chart.layout, ...updateLayout};
+    Plotly.newPlot('revenue_chart', revenue_chart.data, revenue_chart.layout, config);
+
+    // var property_performance_bar_chart = {{ property_performance_bar_chart | safe }};
+    // property_performance_bar_chart.layout = {...property_performance_bar_chart.layout, ...updateLayout};
+    // Plotly.newPlot('property_performance_bar_chart', property_performance_bar_chart.data, property_performance_bar_chart.layout, config);
+
+    // var line_chartData = {{ line_chart | safe }};
+    // line_chartData.layout = {...line_chartData.layout, ...updateLayout};
+    // Plotly.newPlot('linechart', line_chartData.data, line_chartData.layout, config);
   </script>
 
   <script>
@@ -654,20 +697,6 @@
           document.getElementById("alert").style.display = "none";
       }, 5000);
       });
-  </script>
-
-  <script>
-    let counter = 0;
-    const spinner = document.getElementById('spinner');
-
-    const intervalId = setInterval(() => {
-      counter++;
-      spinner.textContent = `${counter}%`;
-
-      if (counter === 100) {
-        clearInterval(intervalId);
-      }
-    }, 100); // Adjust this value to control the speed of the counter
   </script>
 
   <script>
@@ -700,6 +729,22 @@
     }
   </script>
 
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <!-- base:js -->
   <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
   <!-- endinject -->
@@ -713,9 +758,15 @@
   <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
   <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
   <!-- endinject -->
-  <!-- Custom js for this page-->
-  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
   <!-- End custom js for this page-->
+
+  <script>
+    window.history.pushState(null, "", window.location.href);
+    window.onpopstate = function () {
+        window.history.pushState(null, "", window.location.href);
+    };
+  </script>
 </body>
 
 </html>

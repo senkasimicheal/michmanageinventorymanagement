@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Stock Information</title>
+  <title>Sales Information</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -190,7 +190,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Stock Information</h4>
+            <h4 class="mb-0">Sales Information</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -601,19 +601,19 @@
                 <tr>
                     <th>No.</th>
                     <th>Item Name</th>
-                    <th>Stocked Quantity</th>
-                    <th>Buying Price</th>
-                    <th>Total Buying Price</th>
-                    <th>Stock Date</th>
+                    <th>Quantity Sold</th>
+                    <th>Selling Price</th>
+                    <th>Revenue</th>
+                    <th>Sale Date</th>
                 </tr>
-                {% for stock in stock_info %}
-                <tr title="{{ stock['itemName'] }}" style="cursor: pointer;">
+                {% for sale in sales_info %}
+                <tr title="{{ sale['itemName'] }}" style="cursor: pointer;">
                     <td>{{ loop.index }}</td>
-                    <td>{{ stock['itemName'] }}</td>
-                    <td>{{ stock['quantity'] }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
-                    <td>{{ stock['stockDate'] }}</td>
+                    <td>{{ sale['itemName'] }}</td>
+                    <td>{{ sale['quantity'] }}</td>
+                    <td>{{ '{:,.0f}'.format(sale['unitPrice']) }}</td>
+                    <td>{{ '{:,.0f}'.format(sale['revenue']) }}</td>
+                    <td>{{ sale['saleDate'] }}</td>
                 </tr>
                 {% endfor %}
             </table>
