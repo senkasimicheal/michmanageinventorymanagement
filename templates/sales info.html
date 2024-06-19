@@ -613,7 +613,7 @@
                     <td>{{ sale['quantity'] }}</td>
                     <td>{{ '{:,.0f}'.format(sale['unitPrice']) }}</td>
                     <td>{{ '{:,.0f}'.format(sale['revenue']) }}</td>
-                    <td>{{ sale['saleDate'] }}</td>
+                    <td>{{ sale['saleDate'].strftime('%Y-%m-%d') }}</td>
                 </tr>
                 {% endfor %}
             </table>

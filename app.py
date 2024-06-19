@@ -4555,6 +4555,7 @@ def inhouse():
         itemNames = []
         itemQuantities = []
         itemStockDates = []
+        itemUnitPrices = []
         
         # Extract productName, productQuantity, productPrice, useDate from the first itemObject
         # Assuming these fields are the same for all itemObjects in all_items
@@ -4596,6 +4597,7 @@ def inhouse():
                         itemStockDates.append(existing_item['stockDate'])
                         in_stockID.append(existing_item['_id'])
                         in_stockQty.append(available_quantity)
+                        itemUnitPrices.append(existing_item['unitPrice'])
                         message = 'Inhouse updated successfully'
 
             else:
@@ -4607,6 +4609,7 @@ def inhouse():
                     itemStockDates.append(existing_item['stockDate'])
                     in_stockID.append(existing_item['_id'])
                     in_stockQty.append(available_quantity)
+                    itemUnitPrices.append(existing_item['unitPrice'])
                     message = 'Inhouse updated successfully'
 
         if out_of_stock_items:
@@ -4621,6 +4624,7 @@ def inhouse():
                 'useDate': useDate,
                 'itemName': itemNames,  # Array field
                 'itemQuantity': itemQuantities,  # Array field
+                'itemUnitPrices': itemUnitPrices, # Array field
                 'itemStockDates': itemStockDates, # Array field
                 'company_name': company_name
             }
@@ -4754,23 +4758,40 @@ def stock_details():
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('stock info.html', stock_info = stock_info, available_itemNames=available_itemNames, dp=dp_str)
 
-@app.route('/stock-overview')
+@app.route('/stock-overview', methods=["GET", "POST"])
 def stock_overview():
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
         return redirect('/')
     else:
+        # Clear sessions
+        session.pop("profits_chart", None)
+        session.pop("loss_chart", None)
+        session.pop("revenue_and_qty_chart", None)
+        session.pop("monthly_profits_chart", None)
+        session.pop("inhouse_costs_chart", None)
+        session.pop("inhouse_revenue_chart", None)
+
         company = db.registered_managers.find_one({'username': login_data})
 
         company_name = company['company_name']
 
-        today = datetime.today()
-        first_day_of_current_month = today.replace(day=1)
-        first_day_of_current_month = first_day_of_current_month.replace(hour=0, minute=0, second=0, microsecond=0)
-        start_of_previous_month = first_day_of_current_month - timedelta(days=1)
-        start_of_previous_month = start_of_previous_month.replace(hour=0, minute=0, second=0, microsecond=0)
-        start_of_previous_month = start_of_previous_month.replace(day=1)
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+
+        if startdate_on_str and enddate_on_str:
+            start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+            first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+            display_date = f"{start_of_previous_month.strftime("%y-%m-%d")} to {first_day_of_current_month.strftime("%y-%m-%d")}"
+        else:
+            today = datetime.today()
+            first_day_of_current_month = today.replace(day=1)
+            first_day_of_current_month = first_day_of_current_month.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_of_previous_month = first_day_of_current_month - timedelta(days=1)
+            start_of_previous_month = start_of_previous_month.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_of_previous_month = start_of_previous_month.replace(day=1)
+            display_date = f"{start_of_previous_month.strftime("%y-%m-%d")} to {first_day_of_current_month.strftime("%y-%m-%d")}"
 
         pipeline = [
             {
@@ -4852,22 +4873,32 @@ def stock_overview():
         #profits and losses
         # Filter positive profits
         positive_profits_df = df[df['Profit'] > 0]
+        print(positive_profits_df)
+        if not positive_profits_df.empty:
+            session['profits_chart'] = 'profits_chart'
         fig_profits = px.bar(positive_profits_df, x='Item Name', y='Profit', title='Profits on Each Item')
         fig_profits.update_traces(texttemplate='%{y}', textposition='inside')
+        fig_profits.update_layout(showlegend=False)
         profits_chart = json.dumps(fig_profits, cls=plotly.utils.PlotlyJSONEncoder)
 
         # Filter negative profits
         negative_profits_df = df[df['Profit'] < 0]
+        if not negative_profits_df.empty:
+            session['loss_chart'] = 'loss_chart'
         negative_profits_df['Profit'] = -1*negative_profits_df['Profit']
 
         # Create the bar chart for losses
         fig_negative_profits = px.bar(negative_profits_df, x='Item Name', y='Profit', title='Losses on Each Item')
         fig_negative_profits.update_traces(texttemplate='%{y}', textposition='inside')
+        fig_negative_profits.update_layout(showlegend=False)
         Losses_chart = json.dumps(fig_negative_profits, cls=plotly.utils.PlotlyJSONEncoder)
 
         ##total revenue
+        if not df.empty:
+            session['revenue_and_qty_chart'] = 'revenue_and_qty_chart'
         fig_total_revenue = px.bar(df, x='Item Name', y='Total Revenue', title='Revenue on Each Item')
         fig_total_revenue.update_traces(texttemplate='%{y}', textposition='inside')
+        fig_total_revenue.update_layout(showlegend=False)
         revenue = json.dumps(fig_total_revenue, cls=plotly.utils.PlotlyJSONEncoder)
 
         ##Quantity sold
@@ -4956,12 +4987,91 @@ def stock_overview():
         })
 
         # Create the line chart
+        if not monthly_profits_df.empty:
+            session['monthly_profits_chart'] = 'monthly_profits_chart'
         trended_profit_fig = px.line(monthly_profits_df, x='Month', y='Monthly Profit',
               title='Sum of Profits by Month')
 
         # Customize the appearance if needed (e.g., colors, layout)
         trended_profit_fig.update_traces(mode='lines+markers')
         trended_profit = json.dumps(trended_profit_fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+        ###INHOUSE UPDATES
+        inhouse_info = list(db.inhouse.find({'company_name': company['company_name'], 'useDate': {
+                        '$gte': start_of_previous_month,
+                        '$lt': first_day_of_current_month}}))
+        
+        inhouse_itemName = []
+        inhouse_itemQuantity = []
+        inhouse_itemUnitPrices = []
+
+        for record in inhouse_info:
+            item_name = record['itemName']
+            item_quantity = record['itemQuantity']
+            item_unit_price = record['itemUnitPrices']
+            
+            inhouse_itemName.append(item_name)
+            inhouse_itemQuantity.append(item_quantity)
+            inhouse_itemUnitPrices.append(item_unit_price)
+
+        # Create the DataFrame
+        inhouse_df = pd.DataFrame({
+            'Item Name': inhouse_itemName,
+            'quantity': inhouse_itemQuantity,
+            'unit price': inhouse_itemUnitPrices
+        })
+
+        # Assuming you have the DataFrame 'inhouse_df_new'
+        # Explode all variables (Item Name, quantity, unit price)
+        inhouse_df_exploded = inhouse_df.explode('Item Name')
+        inhouse_df_exploded['quantity'] = inhouse_df.explode('quantity')['quantity']
+        inhouse_df_exploded['unit price'] = inhouse_df.explode('unit price')['unit price']
+        inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
+
+        inhouse_df_exploded['cost'] = inhouse_df_exploded['quantity']*inhouse_df_exploded['unit price']
+
+        total_cost_by_item = inhouse_df_exploded.groupby('Item Name')['cost'].sum()
+        inhouse_cost_df = pd.DataFrame(total_cost_by_item).reset_index()
+
+        ##total inhouse cost
+        if not inhouse_cost_df.empty:
+            session['inhouse_costs_chart'] = 'inhouse_costs_chart'
+        inhouse_cost_fig = px.bar(inhouse_cost_df, x='Item Name', y='cost', title='Inhouse Costs')
+        inhouse_cost_fig.update_traces(texttemplate='%{y}', textposition='inside')
+        inhouse_cost_fig.update_layout(showlegend=False)
+        inhouse_cost_chart = json.dumps(inhouse_cost_fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+        ##inhouse revenues
+        inhouse_productName = []
+        inhouse_productQuantity = []
+        inhouse_productPrice = []
+
+        for record in inhouse_info:
+            productName = record['productName']
+            productQuantity = record['productQuantity']
+            productPrice = record['productPrice']
+            
+            inhouse_productName.append(productName)
+            inhouse_productQuantity.append(productQuantity)
+            inhouse_productPrice.append(productPrice)
+
+
+        # Create the DataFrame
+        inhouse_revenue_df = pd.DataFrame({
+            'Product Name': inhouse_productName,
+            'Quantity': inhouse_productQuantity,
+            'Unit Price': inhouse_productPrice
+        })
+
+        inhouse_revenue_df['Revenue'] = inhouse_revenue_df['Quantity']*inhouse_revenue_df['Unit Price']
+        
+        ##total inhouse revenue
+        if not inhouse_revenue_df.empty:
+            session['inhouse_revenue_chart'] = 'inhouse_revenue_chart'
+        inhouse_revenue_fig = px.bar(inhouse_revenue_df, x='Product Name', y='Revenue', title='Inhouse Revenue')
+        inhouse_revenue_fig.update_traces(texttemplate='%{y}', textposition='inside')
+        inhouse_revenue_fig.update_layout(showlegend=False)
+        inhouse_revenue_chart = json.dumps(inhouse_revenue_fig, cls=plotly.utils.PlotlyJSONEncoder)
 
         available_itemNames = []
         available_items = list(db.inventories.find({'company_name': company['company_name']}))
@@ -4971,7 +5081,9 @@ def stock_overview():
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         return render_template('stock dashboard.html',available_itemNames=available_itemNames,profits_chart=profits_chart,
-                               Losses_chart=Losses_chart,revenue=revenue, quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit, dp=dp_str)
+                               Losses_chart=Losses_chart,revenue=revenue, quantity_sold_stocked=quantity_sold_stocked,
+                               trended_profit=trended_profit,inhouse_cost_chart=inhouse_cost_chart,
+                               inhouse_revenue_chart=inhouse_revenue_chart,display_date=display_date, dp=dp_str)
     
 @app.route('/all-accounts-overview')
 def all_accounts_overview():

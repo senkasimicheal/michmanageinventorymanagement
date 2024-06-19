@@ -613,7 +613,7 @@
                     <td>{{ stock['quantity'] }}</td>
                     <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
                     <td>{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
-                    <td>{{ stock['stockDate'] }}</td>
+                    <td>{{ stock['stockDate'].strftime('%Y-%m-%d') }}</td>
                 </tr>
                 {% endfor %}
             </table>

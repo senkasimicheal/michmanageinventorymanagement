@@ -614,7 +614,7 @@
                     <td>{{ loop.index }}</td>
                     <td>{{ revenue['_id']['itemName'] }}</td>
                     {% for detail in revenue['inventoryDetails'] %}
-                    <td>{{ detail['stockDate'] }}</td>
+                    <td>{{ detail['stockDate'].strftime('%Y-%m-%d') }}</td>
                     <td>{{ detail['quantity'] }}</td>
                     <td>{{ '{:,.0f}'.format(detail['unitPrice']) }}</td>
                     <td>{{ '{:,.0f}'.format(detail['totalPrice']) }}</td>
