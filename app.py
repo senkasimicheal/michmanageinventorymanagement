@@ -4783,7 +4783,7 @@ def stock_overview():
         if startdate_on_str and enddate_on_str:
             start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
             first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-            display_date = f"{start_of_previous_month.strftime("%y-%m-%d")} to {first_day_of_current_month.strftime("%y-%m-%d")}"
+            display_date = f"{{start_of_previous_month.strftime('%y-%m-%d')}} to {{first_day_of_current_month.strftime('%y-%m-%d')}}"
         else:
             today = datetime.today()
             first_day_of_current_month = today.replace(day=1)
@@ -4791,7 +4791,7 @@ def stock_overview():
             start_of_previous_month = first_day_of_current_month - timedelta(days=1)
             start_of_previous_month = start_of_previous_month.replace(hour=0, minute=0, second=0, microsecond=0)
             start_of_previous_month = start_of_previous_month.replace(day=1)
-            display_date = f"{start_of_previous_month.strftime("%y-%m-%d")} to {first_day_of_current_month.strftime("%y-%m-%d")}"
+            display_date = f"{{start_of_previous_month.strftime('%y-%m-%d')}} to {{first_day_of_current_month.strftime('%y-%m-%d')}}"
 
         pipeline = [
             {
