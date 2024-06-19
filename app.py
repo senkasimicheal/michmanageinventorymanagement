@@ -4413,6 +4413,7 @@ def add_new_stock():
             # Convert 'quantity' and 'unitPrice' to integers
             item['quantity'] = int(item['quantity'])
             item['unitPrice'] = int(item['unitPrice'])
+            item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
 
             # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
             item['totalPrice'] = item['unitPrice'] * item['quantity']
@@ -4452,6 +4453,7 @@ def update_new_stock():
             # Convert 'quantity' and 'unitPrice' to integers
             item['quantity'] = int(item['quantity'])
             item['unitPrice'] = int(item['unitPrice'])
+            item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
             item['company_name'] = company['company_name']
             item['status'] = "updated stock"
 
@@ -4496,6 +4498,7 @@ def update_sale():
             # Convert 'quantity' and 'unitPrice' to integers
             item['quantity'] = int(item['quantity'])
             item['unitPrice'] = int(item['unitPrice'])
+            item['saleDate'] = datetime.strptime(item['saleDate'], '%Y-%m-%d')
             item['company_name'] = company['company_name']
 
             # Check if the item already exists in the database
@@ -4535,6 +4538,95 @@ def update_sale():
             message += '. The following items are out of stock: ' + ', '.join(out_of_stock_items)
         if over_quantified:
             message += '. Enter smaller quantities for the following items: ' + ', '.join(over_quantified)
+        
+        return jsonify({'message': message})
+    
+@app.route('/in-house-use', methods=['POST'])
+def inhouse():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        all_items = request.json['items']  # Access the JSON data sent from the client
+
+        # Initialize empty arrays for itemNames and itemQuantities
+        itemNames = []
+        itemQuantities = []
+        itemStockDates = []
+        
+        # Extract productName, productQuantity, productPrice, useDate from the first itemObject
+        # Assuming these fields are the same for all itemObjects in all_items
+        productName = all_items[0]['productName']
+        productQuantity = int(all_items[0]['productQuantity'])
+        productPrice = int(all_items[0]['productPrice'])
+        useDate = all_items[0]['useDate']
+        useDate = datetime.strptime(useDate, '%Y-%m-%d')
+        company_name = company['company_name']
+
+        out_of_stock_items = []
+        over_quantified = []
+        in_stockID = []
+        in_stockQty = []
+        # Process each item to convert fields and calculate total price
+        for item in all_items:
+            itemNames.append(item['itemName'])
+            item['itemQuantity'] = int(item['itemQuantity'])
+            itemQuantities.append(item['itemQuantity'])
+
+            # Check if the item already exists in the database
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': company_name
+            })
+
+            if 'available_quantity' in existing_item:
+                if existing_item['available_quantity'] <= 0:
+                    out_of_stock_items.append(item['itemName'])
+                    message = 'NOT UPDATED'
+                    continue
+                else:
+                    if item['itemQuantity'] > existing_item['available_quantity']:
+                        over_quantified.append(item['itemName'])
+                        message = 'NOT UPDATED'
+                        continue
+                    else:
+                        available_quantity = existing_item['available_quantity'] - item['itemQuantity']
+                        itemStockDates.append(existing_item['stockDate'])
+                        in_stockID.append(existing_item['_id'])
+                        in_stockQty.append(available_quantity)
+                        message = 'Inhouse updated successfully'
+
+            else:
+                if item['itemQuantity'] > existing_item['quantity']:
+                    over_quantified.append(item['itemName'])
+                    message = 'NOT UPDATED'
+                else:
+                    available_quantity = existing_item['quantity'] - item['itemQuantity']
+                    itemStockDates.append(existing_item['stockDate'])
+                    in_stockID.append(existing_item['_id'])
+                    in_stockQty.append(available_quantity)
+                    message = 'Inhouse updated successfully'
+
+        if out_of_stock_items:
+            message += '. The following items are out of stock: ' + ', '.join(out_of_stock_items)
+        if over_quantified:
+            message += '. Enter smaller quantities for the following items: ' + ', '.join(over_quantified)
+        if not out_of_stock_items and not over_quantified:
+            document = {
+                'productName': productName,
+                'productQuantity': productQuantity,
+                'productPrice': productPrice,
+                'useDate': useDate,
+                'itemName': itemNames,  # Array field
+                'itemQuantity': itemQuantities,  # Array field
+                'itemStockDates': itemStockDates, # Array field
+                'company_name': company_name
+            }
+            for id, available_quantity in zip(in_stockID, in_stockQty):
+                db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
+            db.inhouse.insert_one(document)
         
         return jsonify({'message': message})
     
@@ -4598,9 +4690,15 @@ def revenue_details():
             ]
 
             revenue_info = list(db.stock_sales.aggregate(pipeline))
+
+            available_itemNames = []
+            available_items = list(db.inventories.find({'company_name': company['company_name']}))
+            if len(available_items) != 0:
+                for item in available_items:
+                    available_itemNames.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
+            return render_template('revenue info.html', revenue_info = revenue_info, available_itemNames=available_itemNames, dp=dp_str)
 
 @app.route('/sales-details')
 def sales_details():
@@ -4619,9 +4717,15 @@ def sales_details():
         if 'Enterprise Resource Planning' in account_type:
             company_name = company['company_name']
             sales_info = list(db.stock_sales.find({'company_name': company_name}))
+
+            available_itemNames = []
+            available_items = list(db.inventories.find({'company_name': company['company_name']}))
+            if len(available_items) != 0:
+                for item in available_items:
+                    available_itemNames.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('sales info.html', sales_info = sales_info, dp=dp_str)
+            return render_template('sales info.html', sales_info = sales_info, available_itemNames=available_itemNames, dp=dp_str)
 
 @app.route('/stock-details')
 def stock_details():
@@ -4640,9 +4744,15 @@ def stock_details():
         if 'Enterprise Resource Planning' in account_type:
             company_name = company['company_name']
             stock_info = list(db.inventories.find({'company_name': company_name}))
+
+            available_itemNames = []
+            available_items = list(db.inventories.find({'company_name': company['company_name']}))
+            if len(available_items) != 0:
+                for item in available_items:
+                    available_itemNames.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
+            return render_template('stock info.html', stock_info = stock_info, available_itemNames=available_itemNames, dp=dp_str)
 
 @app.route('/stock-overview')
 def stock_overview():
@@ -4653,6 +4763,206 @@ def stock_overview():
     else:
         company = db.registered_managers.find_one({'username': login_data})
 
+        company_name = company['company_name']
+
+        today = datetime.today()
+        first_day_of_current_month = today.replace(day=1)
+        first_day_of_current_month = first_day_of_current_month.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_previous_month = first_day_of_current_month - timedelta(days=1)
+        start_of_previous_month = start_of_previous_month.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_previous_month = start_of_previous_month.replace(day=1)
+
+        pipeline = [
+            {
+                '$match': {
+                    'company_name': company_name,
+                    'stockDate': {
+                        '$gte': start_of_previous_month,
+                        '$lt': first_day_of_current_month
+                    }
+                }
+            },
+            {
+                '$group': {
+                    '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
+                    'totalRevenue': {'$sum': '$revenue'},
+                    'quantitysold': {'$sum': '$quantity'}
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'inventories',
+                    'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                    'pipeline': [
+                        {
+                            '$match': {
+                                '$expr': {
+                                    '$and': [
+                                        {'$eq': ['$itemName', '$$itemName']},
+                                        {'$eq': ['$company_name', company_name]},
+                                        { '$gte': ['$stockDate', start_of_previous_month] },
+                                        { '$lt': ['$stockDate', first_day_of_current_month] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            '$project': {
+                                '_id': 0,
+                                'quantity': 1,
+                                'unitPrice': 1,
+                                'stockDate': 1,
+                                'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                            }
+                        }
+                    ],
+                    'as': 'inventoryDetails'
+                }
+            }
+        ]
+
+        revenue_info = list(db.stock_sales.aggregate(pipeline))
+        item_names = []
+        quantities_sold = []
+        quantities_stocked = []
+        total_revenues = []
+        total_prices = []
+        profits = []
+
+        for record in revenue_info:
+            item_names.append(record['_id']['itemName'])
+            quantities_sold.append(record['quantitysold'])
+            quantities_stocked.append(record['inventoryDetails'][0]['quantity'])
+            total_revenues.append(record['totalRevenue'])
+            total_prices.append(record['inventoryDetails'][0]['totalPrice'])
+            profits.append(record['totalRevenue'] - record['inventoryDetails'][0]['totalPrice'])
+
+        # Create the DataFrame
+        df = pd.DataFrame({
+            'Item Name': item_names,
+            'Quantity Sold': quantities_sold,
+            'Quantity Stocked': quantities_stocked,
+            'Total Revenue': total_revenues,
+            'Total Price': total_prices,
+            'Profit': profits
+        })
+
+
+        #####PLOTS
+        #profits and losses
+        # Filter positive profits
+        positive_profits_df = df[df['Profit'] > 0]
+        fig_profits = px.bar(positive_profits_df, x='Item Name', y='Profit', title='Profits on Each Item')
+        fig_profits.update_traces(texttemplate='%{y}', textposition='inside')
+        profits_chart = json.dumps(fig_profits, cls=plotly.utils.PlotlyJSONEncoder)
+
+        # Filter negative profits
+        negative_profits_df = df[df['Profit'] < 0]
+        negative_profits_df['Profit'] = -1*negative_profits_df['Profit']
+
+        # Create the bar chart for losses
+        fig_negative_profits = px.bar(negative_profits_df, x='Item Name', y='Profit', title='Losses on Each Item')
+        fig_negative_profits.update_traces(texttemplate='%{y}', textposition='inside')
+        Losses_chart = json.dumps(fig_negative_profits, cls=plotly.utils.PlotlyJSONEncoder)
+
+        ##total revenue
+        fig_total_revenue = px.bar(df, x='Item Name', y='Total Revenue', title='Revenue on Each Item')
+        fig_total_revenue.update_traces(texttemplate='%{y}', textposition='inside')
+        revenue = json.dumps(fig_total_revenue, cls=plotly.utils.PlotlyJSONEncoder)
+
+        ##Quantity sold
+        fig_quantity_sold = px.bar(df, x='Item Name', y=['Quantity Sold', 'Quantity Stocked'],
+                           title='Qty Sold vs. Qty Stocked',
+                           labels={'value': 'Quantity'})
+        fig_quantity_sold.update_traces(texttemplate='%{y}', textposition='inside')
+        fig_quantity_sold.update_layout(legend=dict(orientation="h", yanchor="top", y=1.1))
+        quantity_sold_stocked = json.dumps(fig_quantity_sold, cls=plotly.utils.PlotlyJSONEncoder)
+
+        ###PROFIT TRENDS
+        twelve_months_ago = datetime.now() - timedelta(days=365)
+        pipeline_profits = [
+            {
+                '$match': {
+                    'company_name': company_name,
+                    'stockDate': {'$gte': twelve_months_ago}
+                }
+            },
+            {
+                '$group': {
+                    '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
+                    'totalRevenue': {'$sum': '$revenue'},
+                    'quantitysold': {'$sum': '$quantity'}
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'inventories',
+                    'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                    'pipeline': [
+                        {
+                            '$match': {
+                                '$expr': {
+                                    '$and': [
+                                        {'$eq': ['$itemName', '$$itemName']},
+                                        {'$eq': ['$company_name', company_name]},
+                                        {'$gte': ['$stockDate', twelve_months_ago]}
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            '$project': {
+                                '_id': 0,
+                                'quantity': 1,
+                                'unitPrice': 1,
+                                'stockDate': 1,
+                                'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                            }
+                        }
+                    ],
+                    'as': 'inventoryDetails'
+                }
+            }
+        ]
+        profit_info = list(db.stock_sales.aggregate(pipeline_profits))
+
+        profit_item_names = []
+        profit_data = []
+        profit_stock_dates = []
+
+
+        for profit_record in profit_info:
+            profit_item_names.append(profit_record['_id']['itemName'])
+            profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
+            profit_stock_dates.append(profit_record['_id']['stockDate'])
+
+        # Create the DataFrame
+        profit_info_df = pd.DataFrame({
+            'Item Name': profit_item_names,
+            'Profit': profit_data,
+            'Stock Date': profit_stock_dates
+        })
+
+        # Convert 'Stock Date' to datetime
+        profit_info_df['Stock Date'] = pd.to_datetime(profit_info_df['Stock Date'])
+
+        # Group by month and calculate the sum of profits
+        monthly_profits = profit_info_df.groupby(profit_info_df['Stock Date'].dt.to_period('M'))['Profit'].sum()
+
+        # Create a DataFrame with month names
+        monthly_profits_df = pd.DataFrame({
+            'Month': monthly_profits.index.to_timestamp().strftime('%B'),
+            'Monthly Profit': monthly_profits
+        })
+
+        # Create the line chart
+        trended_profit_fig = px.line(monthly_profits_df, x='Month', y='Monthly Profit',
+              title='Sum of Profits by Month')
+
+        # Customize the appearance if needed (e.g., colors, layout)
+        trended_profit_fig.update_traces(mode='lines+markers')
+        trended_profit = json.dumps(trended_profit_fig, cls=plotly.utils.PlotlyJSONEncoder)
+
         available_itemNames = []
         available_items = list(db.inventories.find({'company_name': company['company_name']}))
         if len(available_items) != 0:
@@ -4660,7 +4970,8 @@ def stock_overview():
                 available_itemNames.append(item['itemName'])
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-        return render_template('stock dashboard.html',available_itemNames=available_itemNames, dp=dp_str)
+        return render_template('stock dashboard.html',available_itemNames=available_itemNames,profits_chart=profits_chart,
+                               Losses_chart=Losses_chart,revenue=revenue, quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit, dp=dp_str)
     
 @app.route('/all-accounts-overview')
 def all_accounts_overview():

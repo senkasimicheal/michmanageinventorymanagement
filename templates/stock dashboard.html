@@ -499,6 +499,111 @@
       });
     </script>
 
+    <!-- INHOUSE UPDATES -->
+    <div class="inhouse-updates-form">
+      <form action="{{url_for('inhouse')}}" method="POST">
+        <label class="input_labels" for="">Product Name</label>
+        <input class="property_inputs" type="text" name="product_name">
+        <label class="input_labels" for="">Product Quantity</label>
+        <input class="property_inputs" type="number" name="product_quantity" min="1">
+        <label class="input_labels" for="">Product Price</label>
+        <input class="property_inputs" type="number" name="product_price" min="500">
+        <label class="input_labels" for="">Item Used</label>
+        <select name="inhouse_item" id="">
+          <option value="" disabled selected>Select item</option>
+            {% for item in available_itemNames %}
+              <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+        <label class="input_labels" for="">Quantity Used</label>
+        <input class="property_inputs" type="number" name="inhouse_quantity" min="1">
+        <label class="input_labels" for="">Date</label>
+        <input class="property_inputs" type="date" name="inhouse_date" id="inhouse_date" placeholder="enter start date"><br>
+        <button type="button" id="inhouse-button">Add Item</button>
+        <input type="submit" class="btn" value="Submit">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let itemsArray = [];
+
+        document.getElementById('inhouse-button').addEventListener('click', () => {
+          // Get the form values
+          const productName = document.querySelector('input[name="product_name"]').value;
+          const productQuantity = document.querySelector('input[name="product_quantity"]').value;
+          const productPrice = document.querySelector('input[name="product_price"]').value;
+          const itemName = document.querySelector('select[name="inhouse_item"]').value;
+          const itemQuantity = document.querySelector('input[name="inhouse_quantity"]').value;
+          const useDate = document.querySelector('input[name="inhouse_date"]').value;
+
+          // Check if any of the fields are empty
+          if (!productName || !productQuantity || !productPrice || !itemName || !itemQuantity || !useDate) {
+            alert("Please fill in all fields before updating a sale.");
+            return; // Stop here if any field is empty
+          }
+
+          // Create an object with the form data
+          const itemObject = {
+            productName,
+            productQuantity,
+            productPrice,
+            itemName,
+            itemQuantity,
+            useDate
+          };
+
+          // Add the object to the array
+          itemsArray.push(itemObject);       
+
+          // Clear the input fields
+          document.querySelector('select[name="inhouse_item"]').selectedIndex = 0;
+          document.querySelector('input[name="inhouse_quantity"]').value = '';
+        });
+
+        // Handle the form submission
+        document.querySelector('.inhouse-updates-form form').addEventListener('submit', (e) => {
+          e.preventDefault(); // Prevent the default form submission
+
+          if (itemsArray.length === 0) {
+            alert("Please update at least one item.");
+            return; // Stop here if no items have been added
+          }
+
+          document.querySelector('input[name="product_name"]').value = '';
+          document.querySelector('input[name="product_quantity"]').value = '';
+          document.querySelector('input[name="product_price"]').value = '';
+          document.querySelector('input[name="inhouse_date"]').value = '';
+
+          // Send the itemsArray to your Flask app using fetch or another method
+          fetch('{{url_for('inhouse')}}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: itemsArray })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log(data); // Handle the response from your Flask app
+            // Clear the array after successful submission
+            itemsArray = [];
+            
+            // Optionally, clear all input fields here as well
+            // ...
+            
+            alert(data.message);
+            
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            alert("An error occurred while submitting updates.");
+          });
+        });
+      });
+    </script>
+
     <div class="container-fluid page-body-wrapper">
       <!-- partial:partials/_settings-panel.html -->
       <div class="theme-setting-wrapper">
@@ -547,6 +652,12 @@
             <a class="nav-link" href="#" id="update-sale">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Update Sales</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="inhouse">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">In-house</span>
             </a>
           </li>
           <li class="nav-item">
@@ -617,16 +728,21 @@
           <p class="display-date">Display date: {{ month_name }}</p>           -->
           <div class="chart-container">
             <div class="row">
-              <p>Coming Soon</p>
-              <!-- <div class="col-md-6 segment">
-                <div id="revenue_chart"></div>
-              </div> -->
-              <!-- <div class="col-md-6 segment">
-                  <div id="property_performance_bar_chart"></div>
+              <div class="col-md-6 segment">
+                <div id="profits_chart"></div>
               </div>
               <div class="col-md-6 segment">
-                <div id="property_type_bar_chart"></div>
-              </div> -->
+                  <div id="Losses_chart"></div>
+              </div>
+              <div class="col-md-6 segment">
+                <div id="revenue"></div>
+              </div>
+              <div class="col-md-6 segment">
+                <div id="quantity_sold_stocked"></div>
+              </div>
+              <div class="col-md-6 segment">
+                <div id="trended_profit"></div>
+              </div>
             </div>
           </div>
         <!-- content-wrapper ends -->
@@ -677,17 +793,25 @@
     };
 
     // Merge the new layout with the existing layout
-    var revenue_chart = {{ revenue_chart | safe }};
-    revenue_chart.layout = {...revenue_chart.layout, ...updateLayout};
-    Plotly.newPlot('revenue_chart', revenue_chart.data, revenue_chart.layout, config);
+    var profits_chart = {{ profits_chart | safe }};
+    profits_chart.layout = {...profits_chart.layout, ...updateLayout};
+    Plotly.newPlot('profits_chart', profits_chart.data, profits_chart.layout, config);
 
-    // var property_performance_bar_chart = {{ property_performance_bar_chart | safe }};
-    // property_performance_bar_chart.layout = {...property_performance_bar_chart.layout, ...updateLayout};
-    // Plotly.newPlot('property_performance_bar_chart', property_performance_bar_chart.data, property_performance_bar_chart.layout, config);
+    var Losses_chart = {{ Losses_chart | safe }};
+    Losses_chart.layout = {...Losses_chart.layout, ...updateLayout};
+    Plotly.newPlot('Losses_chart', Losses_chart.data, Losses_chart.layout, config);
 
-    // var line_chartData = {{ line_chart | safe }};
-    // line_chartData.layout = {...line_chartData.layout, ...updateLayout};
-    // Plotly.newPlot('linechart', line_chartData.data, line_chartData.layout, config);
+    var revenue = {{ revenue | safe }};
+    revenue.layout = {...revenue.layout, ...updateLayout};
+    Plotly.newPlot('revenue', revenue.data, revenue.layout, config);
+
+    var quantity_sold_stocked = {{ quantity_sold_stocked | safe }};
+    quantity_sold_stocked.layout = {...quantity_sold_stocked.layout, ...updateLayout};
+    Plotly.newPlot('quantity_sold_stocked', quantity_sold_stocked.data, quantity_sold_stocked.layout, config);
+
+    var trended_profit = {{ trended_profit | safe }};
+    trended_profit.layout = {...trended_profit.layout, ...updateLayout};
+    Plotly.newPlot('trended_profit', trended_profit.data, trended_profit.layout, config);
   </script>
 
   <script>
@@ -722,6 +846,11 @@
       }
 
       var enddateFields = document.getElementsByName("stockdatee");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+
+      var enddateFields = document.getElementsByName("inhouse_date");
       for(var i = 0; i < enddateFields.length; i++){
         enddateFields[i].setAttribute("max", today);
       }
