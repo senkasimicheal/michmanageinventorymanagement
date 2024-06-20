@@ -105,7 +105,7 @@
                   </p>
                 </div>
               </a>
-              {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
+              {% if session['is_manager'] == 'is_manager' %}
               <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
@@ -117,10 +117,10 @@
               </a>
               <a class="dropdown-item preview-item" href="{{url_for('add_new_manager_email')}}">
                 <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Add a manager
+                  <h6 class="preview-subject ellipsis font-weight-normal">Add User
                   </h6>
                   <p class="font-weight-light small-text text-muted mb-0">
-                    Add a new manager
+                    Add User
                   </p>
                 </div>
               </a>
@@ -133,6 +133,7 @@
                   </p>
                 </div>
               </a>
+              {% if session['account_type'] == 'all_accounts' or session['account_type'] == 'Property Management' %}
               <a class="dropdown-item preview-item" href="{{url_for('assign_properties')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Assign properties
@@ -151,6 +152,7 @@
                   </p>
                 </div>
               </a>
+              {% endif %}
               <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
@@ -240,6 +242,7 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
+          {% if session['account_type'] == 'Property Management' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
@@ -286,7 +289,7 @@
             </a>
           </li>
           {% endif %}
-          {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
+          {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('view_file_passwords') }}">
               <i class="typcn typcn-key menu-icon"></i>
@@ -295,6 +298,48 @@
             </a>
           </li>
           {% endif %}
+          {% endif %}
+          {% if session['account_type'] == 'all_accounts' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
+              <i class="typcn typcn-device-desktop menu-icon"></i>
+              <span class="menu-title">Property Management</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_overview') }}">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Resource Planning</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session['account_type'] == 'Enterprise Resource Planning' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_overview') }}">
+              <i class="typcn typcn-device-desktop menu-icon"></i>
+              <span class="menu-title">ERP Overview</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_details') }}">
+              <i class="typcn typcn-cloud-storage menu-icon"></i>
+              <span class="menu-title">Stock Info</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('revenue_details') }}">
+              <i class="typcn typcn-business-card menu-icon"></i>
+              <span class="menu-title">Revenues</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('sales_details') }}">
+              <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+              <span class="menu-title">Sales</span>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
       </nav>
       <!-- partial -->
       <div class="main-panel">
@@ -304,6 +349,7 @@
             <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
             {% endfor %} {% endif %} {% endwith %}
           </div>
+          {% if session['account_type'] == 'Property Management' %}
           <form id="myForm" class="property_forn" action="{{url_for('user_rights_initiated')}}" method="POST">
             <input type="hidden" name="email" value="{{email}}">
             <input type="hidden" name="company_name" value="{{company_name}}">
@@ -324,6 +370,78 @@
             <input type="hidden" id="hiddenInput5" name="manage_contracts" value="no">
             <input required type="submit" class="btn" value="Save">
           </form>
+          {% endif %}
+          {% if session['account_type'] == 'Enterprise Resource Planning' %}
+          <form id="myForm" class="property_forn" action="{{url_for('user_rights_initiated')}}" method="POST">
+            <input type="hidden" name="email" value="{{email}}">
+            <input type="hidden" name="company_name" value="{{company_name}}">
+            <label style="margin-top: 5px;" class="input_labels" for="">Add New Stock</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch6" onclick="updateHiddenInput6()"><br>
+            <input type="hidden" id="hiddenInput6" name="add_stock" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Update Stock</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch7" onclick="updateHiddenInput7()"><br>
+            <input type="hidden" id="hiddenInput7" name="update_stock" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Update Sales</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch8" onclick="updateHiddenInput8()"><br>
+            <input type="hidden" id="hiddenInput8" name="update_sales" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Inhouse Updates</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch9" onclick="updateHiddenInput9()"><br>
+            <input type="hidden" id="hiddenInput9" name="inhouse" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">View Stock Info</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch10" onclick="updateHiddenInput10()"><br>
+            <input type="hidden" id="hiddenInput10" name="view_stock_info" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">View Revenue</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch11" onclick="updateHiddenInput11()"><br>
+            <input type="hidden" id="hiddenInput11" name="view_revenue" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">View Sales</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch12" onclick="updateHiddenInput12()"><br>
+            <input type="hidden" id="hiddenInput12" name="view_sales" value="no">
+            <input required type="submit" class="btn" value="Save">
+          </form>
+          {% endif %}
+          {% if session['account_type'] == 'all_accounts' %}
+          <form id="myForm" class="property_forn" action="{{url_for('user_rights_initiated')}}" method="POST">
+            <input type="hidden" name="email" value="{{email}}">
+            <input type="hidden" name="company_name" value="{{company_name}}">
+            <label style="margin-top: 5px;" class="input_labels" for="">Add properties</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch13" onclick="updateHiddenInput1()"><br>
+            <input type="hidden" id="hiddenInput13" name="add_properties" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Add tenants</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch14" onclick="updateHiddenInput2()"><br>
+            <input type="hidden" id="hiddenInput14" name="add_tenants" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Update tenant data</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch15" onclick="updateHiddenInput3()"><br>
+            <input type="hidden" id="hiddenInput15" name="update_tenant" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Edit tenant data</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch16" onclick="updateHiddenInput4()"><br>
+            <input type="hidden" id="hiddenInput16" name="edit_tenant" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Manage contracts</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch17" onclick="updateHiddenInput5()"><br>
+            <input type="hidden" id="hiddenInput17" name="manage_contracts" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Add New Stock</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch18" onclick="updateHiddenInput6()"><br>
+            <input type="hidden" id="hiddenInput18" name="add_stock" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Update Stock</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch19" onclick="updateHiddenInput7()"><br>
+            <input type="hidden" id="hiddenInput19" name="update_stock" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Update Sales</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch20" onclick="updateHiddenInput8()"><br>
+            <input type="hidden" id="hiddenInput20" name="update_sales" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">Inhouse Updates</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch21" onclick="updateHiddenInput9()"><br>
+            <input type="hidden" id="hiddenInput21" name="inhouse" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">View Stock Info</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch22" onclick="updateHiddenInput10()"><br>
+            <input type="hidden" id="hiddenInput22" name="view_stock_info" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">View Revenue</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch23" onclick="updateHiddenInput11()"><br>
+            <input type="hidden" id="hiddenInput23" name="view_revenue" value="no">
+            <label style="margin-top: 5px;" class="input_labels" for="">View Sales</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch24" onclick="updateHiddenInput12()"><br>
+            <input type="hidden" id="hiddenInput24" name="view_sales" value="no">
+            <input required type="submit" class="btn" value="Save">
+          </form>
+          {% endif %}
         </div>
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
@@ -377,7 +495,7 @@
   </script>
 
   <script>
-    var data = [
+    var data1 = [
       {
         checkbox: document.getElementById("mySwitch1"),
         hiddenInput: document.getElementById("hiddenInput1"),
@@ -405,7 +523,148 @@
       }
     ];
 
-    data.forEach(function(item) {
+    data1.forEach(function(item) {
+      if (item.value === "yes") {
+        item.checkbox.checked = true;
+        item.hiddenInput.value = "yes";
+      } else {
+        item.checkbox.checked = false;
+        item.hiddenInput.value = "no";
+      }
+
+      item.checkbox.addEventListener('change', function() {
+        if (item.checkbox.checked) {
+          item.hiddenInput.value = "yes";
+        } else {
+          item.hiddenInput.value = "no";
+        }
+      });
+    });
+  </script>
+
+  <script>
+    var data2 = [
+      {
+        checkbox: document.getElementById("mySwitch6"),
+        hiddenInput: document.getElementById("hiddenInput6"),
+        value: "{{ add_stock }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch7"),
+        hiddenInput: document.getElementById("hiddenInput7"),
+        value: "{{ update_stock }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch8"),
+        hiddenInput: document.getElementById("hiddenInput8"),
+        value: "{{ update_sales }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch9"),
+        hiddenInput: document.getElementById("hiddenInput9"),
+        value: "{{ inhouse }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch10"),
+        hiddenInput: document.getElementById("hiddenInput10"),
+        value: "{{ view_stock_info }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch11"),
+        hiddenInput: document.getElementById("hiddenInput11"),
+        value: "{{ view_revenue }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch12"),
+        hiddenInput: document.getElementById("hiddenInput12"),
+        value: "{{ view_sales }}"
+      }
+    ];
+
+    data2.forEach(function(item) {
+      if (item.value === "yes") {
+        item.checkbox.checked = true;
+        item.hiddenInput.value = "yes";
+      } else {
+        item.checkbox.checked = false;
+        item.hiddenInput.value = "no";
+      }
+
+      item.checkbox.addEventListener('change', function() {
+        if (item.checkbox.checked) {
+          item.hiddenInput.value = "yes";
+        } else {
+          item.hiddenInput.value = "no";
+        }
+      });
+    });
+  </script>
+
+  <script>
+    var data3 = [
+      {
+        checkbox: document.getElementById("mySwitch13"),
+        hiddenInput: document.getElementById("hiddenInput13"),
+        value: "{{ add_properties }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch14"),
+        hiddenInput: document.getElementById("hiddenInput14"),
+        value: "{{ add_tenants }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch15"),
+        hiddenInput: document.getElementById("hiddenInput15"),
+        value: "{{ update_tenant }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch16"),
+        hiddenInput: document.getElementById("hiddenInput16"),
+        value: "{{ edit_tenant }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch17"),
+        hiddenInput: document.getElementById("hiddenInput17"),
+        value: "{{ manage_contracts }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch18"),
+        hiddenInput: document.getElementById("hiddenInput18"),
+        value: "{{ add_stock }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch19"),
+        hiddenInput: document.getElementById("hiddenInput19"),
+        value: "{{ update_stock }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch20"),
+        hiddenInput: document.getElementById("hiddenInput20"),
+        value: "{{ update_sales }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch21"),
+        hiddenInput: document.getElementById("hiddenInput21"),
+        value: "{{ inhouse }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch22"),
+        hiddenInput: document.getElementById("hiddenInput22"),
+        value: "{{ view_stock_info }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch23"),
+        hiddenInput: document.getElementById("hiddenInput23"),
+        value: "{{ view_revenue }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch24"),
+        hiddenInput: document.getElementById("hiddenInput24"),
+        value: "{{ view_sales }}"
+      }
+    ];
+
+    data3.forEach(function(item) {
       if (item.value === "yes") {
         item.checkbox.checked = true;
         item.hiddenInput.value = "yes";

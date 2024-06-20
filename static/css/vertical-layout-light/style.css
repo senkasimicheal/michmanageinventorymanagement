@@ -26228,3 +26228,19 @@ table td {
     right: 10px;
     cursor: pointer;
 }
+
+.house {
+  width: 100px;
+  height: 100px;
+  background-color: #f0a500; /* House color */
+  animation: rotateHouse 5s infinite linear;
+}
+
+@keyframes rotateHouse {
+  0% {
+      transform: rotate(0deg);
+  }
+  100% {
+      transform: rotate(360deg);
+  }
+}

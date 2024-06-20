@@ -548,7 +548,14 @@ def register_account():
             'add_tenants': 'no',
             'update_tenant': 'no',
             'edit_tenant': 'no',
-            'manage_contracts': 'no'
+            'manage_contracts': 'no',
+            'add_stock': 'no',
+            'update_stock': 'no',
+            'update_sales': 'no',
+            'inhouse': 'no',
+            'view_stock_info': 'no',
+            'view_revenue': 'no',
+            'view_sales': 'no'
         }
 
     # Delete existing verification code if exists
@@ -841,7 +848,7 @@ def userlogin():
             session['login_username'] = login_username
             session['phone_number'] = phone_number
 
-            fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts']
+            fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock','update_sales','inhouse','view_stock_info','view_revenue','view_sales']
             for field in fields:
                 value = manager.get(field)
                 if value is not None:
@@ -907,6 +914,10 @@ def authentication():
         session['user_message2'] = remaining_days
         session['login_username'] = manager['username']
         session['phone_number'] = manager['phone_number']
+
+        is_manager = db.managers.find_one({'manager_email': manager['email']})
+        if is_manager:
+            session['is_manager'] = 'is_manager'
 
         account_type = subscription['account_type']
         # Remove any empty strings from the list
@@ -4044,10 +4055,21 @@ def manage_user_rights_page(email,company_name):
         add_tenants = manager.get('add_tenants', "no")
         update_tenant = manager.get('update_tenant', "no")
         edit_tenant = manager.get('edit_tenant', "no")
+
+        manage_contracts = manager.get('manage_contracts', "no")
+        add_stock = manager.get('add_stock', "no")
+        update_stock = manager.get('update_stock', "no")
+        update_sales = manager.get('update_sales', "no")
+        inhouse = manager.get('inhouse', "no")
+        view_stock_info = manager.get('view_stock_info', "no")
+        view_revenue = manager.get('view_revenue', "no")
         
         return render_template('user rights page.html', email=email,company_name=company_name,
                                add_properties=add_properties,add_tenants=add_tenants,
-                               update_tenant=update_tenant,edit_tenant=edit_tenant,dp=dp_str)
+                               update_tenant=update_tenant,edit_tenant=edit_tenant,
+                               manage_contracts=manage_contracts,add_stock=add_stock,
+                               update_stock=update_stock,update_sales=update_sales,inhouse=inhouse,
+                               view_stock_info=view_stock_info,view_revenue=view_revenue,dp=dp_str)
 
 @app.route('/user-rights-initiated', methods=["POST"])
 def user_rights_initiated():
@@ -4063,6 +4085,13 @@ def user_rights_initiated():
         update_tenant = request.form.get("update_tenant")
         edit_tenant = request.form.get("edit_tenant")
         manage_contracts = request.form.get('manage_contracts')
+        add_stock = request.form.get('add_stock')
+        update_stock = request.form.get('update_stock')
+        update_sales = request.form.get('update_sales')
+        inhouse = request.form.get('inhouse')
+        view_stock_info = request.form.get('view_stock_info')
+        view_revenue = request.form.get('view_revenue')
+        view_sales = request.form.get('view_sales')
 
         update_fields = {}
 
@@ -4075,7 +4104,21 @@ def user_rights_initiated():
         if edit_tenant:
             update_fields['edit_tenant'] = edit_tenant
         if manage_contracts:
-            update_fields['manage_contracts'] = manage_contracts
+            update_fields['manage_contracts'] = manage_contracts        
+        if add_stock:
+            update_fields['add_stock'] = add_stock
+        if update_stock:
+            update_fields['update_stock'] = update_stock
+        if update_sales:
+            update_fields['update_sales'] = update_sales
+        if inhouse:
+            update_fields['inhouse'] = inhouse
+        if view_stock_info:
+            update_fields['view_stock_info'] = view_stock_info
+        if view_revenue:
+            update_fields['view_revenue'] = view_revenue
+        if view_sales:
+            update_fields['view_sales'] = view_sales
 
         # Update the document with the non-empty fields
         db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
@@ -4431,6 +4474,7 @@ def add_new_stock():
 
             # Insert the new stock entry into MongoDB
             db.inventories.insert_one(item)
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Added new item to stock', 'Item': 'Items', 'timestamp': datetime.now()})
         
         message = 'New stock added successfully'
         if skipped_items:
@@ -4474,9 +4518,10 @@ def update_new_stock():
             
             # Insert the new stock entry into MongoDB
             db.inventories.insert_one(item)
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Updated item in stock', 'Item': 'Items', 'timestamp': datetime.now()})
             db.inventories.delete_one({'_id': existing_item['_id']})
             existing_item.pop('_id', None)
-            db.old_inveentories.insert_one(existing_item)
+            db.old_inventories.insert_one(existing_item)
         
         message = 'Stock updated successfully'
         
@@ -4530,6 +4575,7 @@ def update_sale():
             
             # Insert the new stock entry into MongoDB
             db.stock_sales.insert_one(item)
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Added a new sale', 'Item': 'Items', 'timestamp': datetime.now()})
             db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
         
         message = 'Sales updated successfully'
@@ -4631,6 +4677,7 @@ def inhouse():
             for id, available_quantity in zip(in_stockID, in_stockQty):
                 db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
             db.inhouse.insert_one(document)
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse use updates', 'Item': 'Items', 'timestamp': datetime.now()})
         
         return jsonify({'message': message})
     
@@ -4650,10 +4697,12 @@ def revenue_details():
 
         if 'Enterprise Resource Planning' in account_type:
             company_name = company['company_name']
+            twelve_months_ago = datetime.now() - timedelta(days=365)
             pipeline = [
                 {
                     '$match': {
-                        'company_name': company_name
+                        'company_name': company_name,
+                        'stockDate': {'$gte': twelve_months_ago}
                     }
                 },
                 {
@@ -4673,7 +4722,8 @@ def revenue_details():
                                     '$expr': {
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
-                                            {'$eq': ['$company_name', company_name]}
+                                            {'$eq': ['$company_name', company_name]},
+                                            {'$gte': ['$stockDate', twelve_months_ago]}
                                         ]
                                     }
                                 }
@@ -4720,7 +4770,10 @@ def sales_details():
 
         if 'Enterprise Resource Planning' in account_type:
             company_name = company['company_name']
-            sales_info = list(db.stock_sales.find({'company_name': company_name}))
+
+            twelve_months_ago = datetime.now() - timedelta(days=365)
+
+            sales_info = list(db.stock_sales.find({'company_name': company_name, 'saleDate': {'$gte': twelve_months_ago}}))
 
             available_itemNames = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
@@ -4747,7 +4800,10 @@ def stock_details():
 
         if 'Enterprise Resource Planning' in account_type:
             company_name = company['company_name']
-            stock_info = list(db.inventories.find({'company_name': company_name}))
+            twelve_months_ago = datetime.now() - timedelta(days=365)
+            current_stock = list(db.inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
+            old_stock = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
+            stock_info = current_stock + old_stock
 
             available_itemNames = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
@@ -4783,7 +4839,6 @@ def stock_overview():
         if startdate_on_str and enddate_on_str:
             start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
             first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-            display_date = f"{{start_of_previous_month.strftime('%y-%m-%d')}} to {{first_day_of_current_month.strftime('%y-%m-%d')}}"
         else:
             today = datetime.today()
             first_day_of_current_month = today.replace(day=1)
@@ -4791,7 +4846,6 @@ def stock_overview():
             start_of_previous_month = first_day_of_current_month - timedelta(days=1)
             start_of_previous_month = start_of_previous_month.replace(hour=0, minute=0, second=0, microsecond=0)
             start_of_previous_month = start_of_previous_month.replace(day=1)
-            display_date = f"{{start_of_previous_month.strftime('%y-%m-%d')}} to {{first_day_of_current_month.strftime('%y-%m-%d')}}"
 
         pipeline = [
             {
@@ -5083,7 +5137,8 @@ def stock_overview():
         return render_template('stock dashboard.html',available_itemNames=available_itemNames,profits_chart=profits_chart,
                                Losses_chart=Losses_chart,revenue=revenue, quantity_sold_stocked=quantity_sold_stocked,
                                trended_profit=trended_profit,inhouse_cost_chart=inhouse_cost_chart,
-                               inhouse_revenue_chart=inhouse_revenue_chart,display_date=display_date, dp=dp_str)
+                               inhouse_revenue_chart=inhouse_revenue_chart,start_of_previous_month=start_of_previous_month,
+                               first_day_of_current_month=first_day_of_current_month, dp=dp_str)
     
 @app.route('/all-accounts-overview')
 def all_accounts_overview():
@@ -5096,6 +5151,292 @@ def all_accounts_overview():
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         return render_template('all count type overview.html', dp=dp_str)
+
+###DOANLOAD STOCK DATA   
+@app.route('/download-stock-data', methods=["POST"])
+def download_stock_data():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        company = db.registered_managers.find_one({'username': login_data})
+
+        current_stock = db.inventories.find({'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},{'_id':0, 'company_name':0, 'available_quantity':0})
+        old_stock = db.old_inventories.find({'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},{'_id':0, 'company_name':0, 'available_quantity':0})
+        combined_stock = list(current_stock) + list(old_stock)
+
+        sorted_combined_stock = sorted(combined_stock, key=lambda x: x["stockDate"], reverse=True)
+        df = pd.DataFrame(sorted_combined_stock)
+        new_column_names = {
+            'itemName': 'Item Name',
+            'quantity': 'Stocked Quantity',
+            'unitOfMeasurement': 'Unit Of Measurement',
+            'unitPrice': 'Unit Buying Price',
+            'stockDate': 'Stock Date',
+            'totalPrice': 'Total Buying Price'
+        }
+
+        df.rename(columns=new_column_names, inplace=True)
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Stock data', index=False)
+        output.seek(0)
+
+        # Create the response
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Stock Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        return response
+    
+###DOANLOAD REVENUE DATA   
+@app.route('/download-revenue-data', methods=["POST"])
+def download_revenue_data():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        company = db.registered_managers.find_one({'username': login_data})
+
+        company_name = company['company_name']
+
+        pipeline = [
+            {
+                '$match': {
+                    'company_name': company_name,
+                    'stockDate': {
+                        '$gte': startdate,
+                        '$lt': enddate
+                    }
+                }
+            },
+            {
+                '$group': {
+                    '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
+                    'totalRevenue': {'$sum': '$revenue'},
+                    'quantitysold': {'$sum': '$quantity'}
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'inventories',
+                    'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                    'pipeline': [
+                        {
+                            '$match': {
+                                '$expr': {
+                                    '$and': [
+                                        {'$eq': ['$itemName', '$$itemName']},
+                                        {'$eq': ['$company_name', company_name]},
+                                        { '$gte': ['$stockDate', startdate] },
+                                        { '$lt': ['$stockDate', enddate] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            '$project': {
+                                '_id': 0,
+                                'quantity': 1,
+                                'unitPrice': 1,
+                                'stockDate': 1,
+                                'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                            }
+                        }
+                    ],
+                    'as': 'inventoryDetails'
+                }
+            }
+        ]
+
+        itemNames = []
+        stockDates = []
+        stockQtys = []
+        unitBuyingPrices = []
+        totalBuyingPrices = []
+        quantitiesSold = []
+        totalRevenues = []
+        profits = []
+        revenue_info = list(db.stock_sales.aggregate(pipeline))
+        if len(revenue_info) != 0:
+            for info in revenue_info:
+                itemNames.append(info['_id']['itemName'])
+                for detail in info['inventoryDetails']:
+                    stockDates.append(detail['stockDate'])
+                    stockQtys.append(detail['quantity'])
+                    unitBuyingPrices.append(detail['unitPrice'])
+                    totalBuyingPrices.append(detail['totalPrice'])
+
+                    profit = info['totalRevenue'] - detail['totalPrice']
+                    profits.append(profit)
+                quantitiesSold.append(info['quantitysold'])
+                totalRevenues.append(info['totalRevenue'])
+            
+        revenue_info = pd.DataFrame({
+            'Item Name': itemNames,
+            'Stock Date': stockDates,
+            'Stock Quantity': stockQtys,
+            'Unit Buying Price': unitBuyingPrices,
+            'Total Buying Price': totalBuyingPrices,
+            'Sold Quantity': quantitiesSold,
+            'Total Revenue': totalRevenues,
+            'Profit/Loss': profits
+        })
+
+        df = pd.DataFrame(revenue_info)
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Revenue data', index=False)
+        output.seek(0)
+
+        # Create the response
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Revenue Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        return response
+    
+###DOANLOAD SALES DATA   
+@app.route('/download-sales-data', methods=["POST"])
+def download_sales_data():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        company = db.registered_managers.find_one({'username': login_data})
+
+        company_name = company['company_name']
+
+        sales_info = list(db.stock_sales.find({'company_name': company_name,'saleDate': {'$gte': startdate, '$lte': enddate}},{'_id':0, 'company_name':0, 'stockDate':0}))
+
+        sorted_sales_info = sorted(sales_info, key=lambda x: x["saleDate"], reverse=True)
+        df = pd.DataFrame(sorted_sales_info)
+        new_column_names = {
+            'itemName': 'Item Name',
+            'quantity': 'Sold Quantity',
+            'unitPrice': 'Unit Selling Price',
+            'revenue': 'Revenue',
+            'saleDate': 'Sale Date',
+        }
+
+        df.rename(columns=new_column_names, inplace=True)
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Revenue data', index=False)
+        output.seek(0)
+
+        # Create the response
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Sales Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        return response
+    
+###DOANLOAD SALES DATA   
+@app.route('/download-inhouse-data', methods=["POST"])
+def download_inhouse():
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        company = db.registered_managers.find_one({'username': login_data})
+
+        company_name = company['company_name']
+
+        inhouse_info = list(db.inhouse.find({'company_name': company_name,'useDate': {'$gte': startdate, '$lte': enddate}},{'company_name':0}))
+
+        inhouse_product_ids = []
+        inhouse_productName = []
+        inhouse_productQuantity = []
+        inhouse_productPrice = []
+        inhouse_useDate = []
+        inhouse_itemName = []
+        inhouse_itemQuantity = []
+        inhouse_itemUnitPrices = []
+        inhouse_itemStockDates = []
+
+        for record in inhouse_info:
+            productID = record['_id']
+            productName = record['productName']
+            productQuantity = record['productQuantity']
+            productPrice = record['productPrice']
+            useDate = record['useDate']
+            item_name = record['itemName']
+            item_quantity = record['itemQuantity']
+            item_unit_price = record['itemUnitPrices']
+            itemStockDates = record['itemStockDates']
+        
+            inhouse_product_ids.append(productID)
+            inhouse_productName.append(productName)
+            inhouse_productQuantity.append(productQuantity)
+            inhouse_productPrice.append(productPrice)
+            inhouse_useDate.append(useDate)
+            inhouse_itemName.append(item_name)
+            inhouse_itemQuantity.append(item_quantity)
+            inhouse_itemUnitPrices.append(item_unit_price)
+            inhouse_itemStockDates.append(itemStockDates)
+
+        # Create the DataFrame
+        inhouse_df = pd.DataFrame({
+            'Product ID':inhouse_product_ids,
+            'Product Name':inhouse_productName,
+            'Product Quantity':inhouse_productQuantity,
+            'Product Unit Price':inhouse_productPrice,
+            'Date Produced':inhouse_useDate,
+            'Item Used': inhouse_itemName,
+            'Item Quantity': inhouse_itemQuantity,
+            'Item Unit Price': inhouse_itemUnitPrices,
+            'Item Stock Date': inhouse_itemStockDates
+        })
+
+        # Assuming you have the DataFrame 'inhouse_df_new'
+        inhouse_df_exploded = inhouse_df.explode('Product ID')
+        inhouse_df_exploded = inhouse_df.explode('Product Name')
+        inhouse_df_exploded = inhouse_df.explode('Product Quantity')
+        inhouse_df_exploded = inhouse_df.explode('Product Unit Price')
+        inhouse_df_exploded = inhouse_df.explode('Date Produced')
+        inhouse_df_exploded = inhouse_df.explode('Item Used')
+        inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
+        inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
+        inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
+        inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
+
+        inhouse_df_exploded['Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Unit Price']
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            inhouse_df_exploded.to_excel(writer, sheet_name='Revenue data', index=False)
+        output.seek(0)
+
+        # Create the response
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        return response
 
 if __name__ == '__main__':
     scheduler.start()

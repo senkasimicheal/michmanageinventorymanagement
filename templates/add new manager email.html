@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Add new manager email</title>
+  <title>Add new user</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -105,7 +105,7 @@
                   </p>
                 </div>
               </a>
-              {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
+              {% if session['is_manager'] == 'is_manager' %}
               <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
@@ -117,10 +117,10 @@
               </a>
               <a class="dropdown-item preview-item" href="{{url_for('add_new_manager_email')}}">
                 <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Add a manager
+                  <h6 class="preview-subject ellipsis font-weight-normal">Add User
                   </h6>
                   <p class="font-weight-light small-text text-muted mb-0">
-                    Add a new manager
+                    Add User
                   </p>
                 </div>
               </a>
@@ -133,6 +133,7 @@
                   </p>
                 </div>
               </a>
+              {% if session['account_type'] == 'all_accounts' or session['account_type'] == 'Property Management' %}
               <a class="dropdown-item preview-item" href="{{url_for('assign_properties')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Assign properties
@@ -151,6 +152,7 @@
                   </p>
                 </div>
               </a>
+              {% endif %}
               <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
@@ -206,7 +208,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Add new manager email</h4>
+            <h4 class="mb-0">Add new user</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -240,6 +242,7 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
+          {% if session['account_type'] == 'Property Management' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
@@ -286,7 +289,7 @@
             </a>
           </li>
           {% endif %}
-          {% if not session.get('add_properties') and not session.get('add_tenants') and not session.get('update_tenant') and not session.get('edit_tenant') and not session.get('manage_contracts')%}
+          {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('view_file_passwords') }}">
               <i class="typcn typcn-key menu-icon"></i>
@@ -295,6 +298,48 @@
             </a>
           </li>
           {% endif %}
+          {% endif %}
+          {% if session['account_type'] == 'all_accounts' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
+              <i class="typcn typcn-device-desktop menu-icon"></i>
+              <span class="menu-title">Property Management</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_overview') }}">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Resource Planning</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session['account_type'] == 'Enterprise Resource Planning' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_overview') }}">
+              <i class="typcn typcn-device-desktop menu-icon"></i>
+              <span class="menu-title">ERP Overview</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_details') }}">
+              <i class="typcn typcn-cloud-storage menu-icon"></i>
+              <span class="menu-title">Stock Info</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('revenue_details') }}">
+              <i class="typcn typcn-business-card menu-icon"></i>
+              <span class="menu-title">Revenues</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('sales_details') }}">
+              <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+              <span class="menu-title">Sales</span>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
       </nav>
       <!-- partial -->
       <div class="main-panel">

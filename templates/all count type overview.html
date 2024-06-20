@@ -20,6 +20,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
   <!-- preloader -->
@@ -191,13 +192,13 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Property Mgt</span>
+              <span class="menu-title">Property Management</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stock_overview') }}">
               <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">ERP</span>
+              <span class="menu-title">Resource Planning</span>
             </a>
           </li>
         </ul>
@@ -219,11 +220,6 @@
             });
           </script>
         {% endif %} -->
-
-        <div class="notification">
-          <span class="close-btn">×</span>
-          This module is still under test and production !!!
-        </div>
       
         <script>
           const notification = document.querySelector('.notification');
@@ -240,26 +236,12 @@
           {% endfor %} {% endif %} {% endwith %}
         </div>
         <div class="content-wrapper">
-          <!-- <form class="dashboard-form-form" action="{{url_for('load_dashboard_page')}}" method="POST">
-            <label class="dashboard-form" for="">From</label>
-            <input class="dashboard-form" type="date" name="startdate" required>
-            <label class="dashboard-form" for="">To</label>
-            <input class="dashboard-form" type="date" name="enddate" required>
-            <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Apply">
-          </form>
-          <p class="display-date">Display date: {{ month_name }}</p>           -->
           <div class="chart-container">
             <div class="row">
-              <p>Welcome To Mich Manage</p>
-              <!-- <div class="col-md-6 segment">
-                <div id="revenue_chart"></div>
-              </div> -->
-              <!-- <div class="col-md-6 segment">
-                  <div id="property_performance_bar_chart"></div>
-              </div>
-              <div class="col-md-6 segment">
-                <div id="property_type_bar_chart"></div>
-              </div> -->
+              <video autoplay loop muted style="width: 100%; height: auto;">
+                <source src="/static/videos/Virtual City Background Video HD.mp4" type="video/mp4">
+                <p>WELCOME TO THE MICH MANAGE</p>
+              </video>
             </div>
           </div>
         <!-- content-wrapper ends -->
