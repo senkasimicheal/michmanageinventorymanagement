@@ -83,42 +83,66 @@
     <!-- end header section -->
   </div>
 
-  <div class="container-fluid-form">
-    <form id="myForm" class="property_forn" action="{{url_for('new_subscription_initiated')}}" method="POST">
-      <div>
-        {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-        <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
-        {% endfor %} {% endif %} {% endwith %}
-      </div>
-      <h6>Add New Subscription</h6>
-      <label class="input_labels" for="">Select Company</label>
-      <select class="property_inputs" name="company_name" id="property" required>
-          <option value="none" disabled selected>Select Company</option>
-          {% for name in company_names %}
-          <option value="{{ name }}">{{ name }}</option>
-          {% endfor %}
-      </select><br>
-      <label class="input_labels" for="">Subscription Date</label>
-      <input class="property_inputs" type="date" name="last_subscribed_on" required><br>
-      <label class="input_labels" for="">Subscription Period</label>
-      <input class="property_inputs" type="number" placeholder="in days" name="subscribed_days" min="1" required><br>
-      <label class="input_labels" for="">Amount Per Month</label>
-      <select class="property_inputs" name="amount_per_month" id="property" required>
-        <option value="none" disabled selected>Select amount</option>
-        <option value="100000">100,000</option>
-        <option value="150000">150,000</option>
-        <option value="200000">200,000</option>
-        <option value="400000">400,000</option>
-      </select><br>
-      <label class="input_labels" for="">Account Type</label>
-      <select class="property_inputs" name="account_type" multiple>
-        <option value="none" disabled>Account Type</option>
-        <option value="Property Management">Property Management</option>
-        <option value="Enterprise Resource Planning">Enterprise Resource Planning</option>
-      </select><br>
-      <input required type="submit" class="btn" value="Submit">
-    </form>
- </div>
+    <div class="container-fluid-form">
+      <form id="myForm" class="property_forn" action="{{url_for('new_subscription_initiated')}}" method="POST">
+          <div>
+              {% with messages = get_flashed_messages() %} 
+              {% if messages %} 
+                  {% for message in messages %}
+                  <div id="alert" class="alert-danger" style="color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
+                  {% endfor %}
+              {% endif %} 
+              {% endwith %}
+          </div>
+          <h6>Add New Subscription</h6>
+          <label class="input_labels" for="">Select Company</label>
+          <select class="property_inputs" name="company_name" id="property" required>
+            <option value="" disabled selected>Select Company</option>
+            {% for name in company_names %}
+            <option value="{{ name }}">{{ name }}</option>
+            {% endfor %}
+          </select><br>
+          <label class="input_labels" for="">Subscription Date</label>
+          <input class="property_inputs" type="date" name="last_subscribed_on" id="subscription_date" required><br>
+          <label class="input_labels" for="">Subscription Period</label>
+          <input class="property_inputs" type="number" placeholder="in days" name="subscribed_days" id="subscribed_days" min="1" required><br>
+          <label class="input_labels" for="">Amount Per Month</label>
+          <select class="property_inputs" name="amount_per_month" id="amount_per_month" required>
+              <option value="" disabled selected>Select amount</option>
+              <option value="100000">100,000</option>
+              <option value="150000">150,000</option>
+              <option value="200000">200,000</option>
+              <option value="400000">400,000</option>
+          </select><br>
+          <label class="input_labels" for="">Account Type</label>
+          <select class="property_inputs" name="account_type" id="account_type" required>
+              <option value="" disabled selected>Select type</option>
+              <option value="Property Management">Property Management</option>
+              <option value="Enterprise Resource Planning">Enterprise Resource Planning</option>
+              <option value="All Types">All Types</option>
+          </select><br>
+          <input type="submit" class="btn" value="Submit">
+      </form>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('myForm');
+        const amountPerMonth = document.getElementById('amount_per_month');
+        const accountType = document.getElementById('account_type');
+        const companyName = document.getElementById('property');
+        const otherFields = Array.from(form.elements).filter(el => el !== amountPerMonth && el !== accountType && el !== companyName);
+
+        function removeRequired() {
+            otherFields.forEach(field => {
+                field.removeAttribute('required');
+            });
+        }
+
+        amountPerMonth.addEventListener('change', removeRequired);
+        accountType.addEventListener('change', removeRequired);
+    });
+  </script>
 
   <script>
     let counter = 0;

@@ -3196,11 +3196,15 @@ def add_property_manager():
             amount_per_month = 200000
         elif amount_per_month_form_data == "400000":
             amount_per_month = 400000
+        
+        account_type = request.form.getlist('account_type')
+        if 'All Types' in account_type:
+            account_type = ['Property Management', 'Enterprise Resource Planning']
         managers = db.managers.find_one({'name': name})
         if managers is None:
             manager = {'email': email, 'name': name, 'managers': allowed_managers,
                     'manager_email': manager_email, 'last_subscribed_on': datetime.now(),
-                    'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month}
+                    'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month, 'account_type': account_type}
             db.managers.insert_one(manager)
             user_data = session.get('user_data')
 
@@ -3255,69 +3259,52 @@ def new_subscription_initiated():
     else:
         company_name = request.form.get('company_name')
         last_subscribed_on_str = request.form.get('last_subscribed_on')
-        # Convert the string to a datetime object
-        last_subscribed_on = datetime.strptime(last_subscribed_on_str, '%Y-%m-%d')
         subscribed_days = request.form.get('subscribed_days')
-        subscribed_days = int(subscribed_days)
         amount_per_month_form_data = request.form.get('amount_per_month')
         account_type = request.form.getlist('account_type')
-        amount_per_month = 0
-        if amount_per_month_form_data == "100000":
-            amount_per_month = 100000
-        elif amount_per_month_form_data == "150000":
-            amount_per_month = 150000
-        elif amount_per_month_form_data == "200000":
-            amount_per_month = 200000
-        elif amount_per_month_form_data == "400000":
-            amount_per_month = 400000
+
         company = db.managers.find_one({'name': company_name})
         remaining_days = (company['last_subscribed_on'] + timedelta(days=company['subscribed_days']) - datetime.now()).days
-        if remaining_days <= 0:
-            subscribed_days = subscribed_days + 0
-            db.managers.update_one(
-                {'name': company_name},
-                {
-                    '$set': {
-                        'last_subscribed_on': last_subscribed_on,
-                        'subscribed_days': subscribed_days,
-                        'amount_per_month': amount_per_month
-                    },
-                    '$addToSet': {
-                        'account_type': {
-                            '$each': account_type
-                        }
-                    }
-                }
-            )
-            flash('New Subscription was added')
-            return render_template("managers accounts.html")
-        else:
+
+        fields_to_update = {}
+        if last_subscribed_on_str:
+            last_subscribed_on = datetime.strptime(last_subscribed_on_str, '%Y-%m-%d')
             if last_subscribed_on <= company['last_subscribed_on']:
-                companies = db.managers.find()
-                cursor = list(companies)
-                df = pd.DataFrame(cursor)
-                company_names = df['name']
-                flash('Enter a newer date')
-                return render_template("new_subscription.html", company_names=company_names)
+                flash('Enter a newer subscription date')
             else:
-                subscribed_days = subscribed_days + remaining_days
-                db.managers.update_one(
-                    {'name': company_name},
-                    {
-                        '$set': {
-                            'last_subscribed_on': last_subscribed_on,
-                            'subscribed_days': subscribed_days,
-                            'amount_per_month': amount_per_month
-                        },
-                        '$addToSet': {
-                            'account_type': {
-                                '$each': account_type
-                            }
-                        }
-                    }
-                )
+                fields_to_update['last_subscribed_on'] = last_subscribed_on
                 flash('New Subscription was added')
-                return render_template("managers accounts.html")
+        if subscribed_days:
+            subscribed_days = int(subscribed_days)
+            if remaining_days <= 0:
+                subscribed_days = subscribed_days + 0
+                fields_to_update['subscribed_days'] = subscribed_days
+            else:
+                if last_subscribed_on <= company['last_subscribed_on']:
+                    flash('Enter a newer subscription date')
+                else:
+                    subscribed_days = subscribed_days + remaining_days
+                    fields_to_update['subscribed_days'] = subscribed_days
+        if amount_per_month_form_data:
+            amount_per_month = 0
+            if amount_per_month_form_data == "100000":
+                amount_per_month = 100000
+            elif amount_per_month_form_data == "150000":
+                amount_per_month = 150000
+            elif amount_per_month_form_data == "200000":
+                amount_per_month = 200000
+            elif amount_per_month_form_data == "400000":
+                amount_per_month = 400000
+            fields_to_update['amount_per_month'] = amount_per_month
+            flash('New Subscription plan was set')
+        if account_type:
+            if 'All Types' in account_type:
+                account_type = ['Property Management', 'Enterprise Resource Planning']
+            fields_to_update['account_type'] = account_type
+            flash('New Subscription plan was set')
+
+        db.managers.update_one({'name': company_name},{'$set': fields_to_update})
+        return render_template("managers accounts.html")
                 
 
 #########FUNCTION TO CREATE A BAR CHART################
