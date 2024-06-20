@@ -8,64 +8,34 @@
 
 
 <url>
-  <loc>https://michmanage.onrender.com/</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
+  <loc>https://michmanager.onrender.com/</loc>
+  <lastmod>2024-06-20T13:05:13+00:00</lastmod>
   <priority>1.00</priority>
 </url>
 <url>
-  <loc>https://michmanage.onrender.com/login</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
+  <loc>https://michmanager.onrender.com/privacy-policy</loc>
+  <lastmod>2024-06-20T13:05:13+00:00</lastmod>
   <priority>0.80</priority>
 </url>
 <url>
-  <loc>https://michmanage.onrender.com/tenant-login-page</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
+  <loc>https://michmanager.onrender.com/terms-of-service</loc>
+  <lastmod>2024-06-20T13:05:13+00:00</lastmod>
   <priority>0.80</priority>
 </url>
 <url>
-  <loc>https://michmanage.onrender.com/register</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
+  <loc>https://michmanager.onrender.com/about</loc>
+  <lastmod>2024-06-20T13:05:13+00:00</lastmod>
   <priority>0.80</priority>
 </url>
 <url>
-  <loc>https://michmanage.onrender.com/tenant-register</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
+  <loc>https://michmanager.onrender.com/contact</loc>
+  <lastmod>2024-06-20T13:05:13+00:00</lastmod>
   <priority>0.80</priority>
 </url>
 <url>
-  <loc>https://michmanage.onrender.com/privacy-policy</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
+  <loc>https://michmanager.onrender.com/verify-username</loc>
+  <lastmod>2024-06-20T13:05:13+00:00</lastmod>
   <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://michmanage.onrender.com/terms-of-service</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://michmanage.onrender.com/about</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://michmanage.onrender.com/contact</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://michmanage.onrender.com/try-to-add-a-property</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
-  <priority>0.80</priority>
-</url>
-<url>
-  <loc>https://michmanage.onrender.com/verify-username</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
-  <priority>0.64</priority>
-</url>
-<url>
-  <loc>https://michmanage.onrender.com/try-verify-before-adding-tenant</loc>
-  <lastmod>2024-04-04T17:51:25+00:00</lastmod>
-  <priority>0.64</priority>
 </url>
 
 
