@@ -748,20 +748,28 @@
             <table class="tenant_table">
                 <tr>
                     <th>No.</th>
-                    <th>Item Name</th>
+                    <th>
+                      Item Name
+                      <br>
+                      <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for item names...">
+                    </th>
+                    <th>
+                      Sale Date
+                      <br>
+                      <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
+                    </th>
                     <th>Quantity Sold</th>
                     <th>Selling Price</th>
                     <th>Revenue</th>
-                    <th>Sale Date</th>
                 </tr>
                 {% for sale in sales_info %}
                 <tr title="{{ sale['itemName'] }}" style="cursor: pointer;">
                     <td>{{ loop.index }}</td>
                     <td>{{ sale['itemName'] }}</td>
+                    <td>{{ sale['saleDate'].strftime('%Y-%m-%d') }}</td>
                     <td>{{ sale['quantity'] }}</td>
                     <td>{{ '{:,.0f}'.format(sale['unitPrice']) }}</td>
                     <td>{{ '{:,.0f}'.format(sale['revenue']) }}</td>
-                    <td>{{ sale['saleDate'].strftime('%Y-%m-%d') }}</td>
                 </tr>
                 {% endfor %}
             </table>
@@ -788,6 +796,31 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    function filterTable(inputId, columnIndex) {
+        // Get the input field and its value
+        var input = document.getElementById(inputId);
+        var filter = input.value.toLowerCase();
+        
+        // Get the table and its rows
+        var table = document.querySelector(".tenant_table tbody");
+        var rows = table.getElementsByTagName("tr");
+
+        // Loop through the rows and hide those that don't match the filter
+        for (var i = 0; i < rows.length; i++) {
+            var cell = rows[i].getElementsByTagName("td")[columnIndex];
+            if (cell) {
+                var cellText = cell.textContent || cell.innerText;
+                if (cellText.toLowerCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+    }
+  </script>
 
   <script>
     function confirmDelete() {

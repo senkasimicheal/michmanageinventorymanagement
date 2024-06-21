@@ -1591,3 +1591,26 @@ form h4, label {
 table td {
   white-space: nowrap;
 }
+
+.upload_icon {
+  display: inline-block;
+  cursor: pointer;
+  color: #007bff;
+  font-size: 24px;
+  padding: 5px;
+}
+
+.upload_icon:hover {
+  color: #0056b3;
+}
+
+.error {
+  color: red;
+  display: none;
+}
+
+.complaint-image{
+  width: 100%;
+  max-width: 15rem;
+  height: 15rem;
+}

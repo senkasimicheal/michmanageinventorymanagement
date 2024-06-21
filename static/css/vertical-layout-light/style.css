@@ -26244,3 +26244,13 @@ table td {
       transform: rotate(360deg);
   }
 }
+
+.tenant_table tr th input{
+  width: 6.8rem;
+}
+
+.complaint-image{
+  width: 100%;
+  max-width: 15rem;
+  height: 15rem;
+}

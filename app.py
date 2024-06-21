@@ -33,6 +33,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import tempfile
 import string
 import qrcode
+from PIL import Image
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
@@ -1153,12 +1154,27 @@ def add_complaint():
         client_time = datetime.fromisoformat(client_time)
         time_zone_offset = int(request.form.get('time_zone_offset'))
         adjusted_time = client_time + timedelta(hours=time_zone_offset)
+
         tenant_user = db.tenant_user_accounts.find_one({'_id': ObjectId(tenant_login_data)})
         tenant = db.tenants.find_one({'tenantEmail': tenant_user['tenantEmail'], 'propertyName': tenant_user['propertyName']})
         manager = db.registered_managers.find_one({'username': tenant['username'], 'company_name': tenant['company_name']})
         manager_email = manager['email']
         compiled_complaint = {'tenantID': ObjectId(tenant_login_data), 'tenant_name': tenant['tenantName'], 'complaint_heading': complaint_heading,
                               'details': details, 'complained_on': adjusted_time}
+        
+        if 'complaint_image' in request.files:
+            file = request.files['complaint_image']
+            if file:
+                # Read the file content and encode it as base64
+                file_content = file.read()
+                img = Image.open(io.BytesIO(file_content))
+                rgb_img = img.convert('RGB')
+                output_io = io.BytesIO()
+                rgb_img.save(output_io, format='JPEG', quality=10)
+                encoded_image = base64.b64encode(output_io.getvalue())
+                compiled_complaint = {'tenantID': ObjectId(tenant_login_data), 'tenant_name': tenant['tenantName'], 'complaint_heading': complaint_heading,
+                              'details': details, 'image': encoded_image, 'complained_on': adjusted_time}
+                
         db.tenant_complaints.insert_one(compiled_complaint)
         #Sending verification code
         if send_emails is not None:
@@ -1210,7 +1226,6 @@ def my_complaints():
             complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
             # Remove duplicates
             complaints = list({v['_id']: v for v in complaints}.values())
-            session['complaints'] = complaints
             return render_template('my complaints.html',complaints=complaints)
 
 ############REPLY TO COMPLAINTS BY TENANT###########
@@ -1223,62 +1238,55 @@ def tenant_reply_complaint():
     else:
         tenant_name = db.tenant_user_accounts.find_one({'_id': ObjectId(tenant_login_data)})
         login_data = tenant_name['username']
-        if 'complaints' in session:
-            complaints = session.get('complaints')
-            for complaint in complaints:
-                if 'Reply_' + str(complaint['_id']) in request.form:
-                    Reply = request.form.get('Reply_' + str(complaint['_id']))
-                    client_time = request.form.get('client_time')
-                    client_time = datetime.fromisoformat(client_time)
-                    time_zone_offset = int(request.form.get('time_zone_offset'))
-                    adjusted_time = client_time + timedelta(hours=time_zone_offset)
-                    db.tenant_complaints_replies.insert_one({'complaintID': ObjectId(complaint['_id']),
-                                                             'Reply': Reply,
-                                                             'who': login_data,
-                                                             'reply_date': adjusted_time})
-                    tenant_managed = db.tenants.find_one({'tenantEmail': tenant_name['tenantEmail'], 'propertyName': tenant_name['propertyName']})
-                    manager = db.registered_managers.find_one({'username': tenant_managed['username'], 'company_name': tenant_managed['company_name']})
-                    manager_email = manager['email']
-                    if send_emails is not None:
-                        msg = Message('New Reply From Tenant', 
-                        sender='michpmts@gmail.com', 
-                        recipients=[manager_email])
-                        msg.html = f"""
-                        <html>
-                        <body>
-                        <p>Dear Manager,</p>
-                        <p>You have a new reply from {tenant_managed['tenantName']}, please login below to check reply:</p>
-                        <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
-                        <p>Best Regards,</p>
-                        <p>Mich Manage</p>
-                        </body>
-                        </html>
-                        """
-                        mail.send(msg)
-            
-            found_complaints = db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)})
-            complaints = []
-            for complaint in found_complaints:
-                replies = list(db.tenant_complaints_replies.find({'complaintID': complaint['_id']}))
-                if len(replies) == 0:
-                    replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
-                else:
-                    # Sort replies by date, most recent first
-                    replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
-                complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
-                complaint_copy['_id'] = str(complaint['_id'])
-                complaint_copy['tenantID'] = str(complaint['tenantID'])
-                complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
-                complaints.append(complaint_copy)
-            # Sort complaints by date, most recent first
-            complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
-            # Remove duplicates
-            complaints = list({v['_id']: v for v in complaints}.values())
-            session['complaints'] = complaints
-            return render_template('my complaints.html',complaints=complaints)
-        else:
-            flash('Login first')
-            return redirect('/')
+        complaint_id = request.form.get('complaint_id')
+        Reply = request.form.get('Reply_' + str(complaint_id))
+        client_time = request.form.get('client_time')
+        client_time = datetime.fromisoformat(client_time)
+        time_zone_offset = int(request.form.get('time_zone_offset'))
+        adjusted_time = client_time + timedelta(hours=time_zone_offset)
+        db.tenant_complaints_replies.insert_one({'complaintID': ObjectId(complaint_id),
+                                                    'Reply': Reply,
+                                                    'who': login_data,
+                                                    'reply_date': adjusted_time})
+        tenant_managed = db.tenants.find_one({'tenantEmail': tenant_name['tenantEmail'], 'propertyName': tenant_name['propertyName']})
+        manager = db.registered_managers.find_one({'username': tenant_managed['username'], 'company_name': tenant_managed['company_name']})
+        manager_email = manager['email']
+        if send_emails is not None:
+            msg = Message('New Reply From Tenant', 
+            sender='michpmts@gmail.com', 
+            recipients=[manager_email])
+            msg.html = f"""
+            <html>
+            <body>
+            <p>Dear Manager,</p>
+            <p>You have a new reply from {tenant_managed['tenantName']}, please login below to check reply:</p>
+            <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
+            <p>Best Regards,</p>
+            <p>Mich Manage</p>
+            </body>
+            </html>
+            """
+            mail.send(msg)
+        
+        found_complaints = db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)})
+        complaints = []
+        for complaint in found_complaints:
+            replies = list(db.tenant_complaints_replies.find({'complaintID': complaint['_id']}))
+            if len(replies) == 0:
+                replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
+            else:
+                # Sort replies by date, most recent first
+                replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
+            complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
+            complaint_copy['_id'] = str(complaint['_id'])
+            complaint_copy['tenantID'] = str(complaint['tenantID'])
+            complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
+            complaints.append(complaint_copy)
+        # Sort complaints by date, most recent first
+        complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
+        # Remove duplicates
+        complaints = list({v['_id']: v for v in complaints}.values())
+        return render_template('my complaints.html',complaints=complaints)
   
 ############LOAD COMPLAINTS TO MANAGER######################
 @app.route('/resolve-complaints')
@@ -4731,6 +4739,7 @@ def revenue_details():
             ]
 
             revenue_info = list(db.stock_sales.aggregate(pipeline))
+            revenue_info.sort(key=lambda x: x['inventoryDetails'][0]['stockDate'], reverse=True)
 
             available_itemNames = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
@@ -4761,6 +4770,7 @@ def sales_details():
             twelve_months_ago = datetime.now() - timedelta(days=365)
 
             sales_info = list(db.stock_sales.find({'company_name': company_name, 'saleDate': {'$gte': twelve_months_ago}}))
+            sales_info.sort(key=lambda x: x['saleDate'], reverse=True)
 
             available_itemNames = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
@@ -4791,6 +4801,7 @@ def stock_details():
             current_stock = list(db.inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
             old_stock = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
             stock_info = current_stock + old_stock
+            stock_info.sort(key=lambda x: x['stockDate'], reverse=True)
 
             available_itemNames = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))

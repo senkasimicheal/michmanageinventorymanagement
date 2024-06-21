@@ -320,7 +320,11 @@
             <table class="tenant_table">
                 <tr>
                     <th>No.</th>
-                    <th>Tenant Name</th>
+                    <th>
+                      Tenant Name
+                      <br>
+                      <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for tenant...">
+                    </th>
                     <th>Telephone</th>
                     <th>Property Name</th>
                     <th>Section</th>
@@ -367,7 +371,11 @@
             <table class="tenant_table">
               <tr>
                   <th>No.</th>
-                  <th>Tenant Name</th>
+                  <th>
+                    Tenant Name
+                    <br>
+                    <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for tenant...">
+                  </th>
                   <th>Telephone</th>
                   <th>Property Name</th>
                   <th>Section</th>
@@ -439,6 +447,31 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    function filterTable(inputId, columnIndex) {
+        // Get the input field and its value
+        var input = document.getElementById(inputId);
+        var filter = input.value.toLowerCase();
+        
+        // Get the table and its rows
+        var table = document.querySelector(".tenant_table tbody");
+        var rows = table.getElementsByTagName("tr");
+
+        // Loop through the rows and hide those that don't match the filter
+        for (var i = 0; i < rows.length; i++) {
+            var cell = rows[i].getElementsByTagName("td")[columnIndex];
+            if (cell) {
+                var cellText = cell.textContent || cell.innerText;
+                if (cellText.toLowerCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+    }
+  </script>
 
   <script>
     function confirmDelete() {

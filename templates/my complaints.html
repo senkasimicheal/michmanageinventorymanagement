@@ -102,6 +102,9 @@
                 <input type="hidden" id="timeZoneOffset" name="time_zone_offset">
                 <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
                 <input type="submit" value="Reply" style="background:none;border:none;color:blue; width: 60px !important;">
+                {% if complaint['image'] %}
+                <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'].decode('utf-8') }}" alt="Complaint Image">
+                {% endif %}
                 <div class="replies-section">
                   <h2>Replies</h2>
                   {% for reply in complaint.replies %}

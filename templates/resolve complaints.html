@@ -342,6 +342,9 @@
                             <a href="{{ url_for('resolved_complaints', complaint_id=complaint._id) }}">Resolve</a>
                           </span>
                         </div>
+                        {% if complaint['image'] %}
+                        <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'].decode('utf-8') }}" alt="Complaint Image">
+                        {% endif %}
                         <div class="replies-section">
                           <h4>Replies</h4>
                           {% for reply in complaint.replies %}

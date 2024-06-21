@@ -746,38 +746,50 @@
           </form>
           <div style="width: 100%; height: 100%; overflow: auto;">
             <table class="tenant_table">
-                <tr>
-                    <th>No.</th>
-                    <th>Item Name</th>
-                    <th>Stock Date</th>
-                    <th>Stocked Quantity</th>
-                    <th>Unit Buying Price</th>
-                    <th>Total Buying Price</th>
-                    <th>Quantity Sold</th>
-                    <th>Revenue</th>
-                    <th>Total Profit</th>
-                    <th>Unit Profit</th>
-                </tr>
-                {% for revenue in revenue_info %}
-                <tr title="{{ revenue['_id'] }}" style="cursor: pointer;">
-                    <td>{{ loop.index }}</td>
-                    <td>{{ revenue['_id']['itemName'] }}</td>
-                    {% for detail in revenue['inventoryDetails'] %}
-                    <td>{{ detail['stockDate'].strftime('%Y-%m-%d') }}</td>
-                    <td>{{ detail['quantity'] }}</td>
-                    <td>{{ '{:,.0f}'.format(detail['unitPrice']) }}</td>
-                    <td>{{ '{:,.0f}'.format(detail['totalPrice']) }}</td>
-                    {% endfor %}
-                    <td>{{ revenue['quantitysold'] }}</td>
-                    <td>{{ '{:,.0f}'.format(revenue['totalRevenue']) }}</td>
-                    {% for detail in revenue['inventoryDetails'] %}
-                    <td>{{ '{:,.0f}'.format(revenue['totalRevenue'] - detail['totalPrice']) }}</td>
-                    {% endfor %}
-                    {% for detail in revenue['inventoryDetails'] %}
-                    <td>{{ '{:,.0f}'.format(revenue['totalRevenue'] - detail['unitPrice']*revenue['quantitysold']) }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
+              <thead>
+                  <tr>
+                      <th>No.</th>
+                      <th>
+                          Item Name
+                          <br>
+                          <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for item names...">
+                      </th>
+                      <th>
+                          Stock Date
+                          <br>
+                          <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
+                      </th>
+                      <th>Stocked Quantity</th>
+                      <th>Unit Buying Price</th>
+                      <th>Total Buying Price</th>
+                      <th>Quantity Sold</th>
+                      <th>Revenue</th>
+                      <th>Total Profit</th>
+                      <th>Unit Profit</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for revenue in revenue_info %}
+                  <tr title="{{ revenue['_id'] }}" style="cursor: pointer;">
+                      <td>{{ loop.index }}</td>
+                      <td>{{ revenue['_id']['itemName'] }}</td>
+                      {% for detail in revenue['inventoryDetails'] %}
+                      <td>{{ detail['stockDate'].strftime('%Y-%m-%d') }}</td>
+                      <td>{{ detail['quantity'] }}</td>
+                      <td>{{ '{:,.0f}'.format(detail['unitPrice']) }}</td>
+                      <td>{{ '{:,.0f}'.format(detail['totalPrice']) }}</td>
+                      {% endfor %}
+                      <td>{{ revenue['quantitysold'] }}</td>
+                      <td>{{ '{:,.0f}'.format(revenue['totalRevenue']) }}</td>
+                      {% for detail in revenue['inventoryDetails'] %}
+                      <td>{{ '{:,.0f}'.format(revenue['totalRevenue'] - detail['totalPrice']) }}</td>
+                      {% endfor %}
+                      {% for detail in revenue['inventoryDetails'] %}
+                      <td>{{ '{:,.0f}'.format(revenue['totalRevenue'] - detail['unitPrice']*revenue['quantitysold']) }}</td>
+                      {% endfor %}
+                  </tr>
+                  {% endfor %}
+              </tbody>
             </table>
           </div>
         </div>
@@ -802,6 +814,31 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    function filterTable(inputId, columnIndex) {
+        // Get the input field and its value
+        var input = document.getElementById(inputId);
+        var filter = input.value.toLowerCase();
+        
+        // Get the table and its rows
+        var table = document.querySelector(".tenant_table tbody");
+        var rows = table.getElementsByTagName("tr");
+
+        // Loop through the rows and hide those that don't match the filter
+        for (var i = 0; i < rows.length; i++) {
+            var cell = rows[i].getElementsByTagName("td")[columnIndex];
+            if (cell) {
+                var cellText = cell.textContent || cell.innerText;
+                if (cellText.toLowerCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+    }
+  </script>
 
   <script>
     function confirmDelete() {

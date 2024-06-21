@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
   <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
@@ -84,27 +85,61 @@
     <!-- end header section -->
     <div>
       {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-      <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
+      <div id="alert" class="alert-danger" style="  color: white; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
       {% endfor %} {% endif %} {% endwith %}
     </div>
     <!-- slider section -->
     <section class="sale_section layout_padding">
       <div class="container-fluid-form" style="margin-top: -90px !important;">
-          <form id="myForm" class="property_forn" action="{{url_for('add_complaint')}}" method="POST">
+          <form id="myForm" class="property_forn" action="{{url_for('add_complaint')}}" method="POST" enctype="multipart/form-data">
               <h3>Time For Pain Points</h3>
               <h6>Tenant Info</h6>
               <label class="input_labels" for="">Question/Complaint Summary</label>
               <input type="text" name="complaint_heading" required><br>
               <label class="input_labels" for="">Details</label>
               <textarea class="complaint_details" name="details" required></textarea><br>
+              <input type="file" id="complaint_image" name="complaint_image" accept="image/*" style="display: none;">
+              <label for="complaint_image" class="upload_icon">
+                  <i class="fas fa-paperclip"></i>
+              </label>
+              <span class="file-name" id="fileName"></span>
+              <span class="error" id="fileSizeError">File size should not exceed 2MB</span>
+              <br>
               <input type="hidden" id="clientTime" name="client_time">
               <input type="hidden" id="timeZoneOffset" name="time_zone_offset">
-              <input required type="submit" class="btn" value="Submit">
+              <input style="margin-bottom: 10px;" required type="submit" class="btn" value="Submit">
           </form>
       </div>
     </section>
     <!-- end slider section -->
   </div>
+
+  <script>
+    document.getElementById('complaint_image').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        const fileNameElement = document.getElementById('fileName');
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB in bytes
+                document.getElementById('fileSizeError').style.display = 'inline';
+                event.target.value = ''; // Clear the file input
+                fileNameElement.textContent = ''; // Reset the file name display
+            } else {
+                document.getElementById('fileSizeError').style.display = 'none';
+                fileNameElement.textContent = file.name; // Display the file name
+            }
+        } else {
+            fileNameElement.textContent = ''; // Reset if no file is chosen
+        }
+    });
+
+    document.getElementById('myForm').addEventListener('submit', function(event) {
+        const file = document.getElementById('complaint_image').files[0];
+        if (file && file.size > 2 * 1024 * 1024) { // 2MB in bytes
+            document.getElementById('fileSizeError').style.display = 'inline';
+            event.preventDefault(); // Prevent form submission
+        }
+    });
+  </script>
 
   <script>
     $(document).ready(function() {
