@@ -1353,7 +1353,6 @@ def resolve_complaints():
         complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
         # Remove duplicates
         complaints = list({v['_id']: v for v in complaints}.values())
-        session['complaints'] = complaints
         return render_template('resolve complaints.html',complaints=complaints,resolved_complaints=resolved_complaints, dp=dp_str)
             
 ############RESOLVE COMPLAINTS BY MANAGER###########
@@ -4925,7 +4924,6 @@ def stock_overview():
         #profits and losses
         # Filter positive profits
         positive_profits_df = df[df['Profit'] > 0]
-        print(positive_profits_df)
         if not positive_profits_df.empty:
             session['profits_chart'] = 'profits_chart'
         fig_profits = px.bar(positive_profits_df, x='Item Name', y='Profit', title='Profits on Each Item')

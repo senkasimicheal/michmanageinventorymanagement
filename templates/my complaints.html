@@ -91,7 +91,6 @@
         {% for complaint in complaints %}
         <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('tenant_reply_complaint') }}">
             <div class="complaint-card">
-                <span>From {{ complaint.tenant_name }}</span>
                 <h2 class="complaint-heading">{{ complaint.complaint_heading }}</h2>
                 <p class="complaint-details">{{ complaint.details }}</p>
                 <div class="complaint-footer">
@@ -103,9 +102,10 @@
                 <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
                 <input type="submit" value="Reply" style="background:none;border:none;color:blue; width: 60px !important;">
                 {% if complaint['image'] %}
-                <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'].decode('utf-8') }}" alt="Complaint Image">
+                <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'].decode('utf-8') }}" alt="Complaint Image"><br><br>
                 {% endif %}
-                <div class="replies-section">
+                <button type="button" id="toggle-replies-btn-{{ complaint._id }}" onclick="toggleReplies('{{ complaint._id }}')">Show Replies</button>
+                <div class="replies-section" id="replies-{{ complaint._id }}" style="display: none;">
                   <h2>Replies</h2>
                   {% for reply in complaint.replies %}
                       <div class="reply">
@@ -113,7 +113,7 @@
                           <p class="reply-message">{{ reply.Reply }}</p>
                       </div>
                   {% endfor %}
-              </div>
+                </div>
             </div>
         </form>
     {% endfor %}
@@ -121,6 +121,20 @@
   </section>
 
   <!-- end about section -->
+
+  <script>
+    function toggleReplies(complaintId) {
+        var repliesSection = document.getElementById('replies-' + complaintId);
+        var toggleButton = document.getElementById('toggle-replies-btn-' + complaintId);
+        if (repliesSection.style.display === "none") {
+            repliesSection.style.display = "block";
+            toggleButton.textContent = "Hide Replies";
+        } else {
+            repliesSection.style.display = "none";
+            toggleButton.textContent = "Show Replies";
+        }
+    }
+  </script>
 
   <script>
     $(document).ready(function() {

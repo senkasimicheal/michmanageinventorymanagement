@@ -343,9 +343,10 @@
                           </span>
                         </div>
                         {% if complaint['image'] %}
-                        <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'].decode('utf-8') }}" alt="Complaint Image">
+                        <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'].decode('utf-8') }}" alt="Complaint Image"><br><br>
                         {% endif %}
-                        <div class="replies-section">
+                        <button type="button" id="toggle-replies-btn-{{ complaint._id }}" onclick="toggleReplies('{{ complaint._id }}')">Show Replies</button>
+                        <div class="replies-section" id="replies-{{ complaint._id }}" style="display: none;">
                           <h4>Replies</h4>
                           {% for reply in complaint.replies %}
                               <div class="reply">
@@ -353,7 +354,7 @@
                                   <p class="reply-message">{{ reply.Reply }}</p>
                               </div>
                           {% endfor %}
-                      </div>
+                        </div>
                     </div>
                 </form>
             {% endfor %}
@@ -398,6 +399,20 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    function toggleReplies(complaintId) {
+        var repliesSection = document.getElementById('replies-' + complaintId);
+        var toggleButton = document.getElementById('toggle-replies-btn-' + complaintId);
+        if (repliesSection.style.display === "none") {
+            repliesSection.style.display = "block";
+            toggleButton.textContent = "Hide Replies";
+        } else {
+            repliesSection.style.display = "none";
+            toggleButton.textContent = "Show Replies";
+        }
+    }
+  </script>
 
   <script>
     $(document).ready(function() {
