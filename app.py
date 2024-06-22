@@ -5,7 +5,7 @@ from docx import Document
 from pymongo import MongoClient, ASCENDING
 import secrets
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import calendar
 import pytz
 import pandas as pd 
@@ -37,9 +37,14 @@ from PIL import Image
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-# client = MongoClient('mongodb://localhost:27017/')
-db = client.PropertyManagement
+
+def get_mongo_client():
+    # client = MongoClient('mongodb://localhost:27017/')
+    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    db = client.PropertyManagement
+    return db
+
+db = get_mongo_client()
 fs = GridFS(db, collection='contracts')
 
 scheduler = APScheduler()
