@@ -1161,6 +1161,10 @@ def tenant_login():
                 session['propertyName'] = tenant['propertyName']
 
                 last_logged_in_data = db.tenant_logged_in_data.find_one({'username': tenant['username']}, sort=[('timestamp', -1)])
+                last_login_utc = last_logged_in_data['timestamp'].replace(tzinfo=timezone.utc)
+                now_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+
+                total_seconds = (now_utc - last_login_utc).total_seconds()
 
                 if last_logged_in_data is None:
                     # This is a new user, so we don't have a last login time.
@@ -1222,6 +1226,10 @@ def tenant_authentication():
         session['propertyName'] = user_auth['propertyName']
 
         last_logged_in_data = db.tenant_logged_in_data.find_one({'username': user_auth['username']}, sort=[('timestamp', -1)])
+        last_login_utc = last_logged_in_data['timestamp'].replace(tzinfo=timezone.utc)
+        now_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+
+        total_seconds = (now_utc - last_login_utc).total_seconds()
 
         if last_logged_in_data is None:
             # This is a new user, so we don't have a last login time.
@@ -1402,6 +1410,8 @@ def add_complaint():
                 
         db.tenant_complaints.insert_one(compiled_complaint)
         #Sending verification code
+        global send_emails
+        send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             msg = Message('New Complaint On Mich Manage', 
             sender='michpmts@gmail.com', 
@@ -1490,6 +1500,8 @@ def tenant_reply_complaint():
         tenant_managed = db.tenants.find_one({'tenantEmail': tenant_name['tenantEmail'], 'propertyName': tenant_name['propertyName']})
         manager = db.registered_managers.find_one({'username': tenant_managed['username'], 'company_name': tenant_managed['company_name']})
         manager_email = manager['email']
+        global send_emails
+        send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             msg = Message('New Reply From Tenant', 
             sender='michpmts@gmail.com', 
