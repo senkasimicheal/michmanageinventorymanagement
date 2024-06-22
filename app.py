@@ -449,7 +449,8 @@ def logout_admin():
 def before_request():
     if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
-                                                               'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'search_apartment', 'authentication'):
+                                                               'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'search_apartment', 'authentication',
+                                                               'tenant_account_setup_page', 'tenant_account_setup_initiated', 'tenant_authentication'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -506,9 +507,6 @@ def register_account():
         return redirect('/')
 
     # Check if username or email already exists
-    if db.tenant_user_accounts.find_one({'username': username}):
-        flash('Username already taken')
-        return redirect('/')
     if db.registered_managers.find_one({'username': username}):
         flash('Username already taken')
         return redirect('/')
@@ -872,7 +870,6 @@ def userlogin():
                 session['account_type'] = 'all_accounts'
                 return redirect('/all-accounts-overview')
 
-
 #USER AUTHENTICATION
 @app.route("/authentication", methods=["POST"])
 def authentication():
@@ -887,6 +884,7 @@ def authentication():
 
     # Get manager and subscription data
     manager = db.registered_managers.find_one({'username': user_auth["username"]})
+    db.login_auth.delete_one({'username': user_auth["username"]})
     if manager is None:
         flash('Not a manager')
         return redirect('/')
@@ -895,6 +893,40 @@ def authentication():
 
         # Calculate remaining days
         remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
+
+        last_logged_in_data = db.logged_in_data.find_one({'username': manager['username']}, sort=[('timestamp', -1)])
+
+        if last_logged_in_data is None:
+            # This is a new user, so we don't have a last login time.
+            session['time_since_last_login_secs'] = None
+            session['time_since_last_login_mins'] = None
+            session['time_since_last_login_hrs'] = None
+        else:
+            last_login = last_logged_in_data['timestamp']
+            now = datetime.now()
+            total_seconds  = (now - last_login).total_seconds()
+
+            if total_seconds < 60:  # less than a minute
+                time_since_last_login_secs = int(total_seconds)
+                session['time_since_last_login_secs'] = time_since_last_login_secs
+            elif total_seconds < 3600:  # less than an hour
+                time_since_last_login_mins = int(total_seconds / 60)
+                session['time_since_last_login_mins'] = time_since_last_login_mins
+            elif total_seconds < 86400:  # less than a day
+                time_since_last_login_hrs = int(total_seconds / 3600)
+                session['time_since_last_login_hrs'] = time_since_last_login_hrs
+            elif total_seconds < 604800:  # less than a week
+                time_since_last_login_days = int(total_seconds / 86400)
+                session['time_since_last_login_days'] = time_since_last_login_days
+            elif total_seconds < 2629800:  # less than a month
+                time_since_last_login_weeks = int(total_seconds / 604800)
+                session['time_since_last_login_weeks'] = time_since_last_login_weeks
+            elif total_seconds < 31557600:  # less than a year
+                time_since_last_login_months = int(total_seconds / 2629800)
+                session['time_since_last_login_months'] = time_since_last_login_months
+            else:  # more than a year
+                time_since_last_login_years = int(total_seconds / 31557600)
+                session['time_since_last_login_years'] = time_since_last_login_years
 
         # Insert logged in data
         logged_in_data = {
@@ -991,6 +1023,52 @@ def account_setup_initiated():
         db.registered_managers.update_one({'username': login_data}, {'$set': update_fields})
         flash("Your account was successfully set")
         return redirect('/account-setup-page')
+    
+##ACCOUNT SETTING FOR TENANT
+@app.route('/tenant-account-setup-page')
+def tenant_account_setup_page():
+    login_data = session.get('tenantID')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        tenant = db.tenant_user_accounts.find_one({'_id': ObjectId(login_data)})
+        dp = tenant.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        auth = tenant.get('auth', "no")
+        return render_template("tenant account setting.html", dp=dp_str, auth=auth)
+
+##ACCOUNT SETTING FOR TENANT
+@app.route('/tenant-account-setup-initiated', methods=["POST"])
+def tenant_account_setup_initiated():
+    login_data = session.get('tenantID')
+    if login_data is None:
+        flash('Login first')
+        return redirect('/')
+    else:
+        auth = request.form.get("switchState")
+        dp = request.files['dp'].read() if 'dp' in request.files else None
+
+        update_fields = {}
+
+        if auth:
+            update_fields['auth'] = auth
+        if dp:
+            # Open the image file with PIL
+            img = Image.open(io.BytesIO(dp))
+            # Convert the image to RGB mode
+            rgb_img = img.convert('RGB')
+            # Adjust the quality of the image
+            output_io = io.BytesIO()
+            rgb_img.save(output_io, format='JPEG', quality=10)  # Adjust the quality until you reach desired size
+            # Convert the image data to base64
+            dp_base64 = base64.b64encode(output_io.getvalue())
+            update_fields['dp'] = dp_base64
+
+        # Update the document with the non-empty fields
+        db.tenant_user_accounts.update_one({'_id': ObjectId(login_data)}, {'$set': update_fields})
+        flash("Your account was successfully set")
+        return redirect('/tenant-account-setup-page')
 
 #######TENANT REGISTER ACCOUNT###############          
 @app.route('/tenant-register-account', methods=["POST"])
@@ -1007,12 +1085,8 @@ def tenant_register_account():
     else:
         tenant_exists = db.tenant_user_accounts.find_one({'tenantEmail': email, 'propertyName': propertyName})
         user = db.tenant_user_accounts.find_one({'username': username})
-        used_username = db.registered_managers.find_one({'username': username})
-        if used_username:
-            flash('This username is already taken')
-            return redirect('/')
-        else:
-            if tenant_exists is None and user is None:
+        if tenant_exists is None:
+            if user is None:
                 tenant = db.tenants.find_one({'propertyName': propertyName, 'tenantEmail': email})
                 if tenant is None:
                     flash('Entered tenant is not attached to any property')
@@ -1025,12 +1099,18 @@ def tenant_register_account():
                     flash('Tenant registered')
                     return redirect('/')
             else:
-                flash('Tenant already registered')
+                flash('Username already taken')
                 return redirect('/')
+        else:
+            flash('Tenant already registered')
+            return redirect('/')
         
 #######TENANT LOGIN##############
 @app.route("/tenant-login", methods=["POST"])
 def tenant_login():
+    session.clear()
+    global send_emails
+
     username = request.form.get('username')
     password = request.form.get('password')
 
@@ -1041,24 +1121,164 @@ def tenant_login():
     else:
         stored_password = tenant['password']
         if bcrypt.checkpw(password.encode('utf-8'), stored_password):
-            session.permanent = False
-            session['tenantID'] = str(tenant['_id'])
-            session['tenantEmail'] = tenant['tenantEmail']
-            session['propertyName'] = tenant['propertyName']
-            return redirect('/tenant-data')
+            if "auth" in tenant and tenant["auth"] == "yes":
+                code = generate_code()
+
+                user_auth = {"username": tenant['username'], "code": code, "tenantID": str(tenant['_id']), "tenantEmail": tenant['tenantEmail'], "propertyName": tenant['propertyName']}
+                db.tenant_login_auth.delete_one({"username": tenant['username']})
+
+                no_send_emails_code = 0
+
+                #Sending verification code
+                send_emails = db.send_emails.find_one({'emails': "yes"})
+
+                if send_emails is not None:
+                    msg = Message('Verify Your Identity - Mich Manage', 
+                    sender='michpmts@gmail.com', 
+                    recipients=[tenant["tenantEmail"]])
+                    msg.html = f"""
+                    <html>
+                    <body>
+                    <p>Mich Manage Personal Identification</p>
+                    <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
+                    <p>Best Regards,</p>
+                    <p>Mich Manage</p>
+                    </body>
+                    </html>
+                    """
+                    mail.send(msg)
+                else:
+                    session['no_send_emails_code'] = 'no_send_emails_code'
+                    no_send_emails_code = code
+
+                db.tenant_login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
+                db.tenant_login_auth.insert_one(user_auth)
+                return render_template("tenant authentication.html", no_send_emails_code=no_send_emails_code)
+            else:
+                session.permanent = False
+                session['tenantID'] = str(tenant['_id'])
+                session['tenantEmail'] = tenant['tenantEmail']
+                session['propertyName'] = tenant['propertyName']
+
+                last_logged_in_data = db.tenant_logged_in_data.find_one({'username': tenant['username']}, sort=[('timestamp', -1)])
+
+                if last_logged_in_data is None:
+                    # This is a new user, so we don't have a last login time.
+                    session['time_since_last_login_secs'] = None
+                    session['time_since_last_login_mins'] = None
+                    session['time_since_last_login_hrs'] = None
+                else:
+                    last_login = last_logged_in_data['timestamp']
+                    now = datetime.now()
+                    total_seconds  = (now - last_login).total_seconds()
+
+                    if total_seconds < 60:  # less than a minute
+                        time_since_last_login_secs = int(total_seconds)
+                        session['time_since_last_login_secs'] = time_since_last_login_secs
+                    elif total_seconds < 3600:  # less than an hour
+                        time_since_last_login_mins = int(total_seconds / 60)
+                        session['time_since_last_login_mins'] = time_since_last_login_mins
+                    elif total_seconds < 86400:  # less than a day
+                        time_since_last_login_hrs = int(total_seconds / 3600)
+                        session['time_since_last_login_hrs'] = time_since_last_login_hrs
+                    elif total_seconds < 604800:  # less than a week
+                        time_since_last_login_days = int(total_seconds / 86400)
+                        session['time_since_last_login_days'] = time_since_last_login_days
+                    elif total_seconds < 2629800:  # less than a month
+                        time_since_last_login_weeks = int(total_seconds / 604800)
+                        session['time_since_last_login_weeks'] = time_since_last_login_weeks
+                    elif total_seconds < 31557600:  # less than a year
+                        time_since_last_login_months = int(total_seconds / 2629800)
+                        session['time_since_last_login_months'] = time_since_last_login_months
+                    else:  # more than a year
+                        time_since_last_login_years = int(total_seconds / 31557600)
+                        session['time_since_last_login_years'] = time_since_last_login_years
+
+                logged_in_data = {
+                    'username': tenant['username'],
+                    'timestamp': datetime.now()
+                }
+                db.tenant_logged_in_data.insert_one(logged_in_data)
+                return redirect('/tenant-data')
         else:
             flash('Wrong Password')
             return redirect('/tenant-login-page')
+
+#USER AUTHENTICATION
+@app.route("/tenant-authentication", methods=["POST"])
+def tenant_authentication():
+    # Get form data
+    code = request.form.get("code")
+
+    # Check if code exists
+    user_auth = db.tenant_login_auth.find_one({"code": code})
+    if user_auth is None:
+        flash("Check code and try again")
+        return render_template("tenant authentication.html")
+    else:
+        session.permanent = False
+        session['tenantID'] = str(user_auth['tenantID'])
+        session['tenantEmail'] = user_auth['tenantEmail']
+        session['propertyName'] = user_auth['propertyName']
+
+        last_logged_in_data = db.tenant_logged_in_data.find_one({'username': user_auth['username']}, sort=[('timestamp', -1)])
+
+        if last_logged_in_data is None:
+            # This is a new user, so we don't have a last login time.
+            session['time_since_last_login_secs'] = None
+            session['time_since_last_login_mins'] = None
+            session['time_since_last_login_hrs'] = None
+        else:
+            last_login = last_logged_in_data['timestamp']
+            now = datetime.now()
+            total_seconds  = (now - last_login).total_seconds()
+
+            if total_seconds < 60:  # less than a minute
+                time_since_last_login_secs = int(total_seconds)
+                session['time_since_last_login_secs'] = time_since_last_login_secs
+            elif total_seconds < 3600:  # less than an hour
+                time_since_last_login_mins = int(total_seconds / 60)
+                session['time_since_last_login_mins'] = time_since_last_login_mins
+            elif total_seconds < 86400:  # less than a day
+                time_since_last_login_hrs = int(total_seconds / 3600)
+                session['time_since_last_login_hrs'] = time_since_last_login_hrs
+            elif total_seconds < 604800:  # less than a week
+                time_since_last_login_days = int(total_seconds / 86400)
+                session['time_since_last_login_days'] = time_since_last_login_days
+            elif total_seconds < 2629800:  # less than a month
+                time_since_last_login_weeks = int(total_seconds / 604800)
+                session['time_since_last_login_weeks'] = time_since_last_login_weeks
+            elif total_seconds < 31557600:  # less than a year
+                time_since_last_login_months = int(total_seconds / 2629800)
+                session['time_since_last_login_months'] = time_since_last_login_months
+            else:  # more than a year
+                time_since_last_login_years = int(total_seconds / 31557600)
+                session['time_since_last_login_years'] = time_since_last_login_years
+
+        logged_in_data = {
+            'username': user_auth['username'],
+            'timestamp': datetime.now()
+        }
+        db.tenant_logged_in_data.insert_one(logged_in_data)
+        db.tenant_login_auth.delete_one({'username': user_auth["username"]})
+        return redirect('/tenant-data')
 
 @app.route('/tenant-data')
 def tenant_data():
     tenantEmail = session.get('tenantEmail')
     propertyName = session.get('propertyName')
-    if tenantEmail is None or propertyName is None:
+    login_data = session.get('tenantID')
+    if login_data is None:
         flash('Login first')
         return redirect('/tenant-login-page')
     else:
         current_tenant_data = list(db.tenants.find({'tenantEmail': tenantEmail, 'propertyName': propertyName}))
+
+        tenant_acc_setting = db.tenant_user_accounts.find_one({'_id': ObjectId(login_data)})
+        dp = tenant_acc_setting.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        auth = tenant_acc_setting.get('auth', "no")
+
         if len(current_tenant_data) == 0:
             flash('We found no amount demanded')
             return redirect('/complaint-form')
@@ -1127,8 +1347,8 @@ def tenant_data():
                             'date_paid': date_paid.strftime("%Y-%m-%d")
                         })
         
-            session['tenant_data'] = tenant_data
-            return render_template('tenant monitor account.html',tenant_data=tenant_data)
+            # session['tenant_data'] = tenant_data
+            return render_template('tenant monitor account.html',tenant_data=tenant_data, dp=dp_str, auth=auth)
 
 #############LOADING COMPLAINTS PAGE##########
 @app.route('/complaint-form')
@@ -1138,7 +1358,12 @@ def complaint_form():
         flash('Login first')
         return redirect('/tenant-login-page')
     else:
-        return render_template('complaints template.html')
+        tenant_acc_setting = db.tenant_user_accounts.find_one({'_id': ObjectId(tenant_login_data)})
+        dp = tenant_acc_setting.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        auth = tenant_acc_setting.get('auth', "no")
+
+        return render_template('complaints template.html', dp=dp_str, auth=auth)
     
 ##########STORE COMPLAINTS##############
 @app.route('/add-complaint', methods=["POST"])
@@ -1160,7 +1385,7 @@ def add_complaint():
         manager = db.registered_managers.find_one({'username': tenant['username'], 'company_name': tenant['company_name']})
         manager_email = manager['email']
         compiled_complaint = {'tenantID': ObjectId(tenant_login_data), 'tenant_name': tenant['tenantName'], 'complaint_heading': complaint_heading,
-                              'details': details, 'complained_on': adjusted_time}
+                              'details': details, 'complained_on': adjusted_time, 'status': ''}
         
         if 'complaint_image' in request.files:
             file = request.files['complaint_image']
@@ -1173,7 +1398,7 @@ def add_complaint():
                 rgb_img.save(output_io, format='JPEG', quality=10)
                 encoded_image = base64.b64encode(output_io.getvalue())
                 compiled_complaint = {'tenantID': ObjectId(tenant_login_data), 'tenant_name': tenant['tenantName'], 'complaint_heading': complaint_heading,
-                              'details': details, 'image': encoded_image, 'complained_on': adjusted_time}
+                              'details': details, 'image': encoded_image, 'complained_on': adjusted_time, 'status': ''}
                 
         db.tenant_complaints.insert_one(compiled_complaint)
         #Sending verification code
@@ -1204,6 +1429,7 @@ def my_complaints():
         flash('Login first')
         return redirect('/tenant-login-page')
     else:
+        tenant_acc_setting = db.tenant_user_accounts.find_one({'_id': ObjectId(tenant_login_data)})
         my_complaints = db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)})
         if len(list(db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)}))) == 0:
             flash('You have not placed any complaint(s) yet!')
@@ -1215,18 +1441,30 @@ def my_complaints():
                 if len(replies) == 0:
                     replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
                 else:
+                    for reply in replies:
+                        if reply['who'] != tenant_acc_setting['username']:
+                            db.tenant_complaints_replies.update_one({'_id': reply['_id']}, {'$set': {'status': 'seen'}})
                     # Sort replies by date, most recent first
                     replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
                 complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
                 complaint_copy['_id'] = str(complaint['_id'])
                 complaint_copy['tenantID'] = str(complaint['tenantID'])
-                complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
+                # Prepare replies with conditional status field
+                if len(replies) == 1 and replies[0]['Reply'] == 'No reply':
+                    complaint_copy['replies'] = [{'Reply': replies[0]['Reply'], 'who': replies[0]['who'], 'reply_date': replies[0]['reply_date'], 'status': ''}]
+                else:
+                    complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'other': tenant_acc_setting['username'], 'status': reply.get('status', ''), 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
                 complaints.append(complaint_copy)
             # Sort complaints by date, most recent first
             complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
             # Remove duplicates
             complaints = list({v['_id']: v for v in complaints}.values())
-            return render_template('my complaints.html',complaints=complaints)
+
+            dp = tenant_acc_setting.get('dp')
+            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+            auth = tenant_acc_setting.get('auth', "no")
+
+            return render_template('my complaints.html',complaints=complaints, dp=dp_str, auth=auth)
 
 ############REPLY TO COMPLAINTS BY TENANT###########
 @app.route('/tenant-reply-to-complaint', methods=['POST'])
@@ -1247,7 +1485,8 @@ def tenant_reply_complaint():
         db.tenant_complaints_replies.insert_one({'complaintID': ObjectId(complaint_id),
                                                     'Reply': Reply,
                                                     'who': login_data,
-                                                    'reply_date': adjusted_time})
+                                                    'reply_date': adjusted_time,
+                                                    'status': ''})
         tenant_managed = db.tenants.find_one({'tenantEmail': tenant_name['tenantEmail'], 'propertyName': tenant_name['propertyName']})
         manager = db.registered_managers.find_one({'username': tenant_managed['username'], 'company_name': tenant_managed['company_name']})
         manager_email = manager['email']
@@ -1268,25 +1507,7 @@ def tenant_reply_complaint():
             """
             mail.send(msg)
         
-        found_complaints = db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)})
-        complaints = []
-        for complaint in found_complaints:
-            replies = list(db.tenant_complaints_replies.find({'complaintID': complaint['_id']}))
-            if len(replies) == 0:
-                replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
-            else:
-                # Sort replies by date, most recent first
-                replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
-            complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
-            complaint_copy['_id'] = str(complaint['_id'])
-            complaint_copy['tenantID'] = str(complaint['tenantID'])
-            complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
-            complaints.append(complaint_copy)
-        # Sort complaints by date, most recent first
-        complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
-        # Remove duplicates
-        complaints = list({v['_id']: v for v in complaints}.values())
-        return render_template('my complaints.html',complaints=complaints)
+        return redirect('/my-complaints')
   
 ############LOAD COMPLAINTS TO MANAGER######################
 @app.route('/resolve-complaints')
@@ -1339,15 +1560,23 @@ def resolve_complaints():
                 resolved_complaints.append(found_resolved)
             for complaint in found_complaints:
                 replies = list(db.tenant_complaints_replies.find({'complaintID': complaint['_id']}))
+                db.tenant_complaints.update_one({'_id': complaint['_id']}, {'$set': {'status': 'seen'}})
                 if len(replies) == 0:
                     replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
                 else:
+                    for reply in replies:
+                        if reply['who'] != login_data:
+                            db.tenant_complaints_replies.update_one({'_id': reply['_id']}, {'$set': {'status': 'seen'}})
                     # Sort replies by date, most recent first
                     replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
                 complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
                 complaint_copy['_id'] = str(complaint['_id'])
                 complaint_copy['tenantID'] = str(complaint['tenantID'])
-                complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
+                # Prepare replies with conditional status field
+                if len(replies) == 1 and replies[0]['Reply'] == 'No reply':
+                    complaint_copy['replies'] = [{'Reply': replies[0]['Reply'], 'who': replies[0]['who'], 'reply_date': replies[0]['reply_date'], 'status': ''}]
+                else:
+                    complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'other': login_data, 'status': reply.get('status', ''), 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
                 complaints.append(complaint_copy)
         # Sort complaints by date, most recent first
         complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
@@ -1363,92 +1592,39 @@ def update_complaint():
         flash('Login first')
         return redirect('/')
     else:
-        if 'complaints' in session:
-            complaints = session.get('complaints')
-            for complaint in complaints:
-                if 'Reply_' + str(complaint['_id']) in request.form:
-                    Reply = request.form.get('Reply_' + str(complaint['_id']))
-                    client_time = request.form.get('client_time')
-                    client_time = datetime.fromisoformat(client_time)
-                    time_zone_offset = int(request.form.get('time_zone_offset'))
-                    adjusted_time = client_time + timedelta(hours=time_zone_offset)
-                    db.tenant_complaints_replies.insert_one({'complaintID': ObjectId(complaint['_id']),
-                                                             'Reply': Reply,
-                                                             'who': login_data,
-                                                             'reply_date': adjusted_time})
-                    
-                    tenant_complaint_id = db.tenant_complaints.find_one({'_id': ObjectId(complaint['_id'])})
-                    tenant_object_id = db.tenant_user_accounts.find_one({'_id': tenant_complaint_id['tenantID']})
-                    tenant_email = tenant_object_id['tenantEmail']
-                    if send_emails is not None:
-                        msg = Message('New Reply From Property Manager', 
-                        sender='michpmts@gmail.com', 
-                        recipients=[tenant_email])
-                        msg.html = f"""
-                        <html>
-                        <body>
-                        <p>Dear tenant,</p>
-                        <p>You have a new reply from manager of {tenant_object_id['propertyName']}, please login below to check reply:</p>
-                        <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
-                        <p>Best Regards,</p>
-                        <p>Mich Manage</p>
-                        </body>
-                        </html>
-                        """
-                        mail.send(msg)
+        complaint_id = request.form.get('complaint_id')
+        Reply = request.form.get('Reply_' + str(complaint_id))
+        client_time = request.form.get('client_time')
+        client_time = datetime.fromisoformat(client_time)
+        time_zone_offset = int(request.form.get('time_zone_offset'))
+        adjusted_time = client_time + timedelta(hours=time_zone_offset)
+        db.tenant_complaints_replies.insert_one({'complaintID': ObjectId(complaint_id),
+                                                    'Reply': Reply,
+                                                    'who': login_data,
+                                                    'reply_date': adjusted_time,
+                                                    'status': ''})
+        
+        tenant_complaint_id = db.tenant_complaints.find_one({'_id': ObjectId(complaint_id)})
+        tenant_object_id = db.tenant_user_accounts.find_one({'_id': tenant_complaint_id['tenantID']})
+        tenant_email = tenant_object_id['tenantEmail']
+        if send_emails is not None:
+            msg = Message('New Reply From Property Manager', 
+            sender='michpmts@gmail.com', 
+            recipients=[tenant_email])
+            msg.html = f"""
+            <html>
+            <body>
+            <p>Dear tenant,</p>
+            <p>You have a new reply from manager of {tenant_object_id['propertyName']}, please login below to check reply:</p>
+            <p><b style="font-size: 20px;"><a href="https://michmanage.onrender.com">Login</a></b></p>
+            <p>Best Regards,</p>
+            <p>Mich Manage</p>
+            </body>
+            </html>
+            """
+            mail.send(msg)
 
-            company = db.registered_managers.find_one({'username': login_data})
-            if 'dp' in company:
-                # Convert the base64 data back to bytes
-                dp = base64.b64decode(company['dp'])
-                # Convert bytes to string for HTML rendering
-                dp_str = base64.b64encode(dp).decode()
-            else:
-                dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email']})
-            if is_manager is None:
-                query = {'username': login_data, 'company_name': company['company_name']}
-            else:
-                query = {'company_name': company['company_name']}
-            properties = db.property_managed.find(query)
-            if len(list(db.property_managed.find(query))) == 0:
-                flash('You are not managing any property!')
-                return redirect('/register')
-            else:
-                tenant_accounts = []
-                for property in properties:
-                    tenant_account = list(db.tenant_user_accounts.find({'propertyName': property['propertyName']}))
-                    tenant_accounts.extend(tenant_account)
-
-                complaints = []
-                resolved_complaints=[]
-                for tenant in tenant_accounts:
-                    tenant_id = tenant['_id']
-                    found_complaints = db.tenant_complaints.find({'tenantID': tenant_id})
-                    found_resolved_complaints = db.resolved_complaints.find({'tenantID': tenant_id})
-                    for found_resolved in found_resolved_complaints:
-                        resolved_complaints.append(found_resolved)
-                    for complaint in found_complaints:
-                        replies = list(db.tenant_complaints_replies.find({'complaintID': complaint['_id']}))
-                        if len(replies) == 0:
-                            replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
-                        else:
-                            # Sort replies by date, most recent first
-                            replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
-                        complaint_copy = complaint.copy()  # create a copy of complaint to avoid overwriting
-                        complaint_copy['_id'] = str(complaint['_id'])
-                        complaint_copy['tenantID'] = str(complaint['tenantID'])
-                        complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
-                        complaints.append(complaint_copy)
-                # Sort complaints by date, most recent first
-                complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
-                # Remove duplicates
-                complaints = list({v['_id']: v for v in complaints}.values())
-                session['complaints'] = complaints
-                return render_template('resolve complaints.html',complaints=complaints, resolved_complaints=resolved_complaints, dp=dp_str)
-        else:
-            flash('Login first')
-            return redirect('/')
+        return redirect('/resolve-complaints')
         
 ##########RESOLVING COMPLAINTS AFTER SOLVING THEM#########
 @app.route('/resolved-complaints/<complaint_id>', methods=["GET", "POST"])

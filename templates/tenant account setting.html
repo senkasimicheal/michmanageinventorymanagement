@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Update tenant information</title>
+  <title>Account setting</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -57,7 +57,7 @@
               <span class="nav-profile-name">{{ session['user_message1'] }}</span>
             </a>
             <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
-              <a class="dropdown-item" href="{{url_for('account_setup_page')}}">
+              <a class="dropdown-item" href="{{url_for('tenant_account_setup_page')}}">
                 <i class="typcn typcn-cog-outline text-primary"></i>
                 Settings
               </a>
@@ -96,7 +96,7 @@
             </a>
             <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="messageDropdown">
               <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
-              <a class="dropdown-item preview-item" href="{{url_for('account_setup_page')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('tenant_account_setup_page')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Settings
                   </h6>
@@ -105,73 +105,6 @@
                   </p>
                 </div>
               </a>
-              {% if session['is_manager'] == 'is_manager' %}
-              <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Users
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    View other users
-                  </p>
-                </div>
-              </a>
-              <a class="dropdown-item preview-item" href="{{url_for('add_new_manager_email')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Add User
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Add User
-                  </p>
-                </div>
-              </a>
-              <a class="dropdown-item preview-item" href="{{url_for('manage_user_rights')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">User rights
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Manage user rights
-                  </p>
-                </div>
-              </a>
-              {% if session['account_type'] == 'all_accounts' or session['account_type'] == 'Property Management' %}
-              <a class="dropdown-item preview-item" href="{{url_for('assign_properties')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Assign properties
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Assign properties to managers
-                  </p>
-                </div>
-              </a>
-              <a class="dropdown-item preview-item" href="{{url_for('unassign_properties')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Unassign properties
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Unassign properties from managers
-                  </p>
-                </div>
-              </a>
-              {% endif %}
-              <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Activities
-                  </p>
-                </div>
-              </a>
-              <a class="dropdown-item preview-item" href="{{url_for('view_login_history')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Login history
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Login history
-                  </p>
-                </div>
-              </a>
-              {% endif %}
               <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Log Out
@@ -208,12 +141,12 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Update tenant information</h4>
+            <h4 class="mb-0">Account setting</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
           <li class="nav-item mr-0">
-            <h5 class="mb-0">{{session['user_message2']}} Days left</h5>
+            <!-- <h5 class="mb-0">{{session['user_message2']}} Days left</h5> -->
           </li>
         </ul>
       </div>
@@ -242,69 +175,24 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
-          {% if session['account_type'] == 'all_accounts' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_overview') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Go To ERP</span>
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Overview</span>
-              <div class="badge badge-danger">new</div>
+            <a class="nav-link" href="{{ url_for('tenant_data') }}">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">Payment Info</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_tenant_info') }}">
-              <i class="typcn typcn-chart-pie-outline menu-icon"></i>
-              <span class="menu-title">Tenants</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% if session.get('add_properties') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_property_info') }}">
-              <i class="typcn typcn-th-small-outline menu-icon"></i>
-              <span class="menu-title">Properties</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('resolve_complaints') }}">
-              <i class="typcn typcn-compass menu-icon"></i>
-              <span class="menu-title">Complaints</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% if session.get('manage_contracts') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('manage_contracts') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Contracts</span>
-              <i class="menu-arrow"></i>
+            <a class="nav-link" href="{{ url_for('complaint_form') }}">
+              <i class="typcn typcn-message-typing menu-icon"></i>
+              <span class="menu-title">Make A Complaint</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Add Contracts</span>
-              <i class="menu-arrow"></i>
+            <a class="nav-link" href="{{ url_for('my_complaints') }}">
+              <i class="typcn typcn-message menu-icon"></i>
+              <span class="menu-title">My Complaints</span>
             </a>
           </li>
-          {% endif %}
-          {% if session['is_manager'] == 'is_manager' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_file_passwords') }}">
-              <i class="typcn typcn-key menu-icon"></i>
-              <span class="menu-title">Passwords</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% endif %}
         </ul>
       </nav>
       <!-- partial -->
@@ -315,52 +203,13 @@
             <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
             {% endfor %} {% endif %} {% endwith %}
           </div>
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('update')}}" method="POST" enctype="multipart/form-data">
-            <h6>Tenant: {{tenantName}}</h6>
-            <label class="input_labels" for="">Amount Paid</label>
-            <input class="property_inputs" placeholder="last payment was {{amount}} in {{year}}" type="number" name="amount_paid" min="5000" required><br>
-            <label class="input_labels" for="">Payment Mode</label>
-            <select class="property_inputs" name="payment_mode" id="" required>
-              <option value="Cash">Cash</option>
-              <option value="Mobile Money">Mobile Money</option>
-              <option value="Bank">Bank</option>
-              <option value="PayPal">PayPal</option>
-              <option value="MasterCard">MasterCard</option>
-              <option value="Momo Pay">Momo Pay</option>
-            </select><br>
-            <label class="input_labels" for="">Select Payment Period</label>
-            <select class="property_inputs" name="months_paid" id="" required>
-              <option value="none" disabled selected>Last payment was in {{months_paid}}</option>
-              {% if payment_type == 'Monthly' %}
-                  <option value="January">January</option>
-                  <option value="February">February</option>
-                  <option value="March">March</option>
-                  <option value="April">April</option>
-                  <option value="May">May</option>
-                  <option value="June">June</option>
-                  <option value="July">July</option>
-                  <option value="August">August</option>
-                  <option value="September">September</option>
-                  <option value="October">October</option>
-                  <option value="November">November</option>
-                  <option value="December">December</option>
-              {% elif payment_type == 'Quarterly' %}
-                  <option value="Quarter 1">Quarter 1</option>
-                  <option value="Quarter 2">Quarter 2</option>
-                  <option value="Quarter 3">Quarter 3</option>
-                  <option value="Quarter 4">Quarter 4</option>
-              {% elif payment_type == 'Annualy' %}
-                {% for year in range(current_year, current_year + 5) %}
-                    <option value="{{ year }}">{{ year }}</option>
-                {% endfor %}
-              {% endif %}
-            </select><br>
-            <label class="input_labels" for="">Date</label>
-            <input class="property_inputs" type="date" name="date" required><br>
-            <input type="hidden" name="tenantEmail" value="{{tenantEmail}}">
-            <input type="hidden" name="propertyName" value="{{propertyName}}">
-            <input type="hidden" name="selected_section" value="{{selected_section}}">
-            <input required type="submit" class="btn" value="Submit">
+          <form id="myForm" class="property_forn content-pannel" action="{{url_for('tenant_account_setup_initiated')}}" method="POST" enctype="multipart/form-data">
+            <label style="margin-top: 5px;" class="input_labels" for="">2 Factor Authentication</label>
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch" onclick="updateHiddenInput()"><br>
+            <input type="hidden" id="hiddenInput" name="switchState" value="no">
+            <label class="input_labels" for="">Upload Profile Picture</label>
+            <input type="file" accept="image/*" name="dp" id="imageUpload"><br>
+            <input required type="submit" class="btn" value="Save">
           </form>
         </div>
         <!-- content-wrapper ends -->
@@ -387,25 +236,55 @@
 
   <script>
     document.getElementById('myForm').addEventListener('submit', function(event) {
-        var radios = document.getElementsByTagName('input');
-        var allAnswered = true;
-        for (var i = 0; i < radios.length; i++) {
-            if (radios[i].type === 'radio' && !radios[i].checked) {
-                allAnswered = false;
+        var inputs = document.getElementsByClassName('property_inputs');
+        var fileInput = document.getElementById('imageUpload');
+        var allEmpty = true;
+
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].type !== 'file' && inputs[i].value.trim() !== "") {
+                allEmpty = false;
                 break;
             }
         }
-        if (!allAnswered) {
-            if (!confirm('Confirm Submission')) {
-                event.preventDefault();
-            }
+
+        // Check if a file is selected
+        if (fileInput.files.length > 0) {
+            allEmpty = false;
+        }
+
+        if (allEmpty) {
+            alert("All fields are empty. Please fill out at least one field.");
+            event.preventDefault();
         } else {
             if (!confirm('Confirm Submission')) {
                 event.preventDefault();
             }
         }
     });
-    </script>
+</script>
+
+<script>
+  var checkbox = document.getElementById("mySwitch");
+  var hiddenInput = document.getElementById("hiddenInput");
+
+  // Set the initial state of the switch based on the value of 2fa
+  var twoFactorAuth = "{{ auth }}";
+  if (twoFactorAuth === "yes") {
+    checkbox.checked = true;
+    hiddenInput.value = "yes";
+  } else {
+    checkbox.checked = false;
+    hiddenInput.value = "no";
+  }
+
+  function updateHiddenInput() {
+    if (checkbox.checked) {
+      hiddenInput.value = "yes";
+    } else {
+      hiddenInput.value = "no";
+    }
+  }
+</script>
 
   <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -414,20 +293,6 @@
           document.getElementById("alert").style.display = "none";
       }, 5000);
       });
-  </script>
-
-  <script>
-    let counter = 0;
-    const spinner = document.getElementById('spinner');
-
-    const intervalId = setInterval(() => {
-      counter++;
-      spinner.textContent = `${counter}%`;
-
-      if (counter === 100) {
-        clearInterval(intervalId);
-      }
-    }, 100); // Adjust this value to control the speed of the counter
   </script>
 
   <!-- base:js -->
@@ -444,6 +309,19 @@
   <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
   <!-- endinject -->
   <!-- Custom js for this page-->
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
   <!-- End custom js for this page-->
 </body>

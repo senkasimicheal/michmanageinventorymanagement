@@ -17,6 +17,7 @@
   <!-- endinject -->
   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
   <!-- preloader -->
@@ -315,7 +316,7 @@
             <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
             {% endfor %} {% endif %} {% endwith %}
           </div>
-          <div class="complaint-button-container">
+          <div class="content-pannel">
             <button class="price-button" onclick="show('pending')">Pending</button>
             <button class="price-button" onclick="show('resolved')">Resolved</button>
           </div>
@@ -332,7 +333,7 @@
                         <div class="complaint-footer">
                           <span class="complaint-date">Filed on {{ complaint.complained_on.strftime('%Y-%m-%d %H:%M') }}</span>
                         </div>
-                        <textarea placeholder="Your reply goes here" class="complaint_details_reply" name="Reply_{{ complaint._id }}" required></textarea>
+                        <textarea placeholder="Your reply goes here" class="complaint_details_reply" name="Reply_{{ complaint._id }}" required maxlength="100"></textarea>
                         <input type="hidden" id="clientTime" name="client_time">
                         <input type="hidden" id="timeZoneOffset" name="time_zone_offset">
                         <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
@@ -350,7 +351,18 @@
                           <h4>Replies</h4>
                           {% for reply in complaint.replies %}
                               <div class="reply">
-                                  <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
+                                  <div class="heading-container">
+                                    <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
+                                    {% if reply.Reply != 'No reply' %}
+                                    {% if reply.who != reply.other %}
+                                    {% if reply.status == 'seen' %}
+                                    <span class="seen-status-icon"><i class="fas fa-check-double"></i></span>
+                                    {% else %}
+                                    <span class="unseen-status-icon"><i class="fas fa-check"></i></span>
+                                    {% endif %}
+                                    {% endif %}
+                                    {% endif %}
+                                  </div>
                                   <p class="reply-message">{{ reply.Reply }}</p>
                               </div>
                           {% endfor %}

@@ -9244,8 +9244,21 @@ pre code {
     font-size: 18px;
   }
 
-  .complaint-button-container{
+  .content-pannel{
     margin-top: -3rem;
+  }
+
+  .tenant-form form{
+    margin-top: 23rem !important;
+  }
+
+  .property-form form{
+    margin-top: 23rem !important;
+  }
+
+  .complaint_details{
+    width: 221px !important;
+    height: 150px;
   }
 }
 
@@ -25637,6 +25650,8 @@ div.tagsinput span.tag a {
   margin-bottom: 10px;
   border-radius: 5px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  box-sizing: border-box;
+  max-width: 500px;
 }
 
 .complaint-heading {
@@ -25644,6 +25659,38 @@ div.tagsinput span.tag a {
   font-size: 1.2em;
   font-weight: bold;
   margin-bottom: 10px;
+}
+
+.heading-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.complaint-heading {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seen-status-icon {
+  margin-left: 8px;
+  font-size: small;
+  flex-shrink: 0;
+  color: blue;
+}
+
+.unseen-status-icon{
+  margin-left: 8px;
+  font-size: small;
+  flex-shrink: 0;
+}
+
+.complaint-details {
+  margin-top: 10px;
+  word-wrap: break-word;
 }
 
 .complaint-heading1 {
@@ -25683,6 +25730,10 @@ div.tagsinput span.tag a {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 5px;
+}
+
+.replies-section h2{
+  font-size: 18px;
 }
 
 .reply {
@@ -25786,7 +25837,7 @@ input[type="number"] {
   background: #fff;
   margin-left: 2rem;
   margin-right: 2rem;
-  margin-top: 27rem;
+  margin-top: 23rem !important;
   padding-left: 2rem;
   padding-right: 2rem;
   border-radius: .5rem;
@@ -25846,7 +25897,7 @@ input[type="number"] {
   background: #fff;
   margin-left: 2rem;
   margin-right: 2rem;
-  margin-top: 33rem;
+  margin-top: 23rem !important;
   padding-left: 2rem;
   padding-right: 2rem;
   border-radius: .5rem;
@@ -26253,8 +26304,30 @@ table td {
   width: 6.8rem;
 }
 
+.upload_icon {
+  display: inline-block;
+  cursor: pointer;
+  color: #007bff;
+  font-size: 24px;
+  padding: 5px;
+}
+
+.upload_icon:hover {
+  color: #0056b3;
+}
+
+.error {
+  color: red;
+  display: none;
+}
+
 .complaint-image{
   width: 100%;
   max-width: 15rem;
   height: 15rem;
+}
+
+.complaint_details{
+  width: 335px;
+  height: 150px;
 }
