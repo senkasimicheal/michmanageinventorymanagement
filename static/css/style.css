@@ -1614,3 +1614,53 @@ table td {
   max-width: 15rem;
   height: 15rem;
 }
+
+.notification {
+  position: fixed;
+  top: -1000px;
+  left: 27%;
+  width: 50%;
+  background-color: lightgreen;
+  color: #333;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1001 !important;
+  transition: top 5s ease-in-out;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification.show {
+  top: 50%; /* Center vertically */
+  transform: translateY(-50%);
+}
+
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 10px;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+.notification button {
+  padding: 5px 10px;
+  font-size: 10px;
+  background-color: #007BFF;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.notification button:hover {
+  background-color: #0056b3;
+}

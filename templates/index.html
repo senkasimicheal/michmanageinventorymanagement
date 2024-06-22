@@ -501,52 +501,75 @@
     });
   </script>
 
-  <script>
-    let deferredPrompt;
-    const installButton = document.getElementById('installButton');
-    const installModal = document.getElementById('installModal');
+  <div class="notification">
+    <span class="close-btn">&times;</span>
+    <button id="confirmInstallButton">Install App</button>
+  </div>
 
+  <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/js/service-worker.js')
+            .then(registration => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            })
+            .catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+    }
+
+    let deferredPrompt;
+    const notification = document.querySelector('.notification');
+    const confirmInstallButton = document.getElementById('confirmInstallButton');
+    const closeBtn = document.querySelector('.close-btn');
+
+    // Function to show the install prompt notification
+    function showInstallPrompt() {
+        notification.classList.add('show');
+    }
+
+    // Function to hide the install prompt notification
+    function hideInstallPrompt() {
+        notification.classList.remove('show');
+        sessionStorage.setItem('dismissedInstallPrompt', 'true');
+    }
+
+    // Event listener for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-
-        // Show the install modal
-        installModal.style.display = 'block';
-
-        // Resolve the promise after the 'beforeinstallprompt' event is fired
-        if (deferredPromptPromiseResolve) {
-            deferredPromptPromiseResolve();
+        if (!sessionStorage.getItem('dismissedInstallPrompt')) {
+            showInstallPrompt();
         }
     });
 
-    installButton.addEventListener('click', (e) => {
-        if (!deferredPrompt) {
-            console.log('The app is already installed or not installable.');
-            return;
+    // Event listener for the install button click
+    confirmInstallButton.addEventListener('click', () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null;
+                hideInstallPrompt();
+            });
         }
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
-            }
-            deferredPrompt = null;
-
-            // Hide the install modal
-            installModal.style.display = 'none';
-        });
     });
 
-    // Create a promise that resolves after the 'beforeinstallprompt' event is fired
-    let deferredPromptPromiseResolve;
-    const deferredPromptPromise = new Promise((resolve) => {
-        deferredPromptPromiseResolve = resolve;
+    // Event listener for the close button click
+    closeBtn.addEventListener('click', () => {
+        hideInstallPrompt();
     });
 
-    // Wait for the promise to resolve, then click the button
-    deferredPromptPromise.then(() => {
-        installButton.click();
+    // Check if the notification was previously dismissed during the current session
+    document.addEventListener('DOMContentLoaded', () => {
+        if (sessionStorage.getItem('dismissedInstallPrompt') === 'true') {
+            hideInstallPrompt();
+        } else {
+            showInstallPrompt(); // Show if not previously dismissed in this session
+        }
     });
   </script>
 
