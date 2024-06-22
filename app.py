@@ -1176,10 +1176,6 @@ def tenant_login():
                 session['propertyName'] = tenant['propertyName']
 
                 last_logged_in_data = db.tenant_logged_in_data.find_one({'username': tenant['username']}, sort=[('timestamp', -1)])
-                last_login_utc = last_logged_in_data['timestamp'].replace(tzinfo=timezone.utc)
-                now_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
-
-                total_seconds = (now_utc - last_login_utc).total_seconds()
 
                 if last_logged_in_data is None:
                     # This is a new user, so we don't have a last login time.
@@ -1241,10 +1237,6 @@ def tenant_authentication():
         session['propertyName'] = user_auth['propertyName']
 
         last_logged_in_data = db.tenant_logged_in_data.find_one({'username': user_auth['username']}, sort=[('timestamp', -1)])
-        last_login_utc = last_logged_in_data['timestamp'].replace(tzinfo=timezone.utc)
-        now_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
-
-        total_seconds = (now_utc - last_login_utc).total_seconds()
 
         if last_logged_in_data is None:
             # This is a new user, so we don't have a last login time.
