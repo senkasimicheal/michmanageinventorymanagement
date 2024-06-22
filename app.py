@@ -1109,7 +1109,17 @@ def tenant_register_account():
 @app.route("/tenant-login", methods=["POST"])
 def tenant_login():
     session.clear()
+
     global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
 
     username = request.form.get('username')
     password = request.form.get('password')
@@ -1410,8 +1420,6 @@ def add_complaint():
                 
         db.tenant_complaints.insert_one(compiled_complaint)
         #Sending verification code
-        global send_emails
-        send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             msg = Message('New Complaint On Mich Manage', 
             sender='michpmts@gmail.com', 
@@ -1500,8 +1508,7 @@ def tenant_reply_complaint():
         tenant_managed = db.tenants.find_one({'tenantEmail': tenant_name['tenantEmail'], 'propertyName': tenant_name['propertyName']})
         manager = db.registered_managers.find_one({'username': tenant_managed['username'], 'company_name': tenant_managed['company_name']})
         manager_email = manager['email']
-        global send_emails
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+
         if send_emails is not None:
             msg = Message('New Reply From Tenant', 
             sender='michpmts@gmail.com', 
