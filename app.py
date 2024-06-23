@@ -39,24 +39,26 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
-    client = MongoClient('mongodb://localhost:27017/')
-    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
-    db = client.PropertyManagement
-    return db
+    # Connect to MongoDB using the connection string
+    # client = MongoClient('mongodb://localhost:27017/')
+    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    return client
 
-db = get_mongo_client()
-fs = GridFS(db, collection='contracts')
+# Function to get the database and GridFS instance
+def get_db_and_fs():
+    client = get_mongo_client()
+    db = client.PropertyManagement
+    fs = GridFS(db, collection='contracts')
+    return db, fs
 
 scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
 
-# Declare send_emails as a global variable
-send_emails = send_emails = db.send_emails.find_one({'emails': "yes"})
 mail = Mail(app)
 
 def update_send_emails():
-    global send_emails
+    db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -76,7 +78,7 @@ def generate_file_password(length=12):
     return ''.join(random.choice(characters) for _ in range(length))
 
 def send_reports():
-    global send_emails
+    db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -289,7 +291,7 @@ scheduler.add_job('send_reports', send_reports, trigger='cron', day='1', hour=11
 
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_reminders():
-    global send_emails
+    db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -365,7 +367,7 @@ scheduler.add_job('send_payment_reminders', send_payment_reminders, trigger='cro
 
 ##########SEND CONTRACT EXPIRY REMINDERS###########
 def send_contract_expiry_reminders():
-    global send_emails
+    db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -424,6 +426,7 @@ scheduler.add_job('send_contract_expiry_reminders', send_contract_expiry_reminde
     
 @app.route("/")
 def index():
+    db, fs = get_db_and_fs()
     companies = db.managers.find({}, {"name": 1})
     company_names = [company['name'] for company in companies]
     
@@ -440,7 +443,7 @@ def index():
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
 def send_message():
-    global send_emails
+    db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -533,7 +536,7 @@ def generate_code(length=6):
 ###########REGISTRING AN ACCOUNT###############
 @app.route('/register-account', methods=["POST"])
 def register_account():
-    global send_emails
+    db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -659,6 +662,7 @@ def load_verification_page():
 
 @app.route('/verifying-your-account', methods=["POST"])
 def verifying_your_account():
+    db, fs = get_db_and_fs()
     # Get form data
     email = request.form.get('email')
     code = request.form.get('code')
@@ -689,8 +693,7 @@ def verify_username():
     return render_template('forgot_password_verify_username.html')
 
 def send_verification_email(manager_email, manager_name, code):
-
-    global send_emails
+    db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -700,7 +703,7 @@ def send_verification_email(manager_email, manager_name, code):
         app.config['MAIL_USE_TLS'] = True
         app.config['MAIL_USE_SSL'] = False
         mail.init_app(app)
-        
+
     if send_emails is not None:
         msg = Message('Password Reset Verification Code - Mich Manage', 
                     sender='michpmts@gmail.com', 
@@ -724,6 +727,7 @@ def send_verification_email(manager_email, manager_name, code):
 
 @app.route('/send-verification-code', methods=["POST"])
 def send_verification_code():
+    db, fs = get_db_and_fs()
     username = request.form.get('username')
     manager_exists = db.registered_managers.find_one({'username': username})
     if manager_exists is None:
@@ -748,6 +752,18 @@ def send_verification_code():
     
 @app.route('/password-reset-verifying_user', methods=["POST"])
 def password_reset_verifying_user():
+    db, fs = get_db_and_fs()
+
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+
     # Get form data
     email = request.form.get('email')
     code = request.form.get('code')
@@ -800,9 +816,8 @@ def password_reset_verifying_user():
 #######PROPERTY MANAGER LOGIN##############
 @app.route("/userlogin", methods=["POST"])
 def userlogin():
+    db, fs = get_db_and_fs()
     session.clear()
-
-    global send_emails
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -945,6 +960,7 @@ def userlogin():
 #USER AUTHENTICATION
 @app.route("/authentication", methods=["POST"])
 def authentication():
+    db, fs = get_db_and_fs()
     # Get form data
     code = request.form.get("code")
 
@@ -1044,6 +1060,7 @@ def authentication():
 ##ACCOUNT SETTING
 @app.route('/account-setup-page')
 def account_setup_page():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -1058,6 +1075,7 @@ def account_setup_page():
 ##ACCOUNT SETTING
 @app.route('/account-setup-initiated', methods=["POST"])
 def account_setup_initiated():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -1099,6 +1117,7 @@ def account_setup_initiated():
 ##ACCOUNT SETTING FOR TENANT
 @app.route('/tenant-account-setup-page')
 def tenant_account_setup_page():
+    db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
     if login_data is None:
         flash('Login first')
@@ -1113,6 +1132,7 @@ def tenant_account_setup_page():
 ##ACCOUNT SETTING FOR TENANT
 @app.route('/tenant-account-setup-initiated', methods=["POST"])
 def tenant_account_setup_initiated():
+    db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
     if login_data is None:
         flash('Login first')
@@ -1145,6 +1165,7 @@ def tenant_account_setup_initiated():
 #######TENANT REGISTER ACCOUNT###############          
 @app.route('/tenant-register-account', methods=["POST"])
 def tenant_register_account():
+    db, fs = get_db_and_fs()
     email = request.form.get('email')
     username = request.form.get('username')
     propertyName = request.form.get('propertyName')
@@ -1180,9 +1201,8 @@ def tenant_register_account():
 #######TENANT LOGIN##############
 @app.route("/tenant-login", methods=["POST"])
 def tenant_login():
+    db, fs = get_db_and_fs()
     session.clear()
-
-    global send_emails
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
         app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -1255,6 +1275,7 @@ def tenant_login():
 #USER AUTHENTICATION
 @app.route("/tenant-authentication", methods=["POST"])
 def tenant_authentication():
+    db, fs = get_db_and_fs()
     # Get form data
     code = request.form.get("code")
 
@@ -1279,6 +1300,7 @@ def tenant_authentication():
 
 @app.route('/tenant-data')
 def tenant_data():
+    db, fs = get_db_and_fs()
     tenantEmail = session.get('tenantEmail')
     propertyName = session.get('propertyName')
     login_data = session.get('tenantID')
@@ -1367,6 +1389,7 @@ def tenant_data():
 #############LOADING COMPLAINTS PAGE##########
 @app.route('/complaint-form')
 def complaint_form():
+    db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
         flash('Login first')
@@ -1382,11 +1405,22 @@ def complaint_form():
 ##########STORE COMPLAINTS##############
 @app.route('/add-complaint', methods=["POST"])
 def add_complaint():
+    db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
         flash('Login first')
         return redirect('/tenant-login-page')
     else:
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         complaint_heading = request.form.get('complaint_heading')
         details = request.form.get('details')
         client_time = request.form.get('client_time')
@@ -1438,6 +1472,7 @@ def add_complaint():
 ############SHOW MY COMPLAINTS######################
 @app.route('/my-complaints')
 def my_complaints():
+    db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
         flash('Login first')
@@ -1483,11 +1518,22 @@ def my_complaints():
 ############REPLY TO COMPLAINTS BY TENANT###########
 @app.route('/tenant-reply-to-complaint', methods=['POST'])
 def tenant_reply_complaint():
+    db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
         flash('Login first')
         return redirect('/')
     else:
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         tenant_name = db.tenant_user_accounts.find_one({'_id': ObjectId(tenant_login_data)})
         login_data = tenant_name['username']
         complaint_id = request.form.get('complaint_id')
@@ -1527,6 +1573,7 @@ def tenant_reply_complaint():
 ############LOAD COMPLAINTS TO MANAGER######################
 @app.route('/resolve-complaints')
 def resolve_complaints():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -1602,11 +1649,22 @@ def resolve_complaints():
 ############RESOLVE COMPLAINTS BY MANAGER###########
 @app.route('/update-complaint', methods=['POST'])
 def update_complaint():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
         return redirect('/')
     else:
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         complaint_id = request.form.get('complaint_id')
         Reply = request.form.get('Reply_' + str(complaint_id))
         client_time = request.form.get('client_time')
@@ -1622,6 +1680,7 @@ def update_complaint():
         tenant_complaint_id = db.tenant_complaints.find_one({'_id': ObjectId(complaint_id)})
         tenant_object_id = db.tenant_user_accounts.find_one({'_id': tenant_complaint_id['tenantID']})
         tenant_email = tenant_object_id['tenantEmail']
+
         if send_emails is not None:
             msg = Message('New Reply From Property Manager', 
             sender='michpmts@gmail.com', 
@@ -1644,11 +1703,22 @@ def update_complaint():
 ##########RESOLVING COMPLAINTS AFTER SOLVING THEM#########
 @app.route('/resolved-complaints/<complaint_id>', methods=["GET", "POST"])
 def resolved_complaints(complaint_id):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
         return redirect('/')
     else:
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+            
         resolved_complaint = db.tenant_complaints.find_one({'_id': ObjectId(complaint_id)})
         resolved_complaint['resolved_time'] = datetime.now()
         resolved_complaint['username'] = login_data
@@ -1689,6 +1759,7 @@ def resolved_complaints(complaint_id):
 #############ADD PROPERTY####################
 @app.route('/add-property', methods=["POST"])
 def add_property():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -1751,6 +1822,7 @@ def add_property():
 ########LOAD TENANT INFO################
 @app.route('/update-tenant-info')
 def update_tenant_info():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     current_year = datetime.now().year
     if login_data is None:
@@ -1842,6 +1914,7 @@ def update_tenant_info():
 
 @app.route('/get_receipt', methods=['GET'])
 def get_receipt():
+    db, fs = get_db_and_fs()
     tenant_email = request.args.get('tenantEmail')
     property_name = request.args.get('propertyName')
     selected_section = request.args.get('selected_section')
@@ -1902,13 +1975,14 @@ def get_receipt():
 ###########UPDATE TENANT INFO################
 @app.route('/update', methods=['POST'])
 def update():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     current_year = datetime.now().year
     if login_data is None:
         flash('Login first') 
         return redirect('/')
     else:
-        global send_emails
+        
         send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -2645,6 +2719,7 @@ def get_property_data(properties):
 
 @app.route('/view-property-info')
 def view_property_info():
+    db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
         flash('Login first')
@@ -2677,6 +2752,7 @@ def view_property_info():
 #####UPDATE PROPERTY INFO#############
 @app.route('/update-property/<propertyName>')
 def selected_property(propertyName):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -2695,6 +2771,7 @@ def selected_property(propertyName):
 ##POSTING NEW PROPERTY INFORMATION
 @app.route('/update-property', methods=["POST"])
 def update_property():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -2735,6 +2812,7 @@ def get_managers_data(registered_managers):
 
 @app.route('/view-user-accounts')
 def view_user_accounts():
+    db, fs = get_db_and_fs()
     # Get session data
     username = session.get('login_username')
     if username is None:
@@ -2765,6 +2843,7 @@ def view_user_accounts():
 ########DELETE PROPERTY################
 @app.route('/delete_manager/<company_name>/<email>', methods=['POST'])
 def delete_manager(company_name,email):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -2783,6 +2862,7 @@ def delete_manager(company_name,email):
 ########ADD NEW MANAGER EMAIL################
 @app.route('/add-new-manager-email')
 def add_new_manager_email():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -2805,6 +2885,7 @@ def add_new_manager_email():
 
 @app.route('/update-new-manager-email', methods=['POST'])
 def update_new_manager_email():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -2826,6 +2907,7 @@ def update_new_manager_email():
 #######CLICK TO UPDATE TENANT#############
 @app.route('/selected-tenant/<tenantName>/<tenantEmail>/<propertyName>/<selected_section>/<payment_type>/<amount>/<months_paid>/<date_last_paid>')
 def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, payment_type, amount, months_paid,date_last_paid):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first') 
@@ -2845,6 +2927,7 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
 ##########EDIT TENANT INFO###################
 @app.route('/edit/<tenantName>/<email>/<property_name>/<selected_section>/<payment_type>')
 def edit(tenantName, email, property_name, selected_section, payment_type):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -2868,12 +2951,13 @@ def edit(tenantName, email, property_name, selected_section, payment_type):
 ############APPLY EDITS##############
 @app.route('/make-edits', methods=["POST"])
 def make_edits():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
         return redirect('/')
     else:
-        global send_emails
+        
         send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -3031,6 +3115,7 @@ def make_edits():
 ###########VIEW TENANT RECEIPT###############
 @app.route('/view-receipt/<tenant_email>/<property_name>/<selected_section>', methods=["GET"])
 def view_receipt(tenant_email, property_name, selected_section):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     # Retrieve the tenant document using tenant_id
     tenant = db.tenants.find_one({'username': login_data, 'propertyName': property_name, 'selected_section': selected_section, 'tenantEmail': tenant_email})
@@ -3058,12 +3143,13 @@ def view_receipt(tenant_email, property_name, selected_section):
 #############ADD TENANT####################
 @app.route('/add-tenant', methods=["POST"])
 def add_tenant():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
         return redirect('/')
     else:
-        global send_emails
+        
         send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -3348,6 +3434,7 @@ def add_tenant():
 ########DELETE TENANT################
 @app.route('/delete_tenant/<tenantEmail>/<propertyName>/<selected_section>')
 def delete_tenant(tenantEmail, propertyName, selected_section):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -3370,6 +3457,7 @@ def admin():
 
 @app.route('/admin-login', methods=["POST"])
 def adminlogin():
+    db, fs = get_db_and_fs()
     email = request.form.get('email')
     entered_password = request.form.get('password')
     password = entered_password.encode('utf-8')
@@ -3406,13 +3494,12 @@ def add_property_manager_page():
 ##########ADD PROPERTY MANAGER COMPANY#############
 @app.route('/add-property-manager', methods=["POST"])
 def add_property_manager():
+    db, fs = get_db_and_fs()
     login_data = session.get('admin_email')
     if login_data is None:
         flash('Login first')
         return redirect('/admin')
-    else:
-
-        global send_emails
+    else:   
         send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -3482,6 +3569,7 @@ def new_subscription():
         flash('Login first')
         return redirect('/admin')
     else:
+        db, fs = get_db_and_fs()
         companies = db.managers.find()
         cursor = list(companies)
         if len(cursor) == 0:
@@ -3495,6 +3583,7 @@ def new_subscription():
 #######STORING NEW SUBSCRIPTION###############
 @app.route("/new-subscription-initiated", methods=["POST"])
 def new_subscription_initiated():
+    db, fs = get_db_and_fs()
     login_data = session.get('admin_email')
     if login_data is None:
         flash('Login first')
@@ -3672,6 +3761,7 @@ def create_line_chart(df, title, xaxis_title, yaxis_title):
 #############DASHBOARD PAGE#######################
 @app.route('/load-dashboard-page', methods=["GET", "POST"])
 def load_dashboard_page():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     # get the current month number
     current_month = datetime.now().month
@@ -3684,6 +3774,16 @@ def load_dashboard_page():
         flash('Login first')
         return redirect('/')
     else:
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         if send_emails is None:
             session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
                 
@@ -3888,6 +3988,7 @@ def load_dashboard_page():
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])
 def download():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4016,6 +4117,7 @@ def download():
 #####FILE PASSWORDS
 @app.route('/view-file-passwords')
 def view_file_passwords():
+    db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
         flash('Login first')
@@ -4037,6 +4139,7 @@ def view_file_passwords():
 ####MANAGE CONTRACTS
 @app.route('/manage-contracts')
 def manage_contracts():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4091,6 +4194,7 @@ def manage_contracts():
         
 @app.route('/upload-contract-page')
 def upload_contract_page():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4124,6 +4228,7 @@ def upload_contract_page():
 
 @app.route('/upload-contract', methods=['POST'])
 def upload_contract():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4162,6 +4267,7 @@ def upload_contract():
 ########DELETE CONTRACTS################
 @app.route('/delete-contract/<contractID>')
 def delete_contract(contractID):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4179,6 +4285,7 @@ def delete_contract(contractID):
 ##UPDATE CONTRACTS
 @app.route('/update-contract/<contractID>/<company_name>/<receiver>')
 def selected_contract(contractID, company_name, receiver):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4196,6 +4303,7 @@ def selected_contract(contractID, company_name, receiver):
 
 @app.route('/updated-contract', methods=['POST'])
 def updated_contract():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4231,6 +4339,7 @@ def updated_contract():
             
 @app.route('/download-contract/<fileID>')
 def download_contract(fileID):
+    db, fs = get_db_and_fs()
     file = fs.get(ObjectId(fileID))
     response = make_response(file.read())
     response.mimetype = 'application/octet-stream'
@@ -4240,6 +4349,7 @@ def download_contract(fileID):
 ####MANAGE USER RIGHTS
 @app.route('/manage-user-rights')
 def manage_user_rights():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4267,6 +4377,7 @@ def manage_user_rights():
     
 @app.route('/manage-user-rights-page/<email>/<company_name>')
 def manage_user_rights_page(email,company_name):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4303,6 +4414,7 @@ def manage_user_rights_page(email,company_name):
 
 @app.route('/user-rights-initiated', methods=["POST"])
 def user_rights_initiated():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4359,6 +4471,7 @@ def user_rights_initiated():
 ####ASSIGN PROPERTIES TO MANAGERS
 @app.route('/assign-properties')
 def assign_properties():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4386,6 +4499,7 @@ def assign_properties():
     
 @app.route('/assign-properties-page/<name>/<email>/<company_name>')
 def assign_properties_page(name,email,company_name):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4406,6 +4520,7 @@ def assign_properties_page(name,email,company_name):
     
 @app.route('/assign-properties-initiated', methods=["POST"])
 def assign_properties_initiated():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4428,6 +4543,7 @@ def assign_properties_initiated():
 ####UNASSIGN PROPERTIES FROM MANAGERS
 @app.route('/unassign-properties')
 def unassign_properties():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4455,6 +4571,7 @@ def unassign_properties():
     
 @app.route('/unassign-properties-page/<name>/<email>/<company_name>')
 def unassign_properties_page(name,email,company_name):
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4475,6 +4592,7 @@ def unassign_properties_page(name,email,company_name):
     
 @app.route('/unassign-properties-initiated', methods=["POST"])
 def unassign_properties_initiated():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4521,6 +4639,7 @@ def convert_to_eat(timestamp):
 ##AUDIT LOGS
 @app.route('/view-audit-logs')
 def view_audit_logs():
+    db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
         flash('Login first')
@@ -4551,6 +4670,7 @@ def format_time(doc):
 ##LOGIN HISTORY
 @app.route('/view-login-history')
 def view_login_history():
+    db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
         flash('Login first')
@@ -4574,6 +4694,7 @@ def view_login_history():
 ###DOANLOAD AUDIT DATA   
 @app.route('/download-audit-logs', methods=["POST"])
 def download_audit_logs():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4614,6 +4735,7 @@ def download_audit_logs():
 ###DOANLOAD LOGIN DATA   
 @app.route('/download-login-data', methods=["POST"])
 def download_login_data():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4651,6 +4773,7 @@ def download_login_data():
 #####ACTIVATE SENDING EMAILS
 @app.route('/activate sending emails/<send_emails>')
 def activate_send_emails(send_emails):
+    db, fs = get_db_and_fs()
     send_emails_state = db.send_emails.find_one()
     if send_emails_state is None:
         db.send_emails.insert_one({'emails': send_emails})
@@ -4672,6 +4795,7 @@ def activate_send_emails(send_emails):
 ###############ENTREPRISE RESOURCE PLANNING (ERP)############################
 @app.route('/add-new-stock', methods=['POST'])
 def add_new_stock():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4714,6 +4838,7 @@ def add_new_stock():
     
 @app.route('/update-new-stock', methods=['POST'])
 def update_new_stock():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4759,6 +4884,7 @@ def update_new_stock():
     
 @app.route('/update-sale', methods=['POST'])
 def update_sale():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4819,6 +4945,7 @@ def update_sale():
     
 @app.route('/in-house-use', methods=['POST'])
 def inhouse():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4913,6 +5040,7 @@ def inhouse():
     
 @app.route('/revenue-details')
 def revenue_details():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -4987,6 +5115,7 @@ def revenue_details():
 
 @app.route('/sales-details')
 def sales_details():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -5018,6 +5147,7 @@ def sales_details():
 
 @app.route('/stock-details')
 def stock_details():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -5049,6 +5179,7 @@ def stock_details():
 
 @app.route('/stock-overview', methods=["GET", "POST"])
 def stock_overview():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -5374,6 +5505,7 @@ def stock_overview():
     
 @app.route('/all-accounts-overview')
 def all_accounts_overview():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -5387,6 +5519,7 @@ def all_accounts_overview():
 ###DOANLOAD STOCK DATA   
 @app.route('/download-stock-data', methods=["POST"])
 def download_stock_data():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -5430,6 +5563,7 @@ def download_stock_data():
 ###DOANLOAD REVENUE DATA   
 @app.route('/download-revenue-data', methods=["POST"])
 def download_revenue_data():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -5543,6 +5677,7 @@ def download_revenue_data():
 ###DOANLOAD SALES DATA   
 @app.route('/download-sales-data', methods=["POST"])
 def download_sales_data():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')
@@ -5585,6 +5720,7 @@ def download_sales_data():
 ###DOANLOAD SALES DATA   
 @app.route('/download-inhouse-data', methods=["POST"])
 def download_inhouse():
+    db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
         flash('Login first')

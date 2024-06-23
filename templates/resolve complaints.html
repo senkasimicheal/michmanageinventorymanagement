@@ -340,7 +340,7 @@
                         <div style="display: flex; align-items: center;">
                           <input type="submit" value="Reply" style="background:none;border:none;color:blue; width: 60px !important;">
                           <span style="margin-left: 10px;">
-                            <a href="{{ url_for('resolved_complaints', complaint_id=complaint._id) }}">Resolve</a>
+                            <a href="{{ url_for('resolved_complaints', complaint_id=complaint._id) }}" id="resolveLink">Resolve</a>
                           </span>
                         </div>
                         {% if complaint['image'] %}
@@ -411,6 +411,22 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    document.getElementById('resolveLink').addEventListener('click', function(event) {
+        // Prevent the default action of the link (navigation) initially
+        event.preventDefault();
+
+        // Show the confirmation dialog
+        if (confirm('By Confirming, You resolve the raised complaint')) {
+            // If user confirms, proceed to the link's href
+            window.location.href = event.target.href;
+        } else {
+            // If user cancels, do nothing (stay on the same page)
+            return;
+        }
+    });
+  </script>
 
   <script>
     function toggleReplies(complaintId) {
