@@ -76,6 +76,17 @@ def generate_file_password(length=12):
     return ''.join(random.choice(characters) for _ in range(length))
 
 def send_reports():
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+
     current_year = datetime.now().year
     current_month = datetime.now().month
     # Query the manager collection for all emails
@@ -278,6 +289,17 @@ scheduler.add_job('send_reports', send_reports, trigger='cron', day='1', hour=11
 
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_reminders():
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+
     current_year = datetime.now().year
     month_mapping = {
         'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
@@ -343,6 +365,17 @@ scheduler.add_job('send_payment_reminders', send_payment_reminders, trigger='cro
 
 ##########SEND CONTRACT EXPIRY REMINDERS###########
 def send_contract_expiry_reminders():
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+
     managers = list(db.managers.find())
     for manager in managers:
         contracts = list(db.contracts.find({'company_name': manager['name']}))
@@ -407,6 +440,17 @@ def index():
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
 def send_message():
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+        
     name = request.form.get('name')
     email = request.form.get('email')
     phone = request.form.get('phone')
@@ -489,6 +533,17 @@ def generate_code(length=6):
 ###########REGISTRING AN ACCOUNT###############
 @app.route('/register-account', methods=["POST"])
 def register_account():
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+        
     # Get form data
     form_data = request.form
     name = form_data.get('name')
@@ -3311,6 +3366,18 @@ def add_property_manager():
         flash('Login first')
         return redirect('/admin')
     else:
+
+        global send_emails
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         email = request.form.get('email')
         name = request.form.get('name')
         allowed_managers = request.form.get('managers').split(',')
