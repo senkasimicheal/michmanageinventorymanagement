@@ -1015,6 +1015,16 @@ h6{
   font-size: 15px;
 }
 
+@media screen and (max-width: 760px) {
+  .tenant-signup-form form{
+    margin-top: 15rem !important;
+  }
+
+  .signup-form form{
+    margin-top: 26rem !important;
+  }
+}
+
 @media screen and (max-width: 600px) {
   .navbar-brand img {
     margin-top: -2px;
@@ -1434,7 +1444,7 @@ input::placeholder {
   background: #fff;
   margin-left: 2rem;
   margin-right: 2rem;
-  margin-top: 10.5rem;
+  margin-top: 18rem;
   padding-left: 2rem;
   padding-right: 2rem;
   border-radius: .5rem;
@@ -1530,11 +1540,11 @@ input::placeholder {
 }
 
 .tenant-signup-form form{
-  width: 20rem;
+  width: 25rem;
   background: #fff;
   margin-left: 2rem;
   margin-right: 2rem;
-  margin-top: -1rem;
+  margin-top: 6rem;
   padding-left: 2rem;
   padding-right: 2rem;
   border-radius: .5rem;
@@ -1663,4 +1673,25 @@ table td {
 
 .notification button:hover {
   background-color: #0056b3;
+}
+
+.password-container {
+  position: relative;
+  display: inline-block;
+}
+.password-container input {
+  padding-right: 30px; /* Space for the eye icon */
+}
+.password-container .toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+.valid {
+  color: green;
+}
+.invalid {
+  color: red;
 }

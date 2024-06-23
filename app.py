@@ -39,8 +39,8 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
-    # client = MongoClient('mongodb://localhost:27017/')
-    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    client = MongoClient('mongodb://localhost:27017/')
+    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     db = client.PropertyManagement
     return db
 
@@ -689,6 +689,18 @@ def verify_username():
     return render_template('forgot_password_verify_username.html')
 
 def send_verification_email(manager_email, manager_name, code):
+
+    global send_emails
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+    if send_emails is not None:
+        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_PORT'] = 587
+        app.config['MAIL_USERNAME'] = 'apikey'
+        app.config['MAIL_PASSWORD'] = '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'
+        app.config['MAIL_USE_TLS'] = True
+        app.config['MAIL_USE_SSL'] = False
+        mail.init_app(app)
+        
     if send_emails is not None:
         msg = Message('Password Reset Verification Code - Mich Manage', 
                     sender='michpmts@gmail.com', 
@@ -1896,6 +1908,17 @@ def update():
         flash('Login first') 
         return redirect('/')
     else:
+        global send_emails
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         new_amount_from_form = request.form.get('amount_paid')
         payment_mode = request.form.get('payment_mode')
         months_paid = request.form.get('months_paid')
@@ -2850,6 +2873,17 @@ def make_edits():
         flash('Login first')
         return redirect('/')
     else:
+        global send_emails
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         tenantEmail = request.form.get('tenantEmail')
         propertyName = request.form.get('propertyName')
         selected_section = request.form.get('selected_section')
@@ -3029,6 +3063,17 @@ def add_tenant():
         flash('Login first')
         return redirect('/')
     else:
+        global send_emails
+        send_emails = db.send_emails.find_one({'emails': "yes"})
+        if send_emails is not None:
+            app.config['MAIL_SERVER']='smtp.sendgrid.net'
+            app.config['MAIL_PORT'] = 587
+            app.config['MAIL_USERNAME'] = 'apikey'
+            app.config['MAIL_PASSWORD'] = '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'
+            app.config['MAIL_USE_TLS'] = True
+            app.config['MAIL_USE_SSL'] = False
+            mail.init_app(app)
+
         tenantName = request.form.get('tenantName')
         gender = request.form.get('gender')
         household_size = request.form.get('household_size')
