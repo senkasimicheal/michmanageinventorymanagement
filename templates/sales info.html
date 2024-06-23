@@ -285,9 +285,11 @@
             itemsArray = [];
             
             // Optionally, clear all input fields here as well
-            // ...
-            
-            alert(data.message);
+            if (data.redirect) {
+                window.location.href = data.redirect; // Redirect to the new URL
+            } else {
+                alert(data.message);
+            }
             
           })
           .catch((error) => {
@@ -389,9 +391,11 @@
             itemsArray = [];
             
             // Optionally, clear all input fields here as well
-            // ...
-            
-            alert(data.message);
+            if (data.redirect) {
+                window.location.href = data.redirect; // Redirect to the new URL
+            } else {
+                alert(data.message);
+            }
             
           })
           .catch((error) => {
@@ -483,9 +487,11 @@
             itemsArray = [];
             
             // Optionally, clear all input fields here as well
-            // ...
-            
-            alert(data.message);
+            if (data.redirect) {
+                window.location.href = data.redirect; // Redirect to the new URL
+            } else {
+                alert(data.message);
+            }
             
           })
           .catch((error) => {
@@ -588,9 +594,105 @@
             itemsArray = [];
             
             // Optionally, clear all input fields here as well
+            if (data.redirect) {
+                window.location.href = data.redirect; // Redirect to the new URL
+            } else {
+                alert(data.message);
+            }
+            
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            alert("An error occurred while submitting updates.");
+          });
+        });
+      });
+    </script>
+
+    <!-- INHOUSE USE -->
+    <div class="inhouse-use-form">
+      <form action="{{url_for('inhouse_used_items')}}" method="POST">
+        <label class="input_labels" for="">Item Used</label>
+        <select name="inhouse_use_item" id="">
+          <option value="" disabled selected>Select item</option>
+            {% for item in available_itemNames %}
+              <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+        <label class="input_labels" for="">Quantity Used</label>
+        <input class="property_inputs" type="number" name="inhouse_use_quantity" min="1">
+        <label class="input_labels" for="">Date</label>
+        <input class="property_inputs" type="date" name="inhouse_use_date" id="inhouse_use_date" placeholder="enter start date"><br>
+        <button type="button" id="inhouse-use-button">Add Item</button>
+        <input type="submit" class="btn" value="Submit">
+        <i class="fas fa-times"></i>
+      </form>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let itemsArray = [];
+
+        document.getElementById('inhouse-use-button').addEventListener('click', () => {
+          // Get the form values
+          const usedItemName = document.querySelector('select[name="inhouse_use_item"]').value;
+          const usedItemQuantity = document.querySelector('input[name="inhouse_use_quantity"]').value;
+          const usedUseDate = document.querySelector('input[name="inhouse_use_date"]').value;
+
+          // Check if any of the fields are empty
+          if (!usedItemName || !usedItemQuantity || !usedUseDate) {
+            alert("Please fill in all fields before updating a usage.");
+            return; // Stop here if any field is empty
+          }
+
+          // Create an object with the form data
+          const itemObject = {
+            usedItemName,
+            usedItemQuantity,
+            usedUseDate
+          };
+
+          // Add the object to the array
+          itemsArray.push(itemObject);      
+
+          // Clear the input fields
+          document.querySelector('select[name="inhouse_use_item"]').selectedIndex = 0;
+          document.querySelector('input[name="inhouse_use_quantity"]').value = '';
+        });
+
+        // Handle the form submission
+        document.querySelector('.inhouse-use-form form').addEventListener('submit', (e) => {
+          e.preventDefault(); // Prevent the default form submission
+
+          if (itemsArray.length === 0) {
+            alert("Please update at least one item.");
+            return; // Stop here if no items have been added
+          }
+
+          document.querySelector('input[name="inhouse_use_date"]').value = '';
+
+          // Send the itemsArray to your Flask app using fetch or another method
+          fetch('{{url_for('inhouse_used_items')}}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: itemsArray })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log(data); // Handle the response from your Flask app
+            // Clear the array after successful submission
+            itemsArray = [];
+            
+            // Optionally, clear all input fields here as well
             // ...
             
-            alert(data.message);
+            if (data.redirect) {
+                window.location.href = data.redirect; // Redirect to the new URL
+            } else {
+                alert(data.message);
+            }
             
           })
           .catch((error) => {
@@ -683,7 +785,19 @@
           <li class="nav-item">
             <a class="nav-link" href="#" id="inhouse">
               <i class="typcn typcn-calculator menu-icon"></i>
-              <span class="menu-title">In-house</span>
+              <span class="menu-title">Production</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="inhouse-use">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">In-House Use</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('inhouse_items_use_details') }}">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">In-House Info</span>
             </a>
           </li>
           <li class="nav-item">
@@ -731,12 +845,18 @@
       </script>
 
       <div class="main-panel">
+        <div>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                  {% for category, message in messages %}
+                      <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}" style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+                          {{ message }}
+                      </div>
+                  {% endfor %}
+              {% endif %}
+          {% endwith %}
+        </div>
         <div class="content-wrapper">
-          <div>
-            {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-            <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
-            {% endfor %} {% endif %} {% endwith %}
-          </div>
           <form class="dashboard-form-form content-pannel" action="{{url_for('download_sales_data')}}" method="POST">
             <label class="dashboard-form" for="">From</label>
             <input class="dashboard-form" type="date" name="startdate" required>
@@ -829,12 +949,15 @@
   </script>
 
   <script>
-      document.addEventListener("DOMContentLoaded", function () {
-      // Hide the alert after 5 seconds
-      setTimeout(function() {
-          document.getElementById("alert").style.display = "none";
-      }, 5000);
-      });
+    document.addEventListener("DOMContentLoaded", function () {
+        // Hide all alerts after 5 seconds
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+    });
   </script>
 
   <script>
@@ -884,6 +1007,11 @@
       }
 
       var enddateFields = document.getElementsByName("enddate");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+
+      var enddateFields = document.getElementsByName("inhouse_use_date");
       for(var i = 0; i < enddateFields.length; i++){
         enddateFields[i].setAttribute("max", today);
       }

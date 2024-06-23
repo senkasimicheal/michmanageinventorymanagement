@@ -1695,3 +1695,11 @@ table td {
 .invalid {
   color: red;
 }
+
+.alert-success {
+  color: #116303;
+}
+
+.alert-danger {
+  color: #f8d7da;
+}

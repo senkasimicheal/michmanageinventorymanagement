@@ -94,6 +94,7 @@ $(document).ready(function(){
         $('.update-new-stock-form').removeClass('popup');
         $('.update-sales-form').removeClass('popup');
         $('.inhouse-updates-form').removeClass('popup');
+        $('.inhouse-use-form').removeClass('popup');
     });
 
     $('.new-stock-form form .fa-times').click(function(){
@@ -108,6 +109,7 @@ $(document).ready(function(){
         $('.tenant-form').removeClass('popup');
         $('.update-sales-form').removeClass('popup');
         $('.inhouse-updates-form').removeClass('popup');
+        $('.inhouse-use-form').removeClass('popup');
     });
 
     $('.update-new-stock-form form .fa-times').click(function(){
@@ -122,6 +124,7 @@ $(document).ready(function(){
         $('.property-form').removeClass('popup');
         $('.tenant-form').removeClass('popup');
         $('.inhouse-updates-form').removeClass('popup');
+        $('.inhouse-use-form').removeClass('popup');
     });
 
     $('.update-sales-form form .fa-times').click(function(){
@@ -136,9 +139,25 @@ $(document).ready(function(){
         $('.export-form').removeClass('popup');
         $('.property-form').removeClass('popup');
         $('.tenant-form').removeClass('popup');
+        $('.inhouse-use-form').removeClass('popup');
     });
 
     $('.inhouse-updates-form form .fa-times').click(function(){
         $('.inhouse-updates-form').removeClass('popup');
+    });
+
+    $('#inhouse-use').click(function(){
+        $('.inhouse-use-form').addClass('popup');
+        $('.inhouse-updates-form').removeClass('popup');
+        $('.update-sales-form').removeClass('popup');
+        $('.update-new-stock-form').removeClass('popup');
+        $('.new-stock-form').removeClass('popup');
+        $('.export-form').removeClass('popup');
+        $('.property-form').removeClass('popup');
+        $('.tenant-form').removeClass('popup');
+    });
+
+    $('.inhouse-use-form form .fa-times').click(function(){
+        $('.inhouse-use-form').removeClass('popup');
     });
 });

@@ -343,12 +343,18 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
+        <div>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                  {% for category, message in messages %}
+                      <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}" style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+                          {{ message }}
+                      </div>
+                  {% endfor %}
+              {% endif %}
+          {% endwith %}
+        </div>
         <div class="content-wrapper">
-          <div>
-            {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-            <div id="alert" class="alert-danger" style="  color: blue; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
-            {% endfor %} {% endif %} {% endwith %}
-          </div>
           <div style="width: 100%; height: 100%; overflow: auto;" class="content-pannel">
             <table class="tenant_table">
                 <tr>
@@ -392,10 +398,13 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      // Hide the alert after 5 seconds
-      setTimeout(function() {
-          document.getElementById("alert").style.display = "none";
-      }, 5000);
+        // Hide all alerts after 5 seconds
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000);
     });
   </script>
 

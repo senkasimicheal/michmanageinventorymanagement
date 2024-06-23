@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Stock Information</title>
+  <title>Inhouse Item Use Information</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -188,7 +188,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Stock Information</h4>
+            <h4 class="mb-0">Inhouse Item Use</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -857,7 +857,7 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
-          <form class="dashboard-form-form content-pannel" action="{{url_for('download_stock_data')}}" method="POST">
+          <form class="dashboard-form-form content-pannel" action="{{url_for('download_inhouse_item_use')}}" method="POST">
             <label class="dashboard-form" for="">From</label>
             <input class="dashboard-form" type="date" name="startdate" required>
             <label class="dashboard-form" for="">To</label>
@@ -869,36 +869,32 @@
                 <tr>
                     <th>No.</th>
                     <th>
-                      Item Name
+                      Items Used
                       <br>
                       <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for item names...">
                     </th>
                     <th>
-                      Stock Date
+                      Date Used
                       <br>
                       <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
                     </th>
-                    <th>Stocked Quantity</th>
-                    <th>Available Stock</th>
-                    <th>Buying Price</th>
-                    <th>Total Buying Price</th>
+                    <th>Quantity Used</th>
+                    <th>Unit Cost</th>
+                    <th>Total Cost</th>
+                    <th>Stock Date</th>
                 </tr>
-                {% for stock in stock_info %}
-                <tr title="{{ stock['itemName'] }}" style="cursor: pointer;">
+                {% for item in inhouse_item_use %}
+                {% for i in range(item.itemName|length) %}
+                <tr title="{{ item.itemName[i] }}" style="cursor: pointer;">
                     <td>{{ loop.index }}</td>
-                    <td>{{ stock['itemName'] }}</td>
-                    <td>{{ stock['stockDate'].strftime('%Y-%m-%d') }}</td>
-                    <td>{{ stock['quantity'] }}</td>
-                    <td>
-                      {% if 'available_quantity' in stock %}
-                      {{ stock['available_quantity'] }}
-                      {% else %}
-                      {{ stock['quantity'] }}
-                      {% endif %}
-                    </td>
-                    <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
+                    <td>{{ item.itemName[i] }}</td>
+                    <td>{{ item.useDate[i].strftime('%Y-%m-%d') }}</td>
+                    <td>{{ item.itemQuantity[i] }}</td>
+                    <td>{{ '{:,.0f}'.format(item.itemUnitPrices[i]) }}</td>
+                    <td>{{ '{:,.0f}'.format(item.itemUnitPrices[i]*item.itemQuantity[i]) }}</td>
+                    <td>{{ item.itemStockDates[i].strftime('%Y-%m-%d') }}</td>
                 </tr>
+                {% endfor %}
                 {% endfor %}
             </table>
           </div>

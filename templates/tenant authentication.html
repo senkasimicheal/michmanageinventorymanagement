@@ -59,9 +59,15 @@
     </header>
     <!-- end header section -->
     <div>
-      {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-      <div id="alert" class="alert-danger" style="  color: white; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: large;">{{ message }}</div>
-      {% endfor %} {% endif %} {% endwith %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+              {% for category, message in messages %}
+                  <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}" style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+                      {{ message }}
+                  </div>
+              {% endfor %}
+          {% endif %}
+      {% endwith %}
     </div>
     <!-- slider section -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>

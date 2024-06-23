@@ -476,7 +476,7 @@ def send_message():
         </html>
         """
         mail.send(msg)
-    flash('Your inquiry was sent')
+    flash('Your inquiry was sent', 'success')
     return redirect('/')
 
 @app.after_request
@@ -559,21 +559,21 @@ def register_account():
 
     # Check if passwords match
     if password != confirm_password:
-        flash('Passwords do not match')
+        flash('Passwords do not match', 'error')
         return redirect('/register')
 
     # Check if user is a manager
     company = db.managers.find_one({'name': company_name})
     if email not in company.get('managers', []):
-        flash('Not a manager in the registered companies')
+        flash('Not a manager in the registered companies', 'error')
         return redirect('/')
 
     # Check if username or email already exists
     if db.registered_managers.find_one({'username': username}):
-        flash('Username already taken')
+        flash('Username already taken', 'error')
         return redirect('/')
     if db.registered_managers.find_one({'email': email, 'company_name': company_name}):
-        flash('User already registered')
+        flash('User already registered', 'success')
         return redirect('/')
 
     # Generate verification code
@@ -650,7 +650,7 @@ def register_account():
     # Insert verification code into database
     db.registration_verification_codes.insert_one(manager)
 
-    flash('Please verify your account')
+    flash('Please verify your account', 'success')
     return render_template('verify_manager.html', no_send_emails_code=no_send_emails_code)
 
     
@@ -669,16 +669,16 @@ def verifying_your_account():
     # Check if code exists
     code_exists = db.registration_verification_codes.find_one({'email': email, 'code': code})
     if code_exists is None:
-        flash('Check the code and try again')
+        flash('Check the code and try again', 'error')
         return render_template('verify_manager.html')
 
     # Insert manager into registered managers
     try:
         db.registered_managers.insert_one(code_exists)
-        flash('User registered')
+        flash('User registered', 'success')
         return redirect('/')
     except Exception as e:
-        flash('An error occurred while registering the user: ' + str(e))
+        flash('An error occurred while registering the user: ' + str(e), 'error')
         return render_template('verify_manager.html')
 
 
@@ -730,7 +730,7 @@ def send_verification_code():
     username = request.form.get('username')
     manager_exists = db.registered_managers.find_one({'username': username})
     if manager_exists is None:
-        flash('Check username and try again')
+        flash('Check username and try again', 'error')
         return redirect('/verify-username')
 
     code = generate_code()
@@ -742,10 +742,10 @@ def send_verification_code():
         manager = {'createdAt': datetime.now(), 'code': code, 'username': username, 'email': manager_email}
         send_verification_email(manager_email, manager_exists['name'], code)
         db.forgot_password_codes.insert_one(manager)
-        flash('A verification code was sent to your email')
+        flash('A verification code was sent to your email', 'success')
         return render_template('forgot_password_code.html', masked_email=masked_email)
     else:
-        flash(f"Code was sent to {masked_email}")
+        flash(f"Code was sent to {masked_email}", 'success')
         return redirect('/verify-username')
 
     
@@ -771,13 +771,13 @@ def password_reset_verifying_user():
 
     # Check if passwords match
     if password != confirm_password:
-        flash('Passwords do not match')
+        flash('Passwords do not match', 'error')
         return render_template('forgot_password_code.html')
 
     # Check if code exists
     request_exists = db.forgot_password_codes.find_one({'email': email, 'code': code})
     if request_exists is None:
-        flash('Check code or email and try again')
+        flash('Check code or email and try again', 'error')
         return render_template('forgot_password_code.html')
 
     # Update password
@@ -786,7 +786,7 @@ def password_reset_verifying_user():
         db.registered_managers.update_one({'username': request_exists['username']},{'$set': {'password': hashed_password}})
         db.forgot_password_codes.delete_one({'email': email, 'code': code})
     except Exception as e:
-        flash('An error occurred while resetting the password: ' + str(e))
+        flash('An error occurred while resetting the password: ' + str(e), 'error')
         return render_template('forgot_password_code.html')
 
     # Send password reset successful email
@@ -809,7 +809,7 @@ def password_reset_verifying_user():
         """
         mail.send(msg)
 
-    flash('Your password was successfully reset')
+    flash('Your password was successfully reset', 'success')
     return redirect('/login')
          
 #######PROPERTY MANAGER LOGIN##############
@@ -832,19 +832,19 @@ def userlogin():
 
     manager = db.registered_managers.find_one({'username':username})
     if manager is None:
-        flash('Not a manager')
+        flash('Not a manager', 'error')
         return redirect('/')
     else:
         subscription = db.managers.find_one({'name': manager['company_name']})
 
         stored_password = manager['password']
         if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
-            flash('Wrong Password')
+            flash('Wrong Password', 'error')
             return redirect('/')
 
         remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
         if remaining_days <= 0:
-            flash('Your subscription has expired, please contact management')
+            flash('Your subscription has expired, please contact management', 'error')
             return redirect('/')
 
         if "auth" in manager and manager["auth"] == "yes":
@@ -966,14 +966,14 @@ def authentication():
     # Check if code exists
     user_auth = db.login_auth.find_one({"code": code})
     if user_auth is None:
-        flash("Check code and try again")
+        flash("Check code and try again", 'error')
         return render_template("authentication.html")
 
     # Get manager and subscription data
     manager = db.registered_managers.find_one({'username': user_auth["username"]})
     db.login_auth.delete_one({'username': user_auth["username"]})
     if manager is None:
-        flash('Not a manager')
+        flash('Not a manager', 'error')
         return redirect('/')
     else:
         subscription = db.managers.find_one({'name': manager['company_name']})
@@ -1023,7 +1023,7 @@ def authentication():
         try:
             db.logged_in_data.insert_one(logged_in_data)
         except Exception as e:
-            flash('An error occurred while logging in: ' + str(e))
+            flash('An error occurred while logging in: ' + str(e), 'error')
             return render_template("authentication.html")
 
         # Set session data
@@ -1062,7 +1062,7 @@ def account_setup_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -1077,7 +1077,7 @@ def account_setup_initiated():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         auth = request.form.get("switchState")
@@ -1110,7 +1110,7 @@ def account_setup_initiated():
 
         # Update the document with the non-empty fields
         db.registered_managers.update_one({'username': login_data}, {'$set': update_fields})
-        flash("Your account was successfully set")
+        flash("Your account was successfully set", 'success')
         return redirect('/account-setup-page')
     
 ##ACCOUNT SETTING FOR TENANT
@@ -1119,7 +1119,7 @@ def tenant_account_setup_page():
     db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         tenant = db.tenant_user_accounts.find_one({'_id': ObjectId(login_data)})
@@ -1134,7 +1134,7 @@ def tenant_account_setup_initiated():
     db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         auth = request.form.get("switchState")
@@ -1158,7 +1158,7 @@ def tenant_account_setup_initiated():
 
         # Update the document with the non-empty fields
         db.tenant_user_accounts.update_one({'_id': ObjectId(login_data)}, {'$set': update_fields})
-        flash("Your account was successfully set")
+        flash("Your account was successfully set", 'success')
         return redirect('/tenant-account-setup-page')
 
 #######TENANT REGISTER ACCOUNT###############          
@@ -1172,7 +1172,7 @@ def tenant_register_account():
     confirm_password = request.form.get('confirm_password')
 
     if password != confirm_password:
-        flash('Passwords do not match')
+        flash('Passwords do not match', 'error')
         return redirect('/tenant-register')
     else:
         tenant_exists = db.tenant_user_accounts.find_one({'tenantEmail': email, 'propertyName': propertyName})
@@ -1181,20 +1181,20 @@ def tenant_register_account():
             if user is None:
                 tenant = db.tenants.find_one({'propertyName': propertyName, 'tenantEmail': email})
                 if tenant is None:
-                    flash('Entered tenant is not attached to any property')
+                    flash('Entered tenant is not attached to any property', 'error')
                     return redirect('/tenant-register')
                 else:
                     hashed_password = bcrypt.hashpw(confirm_password.encode('utf-8'), bcrypt.gensalt())
                     tenant_data = {'account_manager': tenant['username'], 'tenantEmail': email, 'username': username, 'propertyName': propertyName,
                                 'registered_on': datetime.now(), 'password': hashed_password}
                     db.tenant_user_accounts.insert_one(tenant_data)
-                    flash('Tenant registered')
+                    flash('Tenant registered', 'success')
                     return redirect('/')
             else:
-                flash('Username already taken')
+                flash('Username already taken', 'error')
                 return redirect('/')
         else:
-            flash('Tenant already registered')
+            flash('Tenant already registered', 'error')
             return redirect('/')
         
 #######TENANT LOGIN##############
@@ -1217,7 +1217,7 @@ def tenant_login():
 
     tenant = db.tenant_user_accounts.find_one({'username': username})
     if tenant is None:
-        flash('Not a registered tenant')
+        flash('Not a registered tenant', 'error')
         return redirect('/tenant-login-page')
     else:
         stored_password = tenant['password']
@@ -1268,7 +1268,7 @@ def tenant_login():
                 db.tenant_logged_in_data.insert_one(logged_in_data)
                 return redirect('/tenant-data')
         else:
-            flash('Wrong Password')
+            flash('Wrong Password', 'error')
             return redirect('/tenant-login-page')
 
 #USER AUTHENTICATION
@@ -1281,7 +1281,7 @@ def tenant_authentication():
     # Check if code exists
     user_auth = db.tenant_login_auth.find_one({"code": code})
     if user_auth is None:
-        flash("Check code and try again")
+        flash("Check code and try again", 'error')
         return render_template("tenant authentication.html")
     else:
         session.permanent = False
@@ -1304,7 +1304,7 @@ def tenant_data():
     propertyName = session.get('propertyName')
     login_data = session.get('tenantID')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/tenant-login-page')
     else:
         current_tenant_data = list(db.tenants.find({'tenantEmail': tenantEmail, 'propertyName': propertyName}))
@@ -1315,7 +1315,7 @@ def tenant_data():
         auth = tenant_acc_setting.get('auth', "no")
 
         if len(current_tenant_data) == 0:
-            flash('We found no amount demanded')
+            flash('We found no amount demanded', 'error')
             return redirect('/complaint-form')
         else:
 
@@ -1391,7 +1391,7 @@ def complaint_form():
     db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/tenant-login-page')
     else:
         tenant_acc_setting = db.tenant_user_accounts.find_one({'_id': ObjectId(tenant_login_data)})
@@ -1407,7 +1407,7 @@ def add_complaint():
     db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/tenant-login-page')
     else:
         send_emails = db.send_emails.find_one({'emails': "yes"})
@@ -1465,7 +1465,7 @@ def add_complaint():
             </html>
             """
             mail.send(msg)
-        flash('Complaint submitted, we will get back to you')
+        flash('Complaint submitted, we will get back to you', 'success')
         return redirect('/complaint-form')
     
 ############SHOW MY COMPLAINTS######################
@@ -1474,13 +1474,13 @@ def my_complaints():
     db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/tenant-login-page')
     else:
         tenant_acc_setting = db.tenant_user_accounts.find_one({'_id': ObjectId(tenant_login_data)})
         my_complaints = db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)})
         if len(list(db.tenant_complaints.find({'tenantID': ObjectId(tenant_login_data)}))) == 0:
-            flash('You have not placed any complaint(s) yet!')
+            flash('You have not placed any complaint(s) yet!', 'error')
             return redirect('/complaint-form')
         else:
             complaints = []
@@ -1520,7 +1520,7 @@ def tenant_reply_complaint():
     db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
     if tenant_login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         send_emails = db.send_emails.find_one({'emails': "yes"})
@@ -1575,7 +1575,7 @@ def resolve_complaints():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -1592,7 +1592,7 @@ def resolve_complaints():
             property_assigned = db.registered_managers.find({'username': login_data})
             property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
             if not property_assigned_dict:
-                flash('You are not managing any property!')
+                flash('You are not managing any property!', 'error')
                 return redirect('/load-dashboard-page')
             else:
                 tenant_accounts = []
@@ -1603,7 +1603,7 @@ def resolve_complaints():
             user_querry = {'company_name': company['company_name']}
             properties = db.property_managed.find(user_querry)
             if db.property_managed.count_documents(user_querry)==0:
-                flash('You are not managing any property!')
+                flash('You are not managing any property!', 'error')
                 return redirect('/load-dashboard-page')
             else:
                 tenant_accounts = []
@@ -1651,7 +1651,7 @@ def update_complaint():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         send_emails = db.send_emails.find_one({'emails': "yes"})
@@ -1705,7 +1705,7 @@ def resolved_complaints(complaint_id):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         send_emails = db.send_emails.find_one({'emails': "yes"})
@@ -1752,7 +1752,7 @@ def resolved_complaints(complaint_id):
             </html>
             """
             mail.send(msg)
-        flash('Complaint was resolved')
+        flash('Complaint was resolved', 'error')
         return redirect('/resolve-complaints')
        
 #############ADD PROPERTY####################
@@ -1761,7 +1761,7 @@ def add_property():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         propertyName = request.form.get('propertyName', '').strip()
@@ -1786,13 +1786,13 @@ def add_property():
         is_manager = db.managers.find_one({'manager_email': manager['email']})
         properties = db.property_managed.count_documents({'company_name': manager['company_name']})
         if is_manager['amount_per_month'] == 100000 and properties>=20:
-            flash('Maximum number of properties is reached')
+            flash('Maximum number of properties is reached', 'error')
             return redirect('/load-dashboard-page')
         elif is_manager['amount_per_month'] == 150000 and properties>=30:
-            flash('Maximum number of properties is reached')
+            flash('Maximum number of properties is reached', 'error')
             return redirect('/load-dashboard-page')
         elif is_manager['amount_per_month'] == 200000 and properties>=50:
-            flash('Maximum number of properties is reached')
+            flash('Maximum number of properties is reached', 'error')
             return redirect('/load-dashboard-page')
         else:
             if property_exists is None:
@@ -1812,10 +1812,10 @@ def add_property():
                                     'owner_residence': owner_residence}
                 db.property_managed.insert_one(property_details)
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add property data', 'propertyName':propertyName, 'timestamp': datetime.now()})
-                flash('Property was added successfully')
+                flash('Property was added successfully', 'success')
                 return redirect('/load-dashboard-page')
             else:
-                flash('This Property is in the database')
+                flash('This Property is in the database', 'error')
                 return redirect('/load-dashboard-page')
 
 ########LOAD TENANT INFO################
@@ -1825,7 +1825,7 @@ def update_tenant_info():
     login_data = session.get('login_username')
     current_year = datetime.now().year
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     
     company = db.registered_managers.find_one({'username': login_data})
@@ -1857,7 +1857,7 @@ def update_tenant_info():
         property_managed = list(db.property_managed.find(property_query))
     
     if not tenants:
-        flash('No tenant data found')
+        flash('No tenant data found', 'error')
         return redirect('/load-dashboard-page')
     
     tenant_data = []
@@ -1978,7 +1978,7 @@ def update():
     login_data = session.get('login_username')
     current_year = datetime.now().year
     if login_data is None:
-        flash('Login first') 
+        flash('Login first', 'error') 
         return redirect('/')
     else:
         
@@ -2046,10 +2046,10 @@ def update():
             old_data2 = db.old_tenant_data.find_one({'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section, 'months_paid': months_paid, 'date_last_paid': {'$gte': start_date,'$lt': end_date}})
 
             if old_data2:
-                flash('Selected period was fully paid')
+                flash('Selected period was fully paid', 'error')
             else:
                 if old_data['available_amount'] < section_value:
-                    flash('First fully update current/previous period')
+                    flash('First fully update current/previous period', 'error')
                 else:
                     available_amount = new_amount
 
@@ -2173,7 +2173,7 @@ def update():
                                     # Send the email
                                     mail.send(msg)
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                                flash(f"Updates for {old_data['tenantName']} were successful")
+                                flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                                 # Create the email message
@@ -2203,7 +2203,7 @@ def update():
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                                flash(f"Updates for {old_data['tenantName']} were successful")
+                                flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
                             # Create the email message
@@ -2229,7 +2229,7 @@ def update():
                                 # Send the email
                                 mail.send(msg)
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                            flash(f"Updates for {old_data['tenantName']} were successful")
+                            flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                             # Create the email message
@@ -2258,9 +2258,9 @@ def update():
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                            flash(f"Updates for {old_data['tenantName']} were successful")
+                            flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     elif available_amount > section_value:  
-                        flash("Enter amount that does not exceed section value")
+                        flash("Enter amount that does not exceed section value", 'error')
 
                     else:
                         payment_completion = 'Full'
@@ -2292,7 +2292,7 @@ def update():
                                     # Send the email
                                     mail.send(msg)
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                                flash(f"Updates for {old_data['tenantName']} were successful")
+                                flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                                 # Create the email message
@@ -2321,7 +2321,7 @@ def update():
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                                flash(f"Updates for {old_data['tenantName']} were successful")
+                                flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
                             # Create the email message
@@ -2347,7 +2347,7 @@ def update():
                                 # Send the email
                                 mail.send(msg)
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                            flash(f"Updates for {old_data['tenantName']} were successful")
+                            flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                             # Create the email message
@@ -2376,11 +2376,11 @@ def update():
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
-                            flash(f"Updates for {old_data['tenantName']} were successful")
+                            flash(f"Updates for {old_data['tenantName']} were successful", 'success')
 
         elif field_month == months_paid_selected:
             if old_data['available_amount'] == section_value:
-                flash('Period selected is fully paid')
+                flash('Period selected is fully paid', 'error')
             else:
                 available_amount = new_amount + old_amount
 
@@ -2502,7 +2502,7 @@ def update():
                             # Send the email
                             mail.send(msg)
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
-                        flash(f"Updates for {old_data['tenantName']} were successful")
+                        flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     elif date.year < old_date.year:
                         db.old_tenant_data.insert_one(new_data)
                         # Create the email message
@@ -2528,7 +2528,7 @@ def update():
                             # Send the email
                             mail.send(msg)
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
-                        flash(f"Updates for {old_data['tenantName']} were successful")
+                        flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     else:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                         # Create the email message
@@ -2557,9 +2557,9 @@ def update():
                             del old_data['_id']
                         db.old_tenant_data.insert_one(old_data)
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
-                        flash(f"Updates for {old_data['tenantName']} were successful")
+                        flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                 elif available_amount > section_value:        
-                    flash("Enter amount that does not exceed section value")
+                    flash("Enter amount that does not exceed section value", 'error')
                 else:
                     payment_completion = 'Full'
                     new_data['payment_completion'] = payment_completion
@@ -2588,7 +2588,7 @@ def update():
                             # Send the email
                             mail.send(msg)
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
-                        flash(f"Updates for {old_data['tenantName']} were successful")
+                        flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     elif date.year < old_date.year:
                         db.old_tenant_data.insert_one(new_data)
                         # Create the email message
@@ -2614,7 +2614,7 @@ def update():
                             # Send the email
                             mail.send(msg)
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
-                        flash(f"Updates for {old_data['tenantName']} were successful")
+                        flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     else:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
                         # Create the email message
@@ -2643,7 +2643,7 @@ def update():
                             del old_data['_id']
                         db.old_tenant_data.insert_one(old_data)
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
-                        flash(f"Updates for {old_data['tenantName']} were successful")
+                        flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                 
         tenant_data = []
         is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
@@ -2721,7 +2721,7 @@ def view_property_info():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': username})
@@ -2742,7 +2742,7 @@ def view_property_info():
         else:
             properties = list(db.property_managed.find(properties_query))
             if not properties:
-                flash('We did not find property data')
+                flash('We did not find property data', 'error')
                 return redirect('/load-dashboard-page')
             
             property_data = get_property_data(properties)
@@ -2754,7 +2754,7 @@ def selected_property(propertyName):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -2773,7 +2773,7 @@ def update_property():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         propertyName = request.form.get("propertyName")
@@ -2799,7 +2799,7 @@ def update_property():
 
         # Update the document with the non-empty fields
         db.property_managed.update_one({'propertyName': propertyName}, {'$set': update_fields})
-        flash(f"{propertyName} was successfully updated")
+        flash(f"{propertyName} was successfully updated", 'success')
         return redirect('/view-property-info')
 
 ##VIEW MANAGER ACCOUNTS
@@ -2815,7 +2815,7 @@ def view_user_accounts():
     # Get session data
     username = session.get('login_username')
     if username is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
 
     # Get company data
@@ -2825,13 +2825,13 @@ def view_user_accounts():
     # Check if user is a manager
     is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
     if not is_manager:
-        flash("You do not have rights to view other users")
+        flash("You do not have rights to view other users", 'error')
         return redirect('/load-dashboard-page')
 
     # Get registered managers data
     registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': username}}))
     if not registered_managers:
-        flash("We did not find other registered users")
+        flash("We did not find other registered users", 'error')
         return redirect('/load-dashboard-page')
 
     # Prepare managers data
@@ -2845,7 +2845,7 @@ def delete_manager(company_name,email):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         manager = db.registered_managers.find_one({'company_name': company_name, 'email': email})
@@ -2864,7 +2864,7 @@ def add_new_manager_email():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -2879,7 +2879,7 @@ def add_new_manager_email():
         if is_manager:
             return render_template('add new manager email.html', dp=dp_str)
         else:
-            flash("You do not have rights to add managers")
+            flash("You do not have rights to add managers", 'error')
             return redirect('/load-dashboard-page')
 
 @app.route('/update-new-manager-email', methods=['POST'])
@@ -2887,7 +2887,7 @@ def update_new_manager_email():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         email = request.form.get('email')
@@ -2896,11 +2896,11 @@ def update_new_manager_email():
         managers = company['managers']
         for manager in managers:
             if email == manager:
-                flash('This email already exists')
+                flash('This email already exists', 'error')
                 return redirect('/add-new-manager-email')
         db.managers.update_one({'name': manager_found['company_name']}, {'$push': {'managers': email}})
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new manager', 'email':email, 'timestamp': datetime.now()})
-        flash('New manager email was successfully added')
+        flash('New manager email was successfully added', 'success')
         return redirect('/add-new-manager-email')
 
 #######CLICK TO UPDATE TENANT#############
@@ -2909,7 +2909,7 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first') 
+        flash('Login first', 'error') 
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -2929,7 +2929,7 @@ def edit(tenantName, email, property_name, selected_section, payment_type):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         # Retrieve the tenant's info using the email
@@ -2953,7 +2953,7 @@ def make_edits():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         
@@ -3098,7 +3098,7 @@ def make_edits():
             if amount < section_value:
                 payment_completion = 'Partial'
             elif amount > section_value:
-                flash('Amount entered should not exceed section value')
+                flash('Amount entered should not exceed section value', 'error')
                 return redirect(url_for('edit', email=tenantEmail))
             else:
                 payment_completion = 'Full'
@@ -3107,7 +3107,7 @@ def make_edits():
         db.tenants.update_one({'propertyName': propertyName, 'selected_section': selected_section, 'tenantEmail':tenantEmail, 'company_name': company['company_name']},
                                 {'$set': fields_to_update})
 
-        flash('Tenant was successfully edited')
+        flash('Tenant was successfully edited', 'success')
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Edit tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
         return redirect('/update-tenant-info')
         
@@ -3145,7 +3145,7 @@ def add_tenant():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         
@@ -3259,13 +3259,13 @@ def add_tenant():
         is_manager = db.managers.find_one({'manager_email': company['email']})
         num_tenants = db.tenants.count_documents({'company_name': company['company_name']})
         if is_manager['amount_per_month'] == 100000 and num_tenants>=50:
-            flash('Maximum number of tenants is reached')
+            flash('Maximum number of tenants is reached', 'error')
             return redirect('/load-dashboard-page')
         elif is_manager['amount_per_month'] == 150000 and num_tenants>=100:
-            flash('Maximum number of tenants is reached')
+            flash('Maximum number of tenants is reached', 'error')
             return redirect('/load-dashboard-page')
         elif is_manager['amount_per_month'] == 200000 and num_tenants>=200:
-            flash('Maximum number of tenants is reached')
+            flash('Maximum number of tenants is reached', 'error')
             return redirect('/load-dashboard-page')
         else:
             section_exists = db.tenants.find_one({'company_name': company['company_name'], 'propertyName': propertyName, 'selected_section': selected_section})
@@ -3371,7 +3371,7 @@ def add_tenant():
                     # Send the email
                     mail.send(msg)
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantName': tenantName, 'timestamp': datetime.now()})
-                flash('Tenant was successfully added')
+                flash('Tenant was successfully added', 'success')
                 return redirect('/load-dashboard-page')
             else:
                 payment_completion = 'Full'
@@ -3424,10 +3424,10 @@ def add_tenant():
                     # Send the email
                     mail.send(msg)
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantName':tenantName, 'timestamp': datetime.now()})
-                flash('Tenant was successfully added')
+                flash('Tenant was successfully added', 'success')
                 return redirect('/load-dashboard-page')
             else:
-                flash('Section is already assigned')
+                flash('Section is already assigned', 'error')
                 return redirect('/load-dashboard-page')
 
 ########DELETE TENANT################
@@ -3436,7 +3436,7 @@ def delete_tenant(tenantEmail, propertyName, selected_section):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -3463,7 +3463,7 @@ def adminlogin():
     
     user = db.admin.find_one({'email':email})
     if user is None:
-        flash('Not an admin')
+        flash('Not an admin', 'error')
         return redirect('/admin')
     else:
         stored_password = user['password'].encode('utf-8')
@@ -3478,14 +3478,14 @@ def adminlogin():
                 session['send_emails'] = "no"
             return render_template("managers accounts.html")
         else:
-            flash('Wrong Password')
+            flash('Wrong Password', 'error')
             return redirect('/admin')
         
 @app.route('/add-property-manager-page')
 def add_property_manager_page():
     login_data = session.get('admin_email')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/admin')
     else:
         return render_template("managers accounts.html")
@@ -3496,7 +3496,7 @@ def add_property_manager():
     db, fs = get_db_and_fs()
     login_data = session.get('admin_email')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/admin')
     else:   
         send_emails = db.send_emails.find_one({'emails': "yes"})
@@ -3554,10 +3554,10 @@ def add_property_manager():
                 """
                 mail.send(msg)
 
-            flash('Company managers can now create accounts')
+            flash('Company managers can now create accounts', 'success')
             return render_template("managers accounts.html", user_data=user_data)
         else:
-            flash('Company already registered')
+            flash('Company already registered', 'error')
             return render_template("managers accounts.html")
 
 #######NEW SUBSCRIPTION PAGE###############
@@ -3565,14 +3565,14 @@ def add_property_manager():
 def new_subscription():
     login_data = session.get('admin_email')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/admin')
     else:
         db, fs = get_db_and_fs()
         companies = db.managers.find()
         cursor = list(companies)
         if len(cursor) == 0:
-            flash('We found no companies')
+            flash('We found no companies', 'error')
             return render_template("managers accounts.html")
         else:
             df = pd.DataFrame(cursor)
@@ -3585,7 +3585,7 @@ def new_subscription_initiated():
     db, fs = get_db_and_fs()
     login_data = session.get('admin_email')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/admin')
     else:
         company_name = request.form.get('company_name')
@@ -3601,7 +3601,7 @@ def new_subscription_initiated():
         if last_subscribed_on_str:
             last_subscribed_on = datetime.strptime(last_subscribed_on_str, '%Y-%m-%d')
             if last_subscribed_on <= company['last_subscribed_on']:
-                flash('Enter a newer subscription date')
+                flash('Enter a newer subscription date', 'error')
             else:
                 fields_to_update['last_subscribed_on'] = last_subscribed_on
                 flash('New Subscription was added')
@@ -3612,7 +3612,7 @@ def new_subscription_initiated():
                 fields_to_update['subscribed_days'] = subscribed_days
             else:
                 if last_subscribed_on <= company['last_subscribed_on']:
-                    flash('Enter a newer subscription date')
+                    flash('Enter a newer subscription date', 'error')
                 else:
                     subscribed_days = subscribed_days + remaining_days
                     fields_to_update['subscribed_days'] = subscribed_days
@@ -3627,12 +3627,12 @@ def new_subscription_initiated():
             elif amount_per_month_form_data == "400000":
                 amount_per_month = 400000
             fields_to_update['amount_per_month'] = amount_per_month
-            flash('New Subscription plan was set')
+            flash('New Subscription plan was set', 'success')
         if account_type:
             if 'All Types' in account_type:
                 account_type = ['Property Management', 'Enterprise Resource Planning']
             fields_to_update['account_type'] = account_type
-            flash('New Subscription plan was set')
+            flash('New Subscription plan was set', 'success')
 
         db.managers.update_one({'name': company_name},{'$set': fields_to_update})
         return render_template("managers accounts.html")
@@ -3770,7 +3770,7 @@ def load_dashboard_page():
     month_name = month_name.capitalize()
 
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         send_emails = db.send_emails.find_one({'emails': "yes"})
@@ -3846,7 +3846,7 @@ def load_dashboard_page():
             if latest_document is None:
                 property_data = list(db.property_managed.find(user_query))
                 if len(property_data) == 0:
-                    flash('No property data found')
+                    flash('No property data found', 'error')
                     return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames)
                 else:
                     property_data_list = list(db.property_managed.find(user_query))
@@ -3867,7 +3867,7 @@ def load_dashboard_page():
                             if not property_data_dict[tenant_property_name]:
                                 del property_data_dict[tenant_property_name]
 
-                    flash('No tenant data found')
+                    flash('No tenant data found', 'error')
                     return render_template('dashboard.html',property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames)
             latest_year = latest_document['date_last_paid'].year
 
@@ -3915,7 +3915,7 @@ def load_dashboard_page():
 
         property_data = list(db.property_managed.find(user_query))
         if len(property_data) == 0:
-            flash('No property data found')
+            flash('No property data found', 'error')
             return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames)
         else:
             property_data_list = list(db.property_managed.find(user_query))
@@ -3981,7 +3981,7 @@ def load_dashboard_page():
                                     property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
                                     line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
             else:
-                flash('No tenant data found')
+                flash('No tenant data found', 'error')
                 return render_template('dashboard.html', property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames)
         
 #############MANAGER DOWNLOAD DATA######################
@@ -3990,7 +3990,7 @@ def download():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         startdate_on_str = request.form.get("startdate")
@@ -4110,7 +4110,7 @@ def download():
 
             return response
         else:
-            flash('No tenant data found')
+            flash('No tenant data found', 'error')
             return redirect('/load-dashboard-page')
         
 #####FILE PASSWORDS
@@ -4119,7 +4119,7 @@ def view_file_passwords():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': username})
@@ -4127,7 +4127,7 @@ def view_file_passwords():
         
         file_passwords = list(db.file_passwords.find({'username': username}))
         if len(file_passwords)==0:
-            flash('No encryption keys found')
+            flash('No encryption keys found', 'error')
             return redirect('/load-dashboard-page')
         else:
             found_passwords = []
@@ -4141,7 +4141,7 @@ def manage_contracts():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4161,7 +4161,7 @@ def manage_contracts():
 
         contracts = list(db.contracts.find(user_querry))
         if len(contracts)==0:
-            flash('You are not managing any contracts!')
+            flash('You are not managing any contracts!', 'error')
             return redirect('/load-dashboard-page')
         else:
             tenant_contracts = []
@@ -4196,7 +4196,7 @@ def upload_contract_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4217,7 +4217,7 @@ def upload_contract_page():
         tenants = list(db.tenants.find(user_querry))
 
         if len(tenants) == 0:
-            flash('No tenant data found')
+            flash('No tenant data found', 'error')
             return redirect('/load-dashboard-page')
         else:
             tenant_names = []
@@ -4230,15 +4230,15 @@ def upload_contract():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         if 'contract_document' not in request.files:
-            flash("No file part")
+            flash("No file part", 'error')
             return redirect('/upload-contract-page')
         file = request.files['contract_document']
         if file.filename == '':
-            flash("No file selected")
+            flash("No file selected", 'error')
             return redirect('/upload-contract-page')
         if file:
             filename = secure_filename(file.filename)
@@ -4260,7 +4260,7 @@ def upload_contract():
 
             db.contracts.insert_one(contract)
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new contract', 'file_id':file_id, 'timestamp': datetime.now()})
-            flash("Contract was uploaded successfully")
+            flash("Contract was uploaded successfully", 'success')
             return redirect('/upload-contract-page')
 
 ########DELETE CONTRACTS################
@@ -4269,7 +4269,7 @@ def delete_contract(contractID):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         contract = db.contracts.find_one({'_id': ObjectId(contractID)})
@@ -4287,7 +4287,7 @@ def selected_contract(contractID, company_name, receiver):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4305,15 +4305,15 @@ def updated_contract():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         if 'contract_document' not in request.files:
-            flash("No file part")
+            flash("No file part", 'error')
             return redirect('/manage-contracts')
         file = request.files['contract_document']
         if file.filename == '':
-            flash("No file selected")
+            flash("No file selected", 'error')
             return redirect('/manage-contracts')
         if file:
             filename = secure_filename(file.filename)
@@ -4330,10 +4330,10 @@ def updated_contract():
                     {'$set': {'file_id': file_id, 'end_date': end_date}}
                 )
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update contract', 'file_id':file_id, 'timestamp': datetime.now()})
-                flash("Contract was updated successfully")
+                flash("Contract was updated successfully", 'success')
                 return redirect('/manage-contracts')
             else:
-                flash("Contract was not found")
+                flash("Contract was not found", 'error')
                 return redirect('/manage-contracts')
             
 @app.route('/download-contract/<fileID>')
@@ -4351,7 +4351,7 @@ def manage_user_rights():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4366,7 +4366,7 @@ def manage_user_rights():
         # Get registered managers data
         registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': login_data}}))
         if not registered_managers:
-            flash("We did not find other registered users")
+            flash("We did not find other registered users", 'error')
             return redirect('/load-dashboard-page')
 
         # Prepare managers data
@@ -4379,7 +4379,7 @@ def manage_user_rights_page(email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4416,7 +4416,7 @@ def user_rights_initiated():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         email = request.form.get('email')
@@ -4464,7 +4464,7 @@ def user_rights_initiated():
         # Update the document with the non-empty fields
         db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Change of user rights', 'email':email, 'timestamp': datetime.now()})
-        flash("User rights were set successfully")
+        flash("User rights were set successfully", 'success')
         return redirect('/manage-user-rights')
     
 ####ASSIGN PROPERTIES TO MANAGERS
@@ -4473,7 +4473,7 @@ def assign_properties():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4488,7 +4488,7 @@ def assign_properties():
         # Get registered managers data
         registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': login_data}}))
         if not registered_managers:
-            flash("We did not find other registered users")
+            flash("We did not find other registered users", 'error')
             return redirect('/load-dashboard-page')
 
         # Prepare managers data
@@ -4501,7 +4501,7 @@ def assign_properties_page(name,email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4522,7 +4522,7 @@ def assign_properties_initiated():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         name = request.form.get('name')
@@ -4536,7 +4536,7 @@ def assign_properties_initiated():
             upsert=True
         )
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Assign property', 'email':email, 'timestamp': datetime.now()})
-        flash(f"{propertyName} was assigned to {name}")
+        flash(f"{propertyName} was assigned to {name}", 'success')
         return redirect('/assign-properties')
 
 ####UNASSIGN PROPERTIES FROM MANAGERS
@@ -4545,7 +4545,7 @@ def unassign_properties():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4560,7 +4560,7 @@ def unassign_properties():
         # Get registered managers data
         registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': login_data}}))
         if not registered_managers:
-            flash("We did not find other registered users")
+            flash("We did not find other registered users", 'error')
             return redirect('/load-dashboard-page')
 
         # Prepare managers data
@@ -4573,7 +4573,7 @@ def unassign_properties_page(name,email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -4594,7 +4594,7 @@ def unassign_properties_initiated():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         name = request.form.get('name')
@@ -4607,7 +4607,7 @@ def unassign_properties_initiated():
             {'$pull': {'properties': propertyName}}
         )
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Unassign property', 'email':email, 'timestamp': datetime.now()})
-        flash(f"{propertyName} was unassigned from {name}")
+        flash(f"{propertyName} was unassigned from {name}", 'success')
         return redirect('/unassign-properties')
 
 # Function to rename the fourth field to 'details'
@@ -4641,7 +4641,7 @@ def view_audit_logs():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': username})
@@ -4672,7 +4672,7 @@ def view_login_history():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
     if username is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': username})
@@ -4696,7 +4696,7 @@ def download_audit_logs():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         startdate_on_str = request.form.get("startdate")
@@ -4737,7 +4737,7 @@ def download_login_data():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         startdate_on_str = request.form.get("startdate")
@@ -4777,16 +4777,16 @@ def activate_send_emails(send_emails):
     if send_emails_state is None:
         db.send_emails.insert_one({'emails': send_emails})
         if send_emails == "yes":
-            flash(f"Emails have been activated")
+            flash(f"Emails have been activated", 'success')
         else:
-            flash(f"Emails have been deactivated")
+            flash(f"Emails have been deactivated", 'success')
     else:
         if send_emails == "yes":
             db.send_emails.update_one({'emails': "no"}, {'$set': {'emails': send_emails}})
-            flash(f"Emails have been activated")
+            flash(f"Emails have been activated", 'success')
         else:
             db.send_emails.update_one({'emails': "yes"}, {'$set': {'emails': send_emails}})
-            flash(f"Emails have been deactivated")
+            flash(f"Emails have been deactivated", 'success')
     session['send_emails'] = send_emails
     return render_template("managers accounts.html")
 
@@ -4796,117 +4796,119 @@ def activate_send_emails(send_emails):
 def add_new_stock():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
+    
     if login_data is None:
-        flash('Login first')
-        return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data})
-        all_items = request.json['items']  # Access the JSON data sent from the client
-        skipped_items = []  # List to hold names of items that were not added
-        
-        # Process each item to convert fields and calculate total price
-        for item in all_items:
-            # Convert 'quantity' and 'unitPrice' to integers
-            item['quantity'] = int(item['quantity'])
-            item['unitPrice'] = int(item['unitPrice'])
-            item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
+        flash('Login first', 'error')
+        return jsonify({'redirect': url_for('/')})
+    
+    company = db.registered_managers.find_one({'username': login_data})
+    all_items = request.json['items']  # Access the JSON data sent from the client
+    skipped_items = []  # List to hold names of items that were not added
 
-            # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
-            item['totalPrice'] = item['unitPrice'] * item['quantity']
-            item['company_name'] = company['company_name']
+    for item in all_items:
+        # Convert 'quantity' and 'unitPrice' to integers
+        item['quantity'] = int(item['quantity'])
+        item['unitPrice'] = int(item['unitPrice'])
+        item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
 
-            # Check if the item already exists in the database
-            existing_item = db.inventories.find_one({
-                'itemName': item['itemName'],
-                'company_name': item['company_name']
-            })
+        # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
+        item['totalPrice'] = item['unitPrice'] * item['quantity']
+        item['company_name'] = company['company_name']
 
-            if existing_item:
-                skipped_items.append(item['itemName'])  # Add the name of the skipped item
-                continue  # Skip this iteration and don't add the existing item
+        # Check if the item already exists in the database
+        existing_item = db.inventories.find_one({
+            'itemName': item['itemName'],
+            'company_name': item['company_name']
+        })
 
-            # Insert the new stock entry into MongoDB
-            db.inventories.insert_one(item)
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Added new item to stock', 'Item': 'Items', 'timestamp': datetime.now()})
-        
-        message = 'New stock added successfully'
-        if skipped_items:
-            message += '. The following items were not added because they already exist: ' + ', '.join(skipped_items)
-        
-        return jsonify({'message': message})
+        if existing_item:
+            skipped_items.append(item['itemName'])  # Add the name of the skipped item
+            continue  # Skip this iteration and don't add the existing item
+
+        # Insert the new stock entry into MongoDB
+        db.inventories.insert_one(item)
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Added new item to stock', 'Item': 'Items', 'timestamp': datetime.now()})
+    
+    message = 'New stock added successfully'
+    if skipped_items:
+        message += '. The following items were not added because they already exist: ' + ', '.join(skipped_items)
+
+    flash(message, 'success')
+    return jsonify({'redirect': url_for('stock_overview')})
     
 @app.route('/update-new-stock', methods=['POST'])
 def update_new_stock():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
+    
     if login_data is None:
-        flash('Login first')
-        return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data})
-        all_items = request.json['items']  # Access the JSON data sent from the client
-        
-        # Process each item to convert fields and calculate total price
-        for item in all_items:
-            # Convert 'quantity' and 'unitPrice' to integers
-            item['quantity'] = int(item['quantity'])
-            item['unitPrice'] = int(item['unitPrice'])
-            item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
-            item['company_name'] = company['company_name']
-            item['status'] = "updated stock"
+        flash('Login first', 'error')
+        return jsonify({'redirect': url_for('/')})
+    
+    company = db.registered_managers.find_one({'username': login_data})
+    all_items = request.json['items']  # Access the JSON data sent from the client
 
-            # Check if the item already exists in the database
-            existing_item = db.inventories.find_one({
-                'itemName': item['itemName'],
-                'company_name': company['company_name']
-            })
+    for item in all_items:
+        # Convert 'quantity' and 'unitPrice' to integers
+        item['quantity'] = int(item['quantity'])
+        item['unitPrice'] = int(item['unitPrice'])
+        item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
+        item['company_name'] = company['company_name']
+        item['status'] = "updated stock"
 
+        # Check if the item already exists in the database
+        existing_item = db.inventories.find_one({
+            'itemName': item['itemName'],
+            'company_name': company['company_name']
+        })
+
+        if existing_item:
             if 'available_quantity' in existing_item:
                 old_total_price = existing_item['available_quantity'] * existing_item['unitPrice']
                 # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
                 item['totalPrice'] = item['unitPrice'] * item['quantity'] + old_total_price
-                new_available_quantity = existing_item['available_quantity'] +  item['quantity']
+                new_available_quantity = existing_item['available_quantity'] + item['quantity']
                 item['available_quantity'] = new_available_quantity
             else:
                 item['totalPrice'] = item['unitPrice'] * item['quantity'] + existing_item['totalPrice']
-            
+
             # Insert the new stock entry into MongoDB
             db.inventories.insert_one(item)
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Updated item in stock', 'Item': 'Items', 'timestamp': datetime.now()})
             db.inventories.delete_one({'_id': existing_item['_id']})
             existing_item.pop('_id', None)
             db.old_inventories.insert_one(existing_item)
-        
-        message = 'Stock updated successfully'
-        
-        return jsonify({'message': message})
+    
+    flash('Stock updated successfully', 'success')
+    
+    return jsonify({'redirect': url_for('stock_overview')})
     
 @app.route('/update-sale', methods=['POST'])
 def update_sale():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
+    
     if login_data is None:
-        flash('Login first')
-        return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data})
-        all_items = request.json['items']  # Access the JSON data sent from the client
-        out_of_stock_items = []
-        over_quantified = []
-        # Process each item to convert fields and calculate total price
-        for item in all_items:
-            # Convert 'quantity' and 'unitPrice' to integers
-            item['quantity'] = int(item['quantity'])
-            item['unitPrice'] = int(item['unitPrice'])
-            item['saleDate'] = datetime.strptime(item['saleDate'], '%Y-%m-%d')
-            item['company_name'] = company['company_name']
+        flash('Login first', 'error')
+        return jsonify({'redirect': url_for('/')})
+    
+    company = db.registered_managers.find_one({'username': login_data})
+    all_items = request.json['items']  # Access the JSON data sent from the client
+    out_of_stock_items = []
+    over_quantified = []
+    
+    for item in all_items:
+        item['quantity'] = int(item['quantity'])
+        item['unitPrice'] = int(item['unitPrice'])
+        item['saleDate'] = datetime.strptime(item['saleDate'], '%Y-%m-%d')
+        item['company_name'] = company['company_name']
 
-            # Check if the item already exists in the database
-            existing_item = db.inventories.find_one({
-                'itemName': item['itemName'],
-                'company_name': company['company_name']
-            })
+        existing_item = db.inventories.find_one({
+            'itemName': item['itemName'],
+            'company_name': company['company_name']
+        })
 
+        if existing_item:
             if 'available_quantity' in existing_item:
                 if existing_item['available_quantity'] <= 0:
                     out_of_stock_items.append(item['itemName'])
@@ -4914,7 +4916,7 @@ def update_sale():
                 if item['quantity'] > existing_item['available_quantity']:
                     over_quantified.append(item['itemName'])
                     continue
-                revenue = item['quantity']*item['unitPrice']
+                revenue = item['quantity'] * item['unitPrice']
                 available_quantity = existing_item['available_quantity'] - item['quantity']
                 item['revenue'] = revenue
                 item['stockDate'] = existing_item['stockDate']
@@ -4922,77 +4924,77 @@ def update_sale():
                 if item['quantity'] > existing_item['quantity']:
                     over_quantified.append(item['itemName'])
                     continue
-                revenue = item['quantity']*item['unitPrice']
+                revenue = item['quantity'] * item['unitPrice']
                 available_quantity = existing_item['quantity'] - item['quantity']
                 item['revenue'] = revenue
                 item['stockDate'] = existing_item['stockDate']
-            
-            
-            # Insert the new stock entry into MongoDB
+
             db.stock_sales.insert_one(item)
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Added a new sale', 'Item': 'Items', 'timestamp': datetime.now()})
             db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
-        
-        message = 'Sales updated successfully'
+    
+    message = 'Sales updated successfully'
+    flash(message, 'success')
 
-        if out_of_stock_items:
-            message += '. The following items are out of stock: ' + ', '.join(out_of_stock_items)
-        if over_quantified:
-            message += '. Enter smaller quantities for the following items: ' + ', '.join(over_quantified)
-        
-        return jsonify({'message': message})
+    if out_of_stock_items:
+        flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
+    if over_quantified:
+        flash(f'Enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
+
+    return jsonify({'redirect': url_for('stock_overview')})
     
 @app.route('/in-house-use', methods=['POST'])
 def inhouse():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
+    
     if login_data is None:
-        flash('Login first')
-        return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data})
-        all_items = request.json['items']  # Access the JSON data sent from the client
+        flash('Login first', 'error')
+        return jsonify({'redirect': url_for('/')})
+    
+    company = db.registered_managers.find_one({'username': login_data})
+    all_items = request.json['items']  # Access the JSON data sent from the client
 
-        # Initialize empty arrays for itemNames and itemQuantities
-        itemNames = []
-        itemQuantities = []
-        itemStockDates = []
-        itemUnitPrices = []
-        
-        # Extract productName, productQuantity, productPrice, useDate from the first itemObject
-        # Assuming these fields are the same for all itemObjects in all_items
-        productName = all_items[0]['productName']
-        productQuantity = int(all_items[0]['productQuantity'])
-        productPrice = int(all_items[0]['productPrice'])
-        useDate = all_items[0]['useDate']
-        useDate = datetime.strptime(useDate, '%Y-%m-%d')
-        company_name = company['company_name']
+    # Initialize empty arrays for itemNames and itemQuantities
+    itemNames = []
+    itemQuantities = []
+    itemStockDates = []
+    itemUnitPrices = []
+    
+    # Extract productName, productQuantity, productPrice, useDate from the first itemObject
+    productName = all_items[0]['productName']
+    productQuantity = int(all_items[0]['productQuantity'])
+    productPrice = int(all_items[0]['productPrice'])
+    useDate = all_items[0]['useDate']
+    useDate = datetime.strptime(useDate, '%Y-%m-%d')
+    company_name = company['company_name']
 
-        out_of_stock_items = []
-        over_quantified = []
-        in_stockID = []
-        in_stockQty = []
-        # Process each item to convert fields and calculate total price
-        for item in all_items:
-            itemNames.append(item['itemName'])
-            item['itemQuantity'] = int(item['itemQuantity'])
-            itemQuantities.append(item['itemQuantity'])
+    out_of_stock_items = []
+    over_quantified = []
+    in_stockID = []
+    in_stockQty = []
 
-            # Check if the item already exists in the database
-            existing_item = db.inventories.find_one({
-                'itemName': item['itemName'],
-                'company_name': company_name
-            })
+    for item in all_items:
+        itemNames.append(item['itemName'])
+        item['itemQuantity'] = int(item['itemQuantity'])
+        itemQuantities.append(item['itemQuantity'])
 
+        # Check if the item already exists in the database
+        existing_item = db.inventories.find_one({
+            'itemName': item['itemName'],
+            'company_name': company_name
+        })
+
+        if existing_item:
             if 'available_quantity' in existing_item:
                 if existing_item['available_quantity'] <= 0:
                     out_of_stock_items.append(item['itemName'])
-                    message = 'NOT UPDATED'
+                    flash(f'Item {item["itemName"]} is out of stock', 'error')
                     continue
                 else:
                     if item['itemQuantity'] > existing_item['available_quantity']:
                         over_quantified.append(item['itemName'])
-                        message = 'NOT UPDATED'
+                        flash(f'Quantity for item {item["itemName"]} is too high', 'error')
                         continue
                     else:
                         available_quantity = existing_item['available_quantity'] - item['itemQuantity']
@@ -5000,49 +5002,139 @@ def inhouse():
                         in_stockID.append(existing_item['_id'])
                         in_stockQty.append(available_quantity)
                         itemUnitPrices.append(existing_item['unitPrice'])
-                        message = 'Inhouse updated successfully'
-
+                        flash(f'Inhouse use of {item["itemName"]} updated successfully', 'success')
             else:
                 if item['itemQuantity'] > existing_item['quantity']:
                     over_quantified.append(item['itemName'])
-                    message = 'NOT UPDATED'
+                    flash(f'Quantity for item {item["itemName"]} is too high', 'error')
                 else:
                     available_quantity = existing_item['quantity'] - item['itemQuantity']
                     itemStockDates.append(existing_item['stockDate'])
                     in_stockID.append(existing_item['_id'])
                     in_stockQty.append(available_quantity)
                     itemUnitPrices.append(existing_item['unitPrice'])
-                    message = 'Inhouse updated successfully'
+                    flash(f'Inhouse use of {item["itemName"]} updated successfully', 'success')
+
+    if out_of_stock_items:
+        flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
+    if over_quantified:
+        flash(f'Please enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
+
+    if not out_of_stock_items and not over_quantified:
+        document = {
+            'productName': productName,
+            'productQuantity': productQuantity,
+            'productPrice': productPrice,
+            'useDate': useDate,
+            'itemName': itemNames,
+            'itemQuantity': itemQuantities,
+            'itemUnitPrices': itemUnitPrices,
+            'itemStockDates': itemStockDates,
+            'company_name': company_name
+        }
+        for id, available_quantity in zip(in_stockID, in_stockQty):
+            db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
+        db.inhouse.insert_one(document)
+        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse production', 'Item': 'Items', 'timestamp': datetime.now()})
+
+    return jsonify({'redirect': url_for('stock_overview')})
+
+@app.route('/in-house-used-items', methods=['POST'])
+def inhouse_used_items():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Please login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        all_items = request.json['items']  # Access the JSON data sent from the client
+
+        # Initialize empty arrays for itemNames, itemQuantities, etc.
+        itemNames = []
+        itemQuantities = []
+        itemStockDates = []
+        itemUseDates = []
+        itemUnitPrices = []
+        
+        company_name = company['company_name']
+
+        out_of_stock_items = []
+        over_quantified = []
+        in_stockID = []
+        in_stockQty = []
+
+        for item in all_items:
+            itemNames.append(item['usedItemName'])
+            item['usedItemQuantity'] = int(item['usedItemQuantity'])
+            itemQuantities.append(item['usedItemQuantity'])
+            use_date = datetime.strptime(item['usedUseDate'], '%Y-%m-%d')
+            itemUseDates.append(use_date)
+
+            existing_item = db.inventories.find_one({
+                'itemName': item['usedItemName'],
+                'company_name': company_name
+            })
+
+            if existing_item:
+                if 'available_quantity' in existing_item:
+                    if existing_item['available_quantity'] <= 0:
+                        out_of_stock_items.append(item['usedItemName'])
+                        flash(f'Item {item["usedItemName"]} is out of stock', 'error')
+                        continue
+                    else:
+                        if item['usedItemQuantity'] > existing_item['available_quantity']:
+                            over_quantified.append(item['usedItemName'])
+                            flash(f'Quantity for item {item["usedItemName"]} is too high', 'error')
+                            continue
+                        else:
+                            available_quantity = existing_item['available_quantity'] - item['usedItemQuantity']
+                            itemStockDates.append(existing_item['stockDate'])
+                            in_stockID.append(existing_item['_id'])
+                            in_stockQty.append(available_quantity)
+                            itemUnitPrices.append(existing_item['unitPrice'])
+                            flash(f'Inhouse use of {item["usedItemName"]} updated successfully', 'success')
+
+                else:
+                    if item['usedItemQuantity'] > existing_item['quantity']:
+                        over_quantified.append(item['usedItemName'])
+                        flash(f'Quantity for item {item["usedItemName"]} is too high', 'error')
+                    else:
+                        available_quantity = existing_item['quantity'] - item['usedItemQuantity']
+                        itemStockDates.append(existing_item['stockDate'])
+                        in_stockID.append(existing_item['_id'])
+                        in_stockQty.append(available_quantity)
+                        itemUnitPrices.append(existing_item['unitPrice'])
+                        flash(f'Inhouse use of {item["usedItemName"]} updated successfully', 'success')
 
         if out_of_stock_items:
-            message += '. The following items are out of stock: ' + ', '.join(out_of_stock_items)
+            flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
         if over_quantified:
-            message += '. Enter smaller quantities for the following items: ' + ', '.join(over_quantified)
+            flash(f'Please enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
+
         if not out_of_stock_items and not over_quantified:
             document = {
-                'productName': productName,
-                'productQuantity': productQuantity,
-                'productPrice': productPrice,
-                'useDate': useDate,
-                'itemName': itemNames,  # Array field
-                'itemQuantity': itemQuantities,  # Array field
-                'itemUnitPrices': itemUnitPrices, # Array field
-                'itemStockDates': itemStockDates, # Array field
+                'itemName': itemNames,
+                'itemQuantity': itemQuantities,
+                'itemUnitPrices': itemUnitPrices,
+                'itemStockDates': itemStockDates,
+                'useDate': itemUseDates,
                 'company_name': company_name
             }
             for id, available_quantity in zip(in_stockID, in_stockQty):
                 db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
-            db.inhouse.insert_one(document)
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse use updates', 'Item': 'Items', 'timestamp': datetime.now()})
-        
-        return jsonify({'message': message})
+            db.inhouse_use.insert_one(document)
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse use of items', 'Item': 'Items', 'timestamp': datetime.now()})
+
+    return jsonify({'redirect': url_for('stock_overview')})
     
 @app.route('/revenue-details')
 def revenue_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -5117,7 +5209,7 @@ def sales_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -5149,7 +5241,7 @@ def stock_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -5176,12 +5268,42 @@ def stock_details():
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('stock info.html', stock_info = stock_info, available_itemNames=available_itemNames, dp=dp_str)
 
+@app.route('/inhouse-item-use-details')
+def inhouse_items_use_details():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        
+        subscription = db.managers.find_one({'name': company['company_name']})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            twelve_months_ago = datetime.now() - timedelta(days=365)
+            inhouse_item_use = list(db.inhouse_use.find({'company_name': company_name, 'useDate': {'$gte': twelve_months_ago}}))
+            inhouse_item_use.sort(key=lambda x: max(x['useDate']), reverse=True)
+
+            available_itemNames = []
+            available_items = list(db.inventories.find({'company_name': company['company_name']}))
+            if len(available_items) != 0:
+                for item in available_items:
+                    available_itemNames.append(item['itemName'])
+            dp = company.get('dp')
+            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+            return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, available_itemNames=available_itemNames, dp=dp_str)
+
 @app.route('/stock-overview', methods=["GET", "POST"])
 def stock_overview():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         # Clear sessions
@@ -5507,7 +5629,7 @@ def all_accounts_overview():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
@@ -5521,7 +5643,7 @@ def download_stock_data():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         startdate_on_str = request.form.get("startdate")
@@ -5565,7 +5687,7 @@ def download_revenue_data():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         startdate_on_str = request.form.get("startdate")
@@ -5679,7 +5801,7 @@ def download_sales_data():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         startdate_on_str = request.form.get("startdate")
@@ -5722,7 +5844,7 @@ def download_inhouse():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
-        flash('Login first')
+        flash('Login first', 'error')
         return redirect('/')
     else:
         startdate_on_str = request.form.get("startdate")
@@ -5801,6 +5923,74 @@ def download_inhouse():
         # Create the response
         response = make_response(output.read())
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        return response
+    
+@app.route('/download-inhouse-item--data', methods=["POST"])
+def download_inhouse_item_use():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        company = db.registered_managers.find_one({'username': login_data})
+
+        company_name = company['company_name']
+
+        inhouse_info = list(db.inhouse_use.find({'company_name': company_name,'useDate': {'$gte': startdate, '$lte': enddate}},{'company_name':0}))
+
+        inhouse_itemName = []
+        inhouse_useDate = []
+        inhouse_itemQuantity = []
+        inhouse_itemUnitPrices = []
+        inhouse_itemStockDates = []
+
+        for record in inhouse_info:
+            item_name = record['itemName']
+            useDate = record['useDate']
+            item_quantity = record['itemQuantity']
+            item_unit_price = record['itemUnitPrices']
+            itemStockDates = record['itemStockDates']
+        
+            inhouse_itemName.append(item_name)
+            inhouse_useDate.append(useDate)
+            inhouse_itemQuantity.append(item_quantity)
+            inhouse_itemUnitPrices.append(item_unit_price)
+            inhouse_itemStockDates.append(itemStockDates)
+
+        # Create the DataFrame
+        inhouse_df = pd.DataFrame({
+            'Item Used': inhouse_itemName,
+            'Date Used':inhouse_useDate,
+            'Item Quantity': inhouse_itemQuantity,
+            'Item Unit Price': inhouse_itemUnitPrices,
+            'Item Stock Date': inhouse_itemStockDates
+        })
+
+        # Assuming you have the DataFrame 'inhouse_df_new'
+        inhouse_df_exploded = inhouse_df.explode('Item Used')
+        inhouse_df_exploded['Date Used'] = inhouse_df.explode('Date Used')['Date Used']
+        inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
+        inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
+        inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
+        inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
+
+        inhouse_df_exploded['Total Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Unit Price']
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            inhouse_df_exploded.to_excel(writer, sheet_name='Inhouse item use data', index=False)
+        output.seek(0)
+
+        # Create the response
+        response = make_response(output.read())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse Item Use Data_{startdate_on_str}_{enddate_on_str}.xlsx"
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
