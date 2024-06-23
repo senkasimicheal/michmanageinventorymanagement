@@ -1459,7 +1459,7 @@ def add_complaint():
             <body>
             <p>Dear Manager,</p>
             <p>You have a new complaint from {tenant['tenantName']}, please login below to check complaint:</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/login">Login</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
