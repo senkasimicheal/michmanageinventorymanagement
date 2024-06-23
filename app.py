@@ -33,7 +33,6 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import tempfile
 import string
 import qrcode
-from PIL import Image
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
