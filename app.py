@@ -3547,7 +3547,7 @@ def add_property_manager():
                 <body>
                 <p>Dear Manager,</p>
                 <p>You have been granted permission to create an account with Mich Manage. Please click the link below to register:</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/register">Register Here</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Register Here</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
