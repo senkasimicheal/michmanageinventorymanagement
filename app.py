@@ -3799,10 +3799,17 @@ def load_dashboard_page():
         company = db.registered_managers.find_one({'username': login_data})
 
         available_itemNames = []
+        items_to_update = []
         available_items = list(db.inventories.find({'company_name': company['company_name']}))
         if len(available_items) != 0:
             for item in available_items:
-                available_itemNames.append(item['itemName'])
+                if 'available_quantity' in item:
+                    if item['available_quantity'] > 0:
+                        available_itemNames.append(item['itemName'])
+                else:
+                    available_itemNames.append(item['itemName'])
+            for item in available_items:
+                items_to_update.append(item['itemName'])
         
         subscription = db.managers.find_one({'name': company['company_name']})
         account_type = subscription['account_type']
@@ -3847,7 +3854,7 @@ def load_dashboard_page():
                 property_data = list(db.property_managed.find(user_query))
                 if len(property_data) == 0:
                     flash('No property data found', 'error')
-                    return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames)
+                    return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
                 else:
                     property_data_list = list(db.property_managed.find(user_query))
                     tenant_data_cursor = db.tenants.find(user_query)
@@ -3868,7 +3875,7 @@ def load_dashboard_page():
                                 del property_data_dict[tenant_property_name]
 
                     flash('No tenant data found', 'error')
-                    return render_template('dashboard.html',property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames)
+                    return render_template('dashboard.html',property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
             latest_year = latest_document['date_last_paid'].year
 
             startdate = datetime(latest_year, 1, 1)
@@ -3916,7 +3923,7 @@ def load_dashboard_page():
         property_data = list(db.property_managed.find(user_query))
         if len(property_data) == 0:
             flash('No property data found', 'error')
-            return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames)
+            return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
         else:
             property_data_list = list(db.property_managed.find(user_query))
             tenant_data_cursor = db.tenants.find(user_query)
@@ -3976,13 +3983,13 @@ def load_dashboard_page():
                 property_performance_bar_chart = create_stacked_bar_chart(property_performance, 'propertyName', f'Property Performance', 'Property Name', 'Value')
                 line_chart = create_line_chart(property_performance_line, f'Rent Payments {enddate.year}', 'Month', 'Amount Paid')
 
-                return render_template('dashboard.html',count_property=count_property,available_amount=available_amount, available_itemNames=available_itemNames,
+                return render_template('dashboard.html',count_property=count_property,available_amount=available_amount, available_itemNames=available_itemNames,items_to_update=items_to_update,
                                     count_current_tenants=count_current_tenants, property_data=property_data_dict, property_occupancy=property_occupancy,
                                     property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
                                     line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
             else:
                 flash('No tenant data found', 'error')
-                return render_template('dashboard.html', property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames)
+                return render_template('dashboard.html', property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])
@@ -5196,13 +5203,20 @@ def revenue_details():
             revenue_info.sort(key=lambda x: x['inventoryDetails'][0]['stockDate'], reverse=True)
 
             available_itemNames = []
+            items_to_update = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
             if len(available_items) != 0:
                 for item in available_items:
-                    available_itemNames.append(item['itemName'])
+                    if 'available_quantity' in item:
+                        if item['available_quantity'] > 0:
+                            available_itemNames.append(item['itemName'])
+                    else:
+                        available_itemNames.append(item['itemName'])
+                for item in available_items:
+                    items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('revenue info.html', revenue_info = revenue_info, available_itemNames=available_itemNames, dp=dp_str)
+            return render_template('revenue info.html', revenue_info = revenue_info, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
 
 @app.route('/sales-details')
 def sales_details():
@@ -5228,13 +5242,20 @@ def sales_details():
             sales_info.sort(key=lambda x: x['saleDate'], reverse=True)
 
             available_itemNames = []
+            items_to_update = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
             if len(available_items) != 0:
                 for item in available_items:
-                    available_itemNames.append(item['itemName'])
+                    if 'available_quantity' in item:
+                        if item['available_quantity'] > 0:
+                            available_itemNames.append(item['itemName'])
+                    else:
+                        available_itemNames.append(item['itemName'])
+                for item in available_items:
+                    items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('sales info.html', sales_info = sales_info, available_itemNames=available_itemNames, dp=dp_str)
+            return render_template('sales info.html', sales_info = sales_info, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
 
 @app.route('/stock-details')
 def stock_details():
@@ -5260,13 +5281,20 @@ def stock_details():
             stock_info.sort(key=lambda x: x['stockDate'], reverse=True)
 
             available_itemNames = []
+            items_to_update = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
             if len(available_items) != 0:
                 for item in available_items:
-                    available_itemNames.append(item['itemName'])
+                    if 'available_quantity' in item:
+                        if item['available_quantity'] > 0:
+                            available_itemNames.append(item['itemName'])
+                    else:
+                        available_itemNames.append(item['itemName'])
+                for item in available_items:
+                    items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('stock info.html', stock_info = stock_info, available_itemNames=available_itemNames, dp=dp_str)
+            return render_template('stock info.html', stock_info = stock_info, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
 
 @app.route('/inhouse-item-use-details')
 def inhouse_items_use_details():
@@ -5290,13 +5318,20 @@ def inhouse_items_use_details():
             inhouse_item_use.sort(key=lambda x: max(x['useDate']), reverse=True)
 
             available_itemNames = []
+            items_to_update = []
             available_items = list(db.inventories.find({'company_name': company['company_name']}))
             if len(available_items) != 0:
                 for item in available_items:
-                    available_itemNames.append(item['itemName'])
+                    if 'available_quantity' in item:
+                        if item['available_quantity'] > 0:
+                            available_itemNames.append(item['itemName'])
+                    else:
+                        available_itemNames.append(item['itemName'])
+                for item in available_items:
+                    items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, available_itemNames=available_itemNames, dp=dp_str)
+            return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
 
 @app.route('/stock-overview', methods=["GET", "POST"])
 def stock_overview():
@@ -5612,13 +5647,20 @@ def stock_overview():
         inhouse_revenue_chart = json.dumps(inhouse_revenue_fig, cls=plotly.utils.PlotlyJSONEncoder)
 
         available_itemNames = []
+        items_to_update = []
         available_items = list(db.inventories.find({'company_name': company['company_name']}))
         if len(available_items) != 0:
             for item in available_items:
-                available_itemNames.append(item['itemName'])
+                if 'available_quantity' in item:
+                    if item['available_quantity'] > 0:
+                        available_itemNames.append(item['itemName'])
+                else:
+                    available_itemNames.append(item['itemName'])
+            for item in available_items:
+                items_to_update.append(item['itemName'])
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-        return render_template('stock dashboard.html',available_itemNames=available_itemNames,profits_chart=profits_chart,
+        return render_template('stock dashboard.html',available_itemNames=available_itemNames,items_to_update=items_to_update,profits_chart=profits_chart,
                                Losses_chart=Losses_chart,revenue=revenue, quantity_sold_stocked=quantity_sold_stocked,
                                trended_profit=trended_profit,inhouse_cost_chart=inhouse_cost_chart,
                                inhouse_revenue_chart=inhouse_revenue_chart,start_of_previous_month=start_of_previous_month,
@@ -5837,7 +5879,97 @@ def download_sales_data():
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-    
+
+@app.route('/view-production-info')
+def view_production_info():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        twelve_months_ago = datetime.now() - timedelta(days=365)
+        company = db.registered_managers.find_one({'username': login_data})
+
+        company_name = company['company_name']
+
+        inhouse_info = list(db.inhouse.find({'company_name': company_name,'useDate': {'$gte': twelve_months_ago}},{'company_name':0}))
+
+        inhouse_product_ids = []
+        inhouse_productName = []
+        inhouse_productQuantity = []
+        inhouse_productPrice = []
+        inhouse_useDate = []
+        inhouse_itemName = []
+        inhouse_itemQuantity = []
+        inhouse_itemUnitPrices = []
+        inhouse_itemStockDates = []
+
+        for record in inhouse_info:
+            productID = record['_id']
+            productName = record['productName']
+            productQuantity = record['productQuantity']
+            productPrice = record['productPrice']
+            useDate = record['useDate']
+            item_name = record['itemName']
+            item_quantity = record['itemQuantity']
+            item_unit_price = record['itemUnitPrices']
+            itemStockDates = record['itemStockDates']
+        
+            inhouse_product_ids.append(productID)
+            inhouse_productName.append(productName)
+            inhouse_productQuantity.append(productQuantity)
+            inhouse_productPrice.append(productPrice)
+            inhouse_useDate.append(useDate)
+            inhouse_itemName.append(item_name)
+            inhouse_itemQuantity.append(item_quantity)
+            inhouse_itemUnitPrices.append(item_unit_price)
+            inhouse_itemStockDates.append(itemStockDates)
+
+        # Create the DataFrame
+        inhouse_df = pd.DataFrame({
+            'Product ID':inhouse_product_ids,
+            'Product Name':inhouse_productName,
+            'Product Quantity':inhouse_productQuantity,
+            'Product Unit Price':inhouse_productPrice,
+            'Date Produced':inhouse_useDate,
+            'Item Used': inhouse_itemName,
+            'Item Quantity': inhouse_itemQuantity,
+            'Item Unit Price': inhouse_itemUnitPrices,
+            'Item Stock Date': inhouse_itemStockDates
+        })
+
+        # Assuming you have the DataFrame 'inhouse_df_new'
+        inhouse_df_exploded = inhouse_df.explode('Product ID')
+        inhouse_df_exploded = inhouse_df.explode('Product Name')
+        inhouse_df_exploded = inhouse_df.explode('Product Quantity')
+        inhouse_df_exploded = inhouse_df.explode('Product Unit Price')
+        inhouse_df_exploded = inhouse_df.explode('Date Produced')
+        inhouse_df_exploded = inhouse_df.explode('Item Used')
+        inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
+        inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
+        inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
+        inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
+
+        inhouse_df_exploded['Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Unit Price']
+        products = inhouse_df_exploded.to_dict(orient='records')
+
+        available_itemNames = []
+        items_to_update = []
+        available_items = list(db.inventories.find({'company_name': company['company_name']}))
+        if len(available_items) != 0:
+            for item in available_items:
+                if 'available_quantity' in item:
+                    if item['available_quantity'] > 0:
+                        available_itemNames.append(item['itemName'])
+                else:
+                    available_itemNames.append(item['itemName'])
+            for item in available_items:
+                items_to_update.append(item['itemName'])
+        dp = company.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        return render_template('production info.html', products = products, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
+       
 ###DOANLOAD SALES DATA   
 @app.route('/download-inhouse-data', methods=["POST"])
 def download_inhouse():

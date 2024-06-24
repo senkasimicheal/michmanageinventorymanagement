@@ -306,7 +306,7 @@
         <label class="input_labels" for="">Item Name</label>
         <select name="item_name" id="">
           <option value="" disabled selected>Select item</option>
-            {% for item in available_itemNames %}
+            {% for item in items_to_update %}
               <option value="{{ item }}">{{ item }}</option>
             {% endfor %}
         </select>
@@ -703,18 +703,6 @@
       });
     </script>
 
-    <!-- EXPORT INHOUSE DATA -->
-    <div class="export-form">
-      <form action="{{url_for('download_inhouse')}}" method="POST">
-        <label class="input_labels" for="">From date</label>
-        <input class="property_inputs" type="date" name="startdate" id="" placeholder="enter start date" required><br>
-        <label class="input_labels" for="">To date</label>
-        <input class="property_inputs" type="date" name="enddate" id="" placeholder="enter end date" required>
-        <input required type="submit" class="btn" value="Export">
-        <i class="fas fa-times"></i>
-      </form>
-    </div>
-
     <div class="container-fluid page-body-wrapper">
       <!-- partial:partials/_settings-panel.html -->
       <div class="theme-setting-wrapper">
@@ -744,7 +732,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Go To Property Management</span>
+              <span class="menu-title">Go To Property Mgt</span>
             </a>
           </li>
           {% endif %}
@@ -784,13 +772,13 @@
           {% if session.get('inhouse') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="#" id="inhouse">
-              <i class="typcn typcn-calculator menu-icon"></i>
+              <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">Production</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="#" id="inhouse-use">
-              <i class="typcn typcn-calculator menu-icon"></i>
+              <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">In-House Use</span>
             </a>
           </li>
@@ -803,7 +791,7 @@
           <li class="nav-item">
             <a class="nav-link" href="#" id="export">
               <i class="typcn typcn-mortar-board menu-icon"></i>
-              <span class="menu-title">Export In-house</span>
+              <span class="menu-title">Production Info</span>
             </a>
           </li>
           {% endif %}
@@ -819,7 +807,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('revenue_details') }}">
               <i class="typcn typcn-business-card menu-icon"></i>
-              <span class="menu-title">Revenues</span>
+              <span class="menu-title">Sales Revenue</span>
             </a>
           </li>
           {% endif %}
