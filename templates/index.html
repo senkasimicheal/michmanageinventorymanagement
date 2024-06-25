@@ -712,10 +712,10 @@
   <script>
     // Define a unique key for each PWA's install prompt dismissal
     const dismissedInstallPromptKey = 'dismissedInstallPrompt_myApp1';
-
+  
     let deferredPrompt;
     const overlayContent = document.querySelector('.overlay-content');
-
+  
     // Function to show the install prompt notification
     function showInstallPrompt() {
       const installLink = document.createElement('a');
@@ -733,19 +733,13 @@
               console.log('User dismissed the install prompt');
             }
             deferredPrompt = null;
-            hideInstallPrompt();
             removeInstallButton();
           });
         }
       });
       overlayContent.appendChild(installLink);
     }
-
-    // Function to hide the install prompt notification
-    function hideInstallPrompt() {
-      sessionStorage.setItem(dismissedInstallPromptKey, 'true');
-    }
-
+  
     // Event listener for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -754,18 +748,19 @@
         showInstallPrompt();
       }
     });
-
+  
     // Check if the notification was previously dismissed during the current session
     document.addEventListener('DOMContentLoaded', () => {
       if (sessionStorage.getItem(dismissedInstallPromptKey) === 'true') {
-        hideInstallPrompt();
+        // Optional: You can remove this line if you don't want to auto-hide the prompt
+        removeInstallButton();
       } else {
         if (deferredPrompt) {
           showInstallPrompt(); // Show only if deferredPrompt is already set and not dismissed
         }
       }
     });
-
+  
     // Function to remove install button from overlay content
     function removeInstallButton() {
       const installLink = document.getElementById('installLink');
@@ -773,7 +768,7 @@
         installLink.remove();
       }
     }
-  </script>
+  </script>  
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
