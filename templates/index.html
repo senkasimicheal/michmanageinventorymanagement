@@ -704,11 +704,6 @@
     });
   </script>
 
-  <!-- <div class="notification">
-    <span class="close-btn">&times;</span>
-    <button id="confirmInstallButton">Install App</button>
-  </div> -->
-
   <script>
     // Define a unique key for each PWA's install prompt dismissal
     const dismissedInstallPromptKey = 'dismissedInstallPrompt_myApp1';
@@ -740,12 +735,31 @@
       overlayContent.appendChild(installLink);
     }
   
+    // Function to show update browser link for Chrome
+    function showUpdateBrowserLink() {
+      const updateLink = document.createElement('a');
+      updateLink.textContent = 'Update Chrome';
+      // Check if on Android or desktop (for redirect)
+      if (/Android/.test(navigator.userAgent)) {
+        updateLink.href = 'https://play.google.com/store/apps/details?id=com.android.chrome';
+      } else {
+        updateLink.href = 'https://www.google.com/chrome/';
+      }
+      updateLink.id = 'updateLink'; // Add an id for easy removal
+      updateLink.addEventListener('click', () => {
+        sessionStorage.setItem(dismissedInstallPromptKey, 'true'); // Optionally dismiss install prompt
+      });
+      overlayContent.appendChild(updateLink);
+    }
+  
     // Event listener for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      if (!sessionStorage.getItem(dismissedInstallPromptKey)) {
-        showInstallPrompt();
+      if (isChrome()) {
+        showInstallPrompt(); // Show install prompt if browser is Chrome
+      } else {
+        showUpdateBrowserLink(); // Show update browser link for non-Chrome browsers
       }
     });
   
@@ -755,20 +769,31 @@
         // Optional: You can remove this line if you don't want to auto-hide the prompt
         removeInstallButton();
       } else {
-        if (deferredPrompt) {
-          showInstallPrompt(); // Show only if deferredPrompt is already set and not dismissed
+        if (deferredPrompt && !isChrome()) {
+          showUpdateBrowserLink(); // Show update browser link if deferredPrompt exists and not Chrome
         }
       }
     });
   
-    // Function to remove install button from overlay content
+    // Function to remove install button or update browser link from overlay content
     function removeInstallButton() {
       const installLink = document.getElementById('installLink');
       if (installLink) {
         installLink.remove();
       }
+  
+      const updateLink = document.getElementById('updateLink');
+      if (updateLink) {
+        updateLink.remove();
+      }
     }
-  </script>  
+  
+    // Function to check if browser is Chrome
+    function isChrome() {
+      // Check userAgent for Chrome
+      return /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    }
+  </script>    
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
