@@ -1200,7 +1200,7 @@ h6{
 }
 
 .spinner {
-  position: relative;
+  /* position: relative; */
   font-size: 20px;
   text-align: center;
 }

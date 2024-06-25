@@ -704,72 +704,75 @@
     });
   </script>
 
-  <div class="notification">
+  <!-- <div class="notification">
     <span class="close-btn">&times;</span>
     <button id="confirmInstallButton">Install App</button>
-  </div>
+  </div> -->
 
   <script>
     // Define a unique key for each PWA's install prompt dismissal
     const dismissedInstallPromptKey = 'dismissedInstallPrompt_myApp1';
 
     let deferredPrompt;
-    const notification = document.querySelector('.notification');
-    const confirmInstallButton = document.getElementById('confirmInstallButton');
-    const closeBtn = document.querySelector('.close-btn');
+    const overlayContent = document.querySelector('.overlay-content');
 
     // Function to show the install prompt notification
     function showInstallPrompt() {
-        notification.classList.add('show');
+      const installLink = document.createElement('a');
+      installLink.textContent = 'Install App';
+      installLink.href = '#'; // Replace with appropriate URL or action
+      installLink.id = 'installLink';
+      installLink.addEventListener('click', () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('User accepted the install prompt');
+              sessionStorage.setItem(dismissedInstallPromptKey, 'true');
+            } else {
+              console.log('User dismissed the install prompt');
+            }
+            deferredPrompt = null;
+            hideInstallPrompt();
+            removeInstallButton();
+          });
+        }
+      });
+      overlayContent.appendChild(installLink);
     }
 
     // Function to hide the install prompt notification
     function hideInstallPrompt() {
-        notification.classList.remove('show');
-        sessionStorage.setItem(dismissedInstallPromptKey, 'true');
+      sessionStorage.setItem(dismissedInstallPromptKey, 'true');
     }
 
     // Event listener for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        if (!sessionStorage.getItem(dismissedInstallPromptKey)) {
-            showInstallPrompt();
-        }
-    });
-
-    // Event listener for the install button click
-    confirmInstallButton.addEventListener('click', () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                    sessionStorage.setItem(dismissedInstallPromptKey, 'true');
-                } else {
-                    console.log('User dismissed the install prompt');
-                }
-                deferredPrompt = null;
-                hideInstallPrompt();
-            });
-        }
-    });
-
-    // Event listener for the close button click
-    closeBtn.addEventListener('click', () => {
-        hideInstallPrompt();
+      e.preventDefault();
+      deferredPrompt = e;
+      if (!sessionStorage.getItem(dismissedInstallPromptKey)) {
+        showInstallPrompt();
+      }
     });
 
     // Check if the notification was previously dismissed during the current session
     document.addEventListener('DOMContentLoaded', () => {
-        if (sessionStorage.getItem(dismissedInstallPromptKey) === 'true') {
-            hideInstallPrompt();
-        } else {
-            if (deferredPrompt) {
-                showInstallPrompt(); // Show only if deferredPrompt is already set and not dismissed
-            }
+      if (sessionStorage.getItem(dismissedInstallPromptKey) === 'true') {
+        hideInstallPrompt();
+      } else {
+        if (deferredPrompt) {
+          showInstallPrompt(); // Show only if deferredPrompt is already set and not dismissed
         }
+      }
     });
+
+    // Function to remove install button from overlay content
+    function removeInstallButton() {
+      const installLink = document.getElementById('installLink');
+      if (installLink) {
+        installLink.remove();
+      }
+    }
   </script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
