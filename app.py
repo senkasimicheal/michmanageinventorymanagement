@@ -56,20 +56,6 @@ scheduler.start()
 
 mail = Mail(app)
 
-def update_send_emails():
-    db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
-
-scheduler.add_job('update_send_emails', update_send_emails, trigger='interval', seconds=5)
-
 utc = pytz.UTC
 
 def generate_file_password(length=12):
@@ -438,6 +424,10 @@ def index():
 
     resp = make_response(render_template("index.html", property_data=property_data, company_names=company_names))
     return resp
+
+@app.route('/download-apk')
+def download_apk():
+    return send_from_directory(directory='.', path='Mich Manage.apk', as_attachment=True)
     
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
