@@ -711,7 +711,7 @@
         const appPackage = 'com.example.michmanage'; // Replace with your app's package name
 
         if (navigator.userAgent.toLowerCase().includes('android')) {
-            // Create an intent to check if the app is installed
+            // Try to open the app using the intent
             const intent = document.createElement('a');
             intent.href = `intent://${appPackage}#Intent;scheme=package;package=${appPackage};end`;
             intent.id = 'app-intent';
@@ -720,7 +720,7 @@
             // Try to open the app using the intent
             window.location = intent.href;
 
-            // After a short delay, check if the page still has focus
+            // Use a longer timeout to give more time for the focus change
             setTimeout(() => {
                 if (document.hasFocus()) {
                     // If the page still has focus, the app is likely not installed
@@ -728,11 +728,14 @@
                     installLink.onclick = () => {
                         alert('The APK file will be downloaded. Please open the file to install the Mich Manage App.');
                     };
+                } else {
+                    // If the app is installed and opened, the focus will be lost
+                    installLink.style.display = 'none';
                 }
-            }, 500); // Adjust the timeout if necessary
+            }, 1000); // Adjust the timeout if necessary
         }
     });
-  </script>    
+  </script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>

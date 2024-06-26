@@ -491,7 +491,7 @@ def before_request():
     if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'search_apartment', 'authentication',
-                                                               'tenant_account_setup_page', 'tenant_account_setup_initiated', 'tenant_authentication'):
+                                                               'tenant_account_setup_page', 'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk'):
         return redirect('/')
     
 @app.route('/privacy-policy')
