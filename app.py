@@ -427,7 +427,7 @@ def index():
 
 @app.route('/download-apk')
 def download_apk():
-    return send_from_directory(directory='.', path='Mich Manage.apk', as_attachment=True)
+    return send_from_directory(directory='.', path='michmanage.apk', as_attachment=True)
     
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
