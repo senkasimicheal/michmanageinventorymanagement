@@ -233,7 +233,7 @@
                   <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
                   <input type="submit" value="Reply" style="background:none;border:none;color:blue; width: 60px !important;"><br><br>
                   {% if complaint['image'] %}
-                  <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'].decode('utf-8') }}" alt="Complaint Image"><br><br>
+                  <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'] }}" alt="Complaint Image"><br><br>
                   {% endif %}
                   <button type="button" id="toggle-replies-btn-{{ complaint._id }}" onclick="toggleReplies('{{ complaint._id }}')">Show Replies</button>
                   <div class="replies-section" id="replies-{{ complaint._id }}" style="display: none;">

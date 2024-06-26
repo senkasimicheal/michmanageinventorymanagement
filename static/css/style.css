@@ -1698,8 +1698,12 @@ table td {
 
 .alert-success {
   color: #116303;
+  background-color: #d3f2cd;
+  border-color: #c1edb9;
 }
 
 .alert-danger {
-  color: #f8d7da;
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
 }

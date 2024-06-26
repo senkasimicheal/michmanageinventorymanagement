@@ -16,7 +16,9 @@ import plotly.express as px
 import plotly.utils
 import json
 from bson.objectid import ObjectId
-from PIL import Image
+import cv2
+import numpy as np
+import io
 import io
 import base64
 import calendar
@@ -39,8 +41,8 @@ app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
     # Connect to MongoDB using the connection string
-    # client = MongoClient('mongodb://localhost:27017/')
-    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    client = MongoClient('mongodb://localhost:27017/')
+    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
 
 # Function to get the database and GridFS instance
@@ -1427,15 +1429,21 @@ def add_complaint():
         if 'complaint_image' in request.files:
             file = request.files['complaint_image']
             if file:
-                # Read the file content and encode it as base64
+                # Read the file content
                 file_content = file.read()
-                img = Image.open(io.BytesIO(file_content))
-                rgb_img = img.convert('RGB')
-                output_io = io.BytesIO()
-                rgb_img.save(output_io, format='JPEG', quality=10)
-                encoded_image = base64.b64encode(output_io.getvalue())
+                np_img = np.frombuffer(file_content, np.uint8)
+                
+                # Use OpenCV to read the image
+                img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+                # Convert the image to RGB
+                rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+                # Encode the image as JPEG
+                _, buffer = cv2.imencode('.jpg', rgb_img, [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+                base64_string = base64.b64encode(buffer).decode('utf-8')
+
                 compiled_complaint = {'tenantID': ObjectId(tenant_login_data), 'tenant_name': tenant['tenantName'], 'complaint_heading': complaint_heading,
-                              'details': details, 'image': encoded_image, 'complained_on': adjusted_time, 'status': ''}
+                              'details': details, 'image': base64_string, 'complained_on': adjusted_time, 'status': ''}
                 
         db.tenant_complaints.insert_one(compiled_complaint)
         #Sending verification code
@@ -1662,7 +1670,7 @@ def update_complaint():
         adjusted_time = client_time + timedelta(hours=time_zone_offset)
         db.tenant_complaints_replies.insert_one({'complaintID': ObjectId(complaint_id),
                                                     'Reply': Reply,
-                                                    'who': login_data,
+                                                    'who': 'Manager',
                                                     'reply_date': adjusted_time,
                                                     'status': ''})
         
