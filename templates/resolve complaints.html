@@ -360,7 +360,7 @@
                                   <div class="heading-container">
                                     <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
                                     {% if reply.Reply != 'No reply' %}
-                                    {% if reply.who == reply.other %}
+                                    {% if reply.who == 'Manager' %}
                                     {% if reply.status == 'seen' %}
                                     <span class="seen-status-icon"><i class="fas fa-check-double"></i></span>
                                     {% else %}
