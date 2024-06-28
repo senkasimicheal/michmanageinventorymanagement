@@ -1076,7 +1076,7 @@ def account_setup_initiated():
         name = request.form.get("name")
         phone_number = request.form.get("phone_number")
         address = request.form.get("address")
-        dp = request.files['dp'].read() if 'dp' in request.files else None
+        dp = request.files['dp'] if 'dp' in request.files else None
 
         update_fields = {}
 
@@ -1089,16 +1089,18 @@ def account_setup_initiated():
         if address:
             update_fields['address'] = address
         if dp:
-            # Open the image file with PIL
-            img = Image.open(io.BytesIO(dp))
-            # Convert the image to RGB mode
-            rgb_img = img.convert('RGB')
-            # Adjust the quality of the image
-            output_io = io.BytesIO()
-            rgb_img.save(output_io, format='JPEG', quality=10)  # Adjust the quality until you reach desired size
-            # Convert the image data to base64
-            dp_base64 = base64.b64encode(output_io.getvalue())
-            update_fields['dp'] = dp_base64
+            file_content = dp.read()
+            np_img = np.frombuffer(file_content, np.uint8)
+            
+            # Use OpenCV to read the image
+            img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+            # Convert the image to RGB
+            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            # Encode the image as JPEG
+            _, buffer = cv2.imencode('.jpg', rgb_img, [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+            base64_string = base64.b64encode(buffer).decode('utf-8')
+            update_fields['dp'] = base64_string
 
         # Update the document with the non-empty fields
         db.registered_managers.update_one({'username': login_data}, {'$set': update_fields})
@@ -1130,23 +1132,25 @@ def tenant_account_setup_initiated():
         return redirect('/')
     else:
         auth = request.form.get("switchState")
-        dp = request.files['dp'].read() if 'dp' in request.files else None
+        dp = request.files['dp'] if 'dp' in request.files else None
 
         update_fields = {}
 
         if auth:
             update_fields['auth'] = auth
         if dp:
-            # Open the image file with PIL
-            img = Image.open(io.BytesIO(dp))
-            # Convert the image to RGB mode
-            rgb_img = img.convert('RGB')
-            # Adjust the quality of the image
-            output_io = io.BytesIO()
-            rgb_img.save(output_io, format='JPEG', quality=10)  # Adjust the quality until you reach desired size
-            # Convert the image data to base64
-            dp_base64 = base64.b64encode(output_io.getvalue())
-            update_fields['dp'] = dp_base64
+            file_content = dp.read()
+            np_img = np.frombuffer(file_content, np.uint8)
+            
+            # Use OpenCV to read the image
+            img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+            # Convert the image to RGB
+            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            # Encode the image as JPEG
+            _, buffer = cv2.imencode('.jpg', rgb_img, [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+            base64_string = base64.b64encode(buffer).decode('utf-8')
+            update_fields['dp'] = base64_string
 
         # Update the document with the non-empty fields
         db.tenant_user_accounts.update_one({'_id': ObjectId(login_data)}, {'$set': update_fields})
@@ -1578,10 +1582,7 @@ def resolve_complaints():
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         is_manager = db.managers.find_one({'manager_email': company['email']})
@@ -2008,10 +2009,7 @@ def update():
 
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
 
@@ -2757,10 +2755,7 @@ def selected_property(propertyName):
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
     return render_template('update property information.html',propertyName=propertyName, dp=dp_str)
@@ -2867,10 +2862,7 @@ def add_new_manager_email():
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         is_manager = db.managers.find_one({'manager_email': company['email']})
@@ -2912,10 +2904,7 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
     date_last_paid = datetime.strptime(date_last_paid, '%Y-%m-%d')
@@ -2933,10 +2922,7 @@ def edit(tenantName, email, property_name, selected_section, payment_type):
         # Retrieve the tenant's info using the email
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         tenant = db.tenants.find_one({'propertyName': property_name, 'selected_section': selected_section, 'tenantName': tenantName, 'company_name': company['company_name']})
@@ -3815,10 +3801,7 @@ def load_dashboard_page():
         account_type = [atype for atype in account_type if atype]
 
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         is_manager = db.managers.find_one({'manager_email': company['email']})        
@@ -4151,10 +4134,7 @@ def manage_contracts():
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         is_manager = db.managers.find_one({'manager_email': company['email']})
@@ -4206,10 +4186,7 @@ def upload_contract_page():
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         is_manager = db.managers.find_one({'manager_email': company['email']})
@@ -4297,10 +4274,7 @@ def selected_contract(contractID, company_name, receiver):
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
     return render_template('update contract.html',contractID=contractID,company_name=company_name,receiver=receiver,dp=dp_str)
@@ -4361,10 +4335,7 @@ def manage_user_rights():
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         
@@ -4389,10 +4360,7 @@ def manage_user_rights_page(email,company_name):
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         manager = db.registered_managers.find_one({'email': email, 'company_name': company_name})
@@ -4483,10 +4451,7 @@ def assign_properties():
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         
@@ -4511,10 +4476,7 @@ def assign_properties_page(name,email,company_name):
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         properties = db.property_managed.find({'company_name': company['company_name']}, {"propertyName": 1})
@@ -4555,10 +4517,7 @@ def unassign_properties():
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         
@@ -4583,10 +4542,7 @@ def unassign_properties_page(name,email,company_name):
     else:
         company = db.registered_managers.find_one({'username': login_data})
         if 'dp' in company:
-            # Convert the base64 data back to bytes
-            dp = base64.b64decode(company['dp'])
-            # Convert bytes to string for HTML rendering
-            dp_str = base64.b64encode(dp).decode()
+            dp_str = company['dp']
         else:
             dp_str = None
         property_assigned = db.registered_managers.find({'email': email, 'company_name': company_name})
