@@ -1343,7 +1343,7 @@ def tenant_data():
                 if amount_demanded == 0:
                     if last_payment_month < current_month_number:
                         amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
-                        amount_demanded += (tenant['section_value'] - tenant['available_amount']) + amount_next_month
+                        amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month
 
                         tenant_data.append({
                             'name': name,
@@ -1367,7 +1367,7 @@ def tenant_data():
                     
                     elif last_payment_month < current_month_number:
                         amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
-                        amount_demanded += (tenant['section_value'] - tenant['available_amount']) + amount_next_month
+                        amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month
 
                         tenant_data.append({
                             'name': name,
@@ -1880,7 +1880,7 @@ def update_tenant_info():
                     overdue = True
                     remaining_days = abs(remaining_days)
                     amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
-                    amount_demanded += (tenant['section_value'] - tenant['available_amount']) + amount_next_month                    
+                    amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month                   
                 else:
                     overdue = False
 
@@ -2678,7 +2678,7 @@ def update():
                         overdue = True
                         remaining_days = abs(remaining_days)
                         amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
-                        amount_demanded += (tenant['section_value'] - tenant['available_amount']) + amount_next_month
+                        amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month
                     else:
                         overdue = False
 
