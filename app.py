@@ -733,12 +733,18 @@ def send_verification_code():
     if reset_requested is None:
         manager = {'createdAt': datetime.now(), 'code': code, 'username': username, 'email': manager_email}
         send_verification_email(manager_email, manager_exists['name'], code)
+        db.forgot_password_codes.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
         db.forgot_password_codes.insert_one(manager)
-        flash('A verification code was sent to your email', 'success')
+        flash(f"A verification code was sent to {masked_email}", 'success')
         return render_template('forgot_password_code.html', masked_email=masked_email)
     else:
-        flash(f"Code was sent to {masked_email}", 'success')
-        return redirect('/verify-username')
+        db.forgot_password_codes.delete_one({'username': username})
+        manager = {'createdAt': datetime.now(), 'code': code, 'username': username, 'email': manager_email}
+        send_verification_email(manager_email, manager_exists['name'], code)
+        db.forgot_password_codes.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
+        db.forgot_password_codes.insert_one(manager)
+        flash(f"Another verification code was sent to {masked_email}", 'success')
+        return render_template('forgot_password_code.html', masked_email=masked_email)
 
     
 @app.route('/password-reset-verifying_user', methods=["POST"])
