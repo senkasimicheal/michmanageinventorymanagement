@@ -236,7 +236,7 @@ def send_reports():
         doc.add_paragraph('Top 5 complaints')
         doc.add_paragraph(f'{top_5_complaints}')
         doc.add_paragraph(f'Average Number Of Days Taken To Resolve Complaints: {average_days}')
-        doc.add_paragraph(f'Manimum Number Of Days Taken To Resolve Complaints: {max_days}')
+        doc.add_paragraph(f'Maximum Number Of Days Taken To Resolve Complaints: {max_days}')
         doc.add_paragraph(f'Minimum Number Of Days Taken To Resolve Complaints: {min_days}')
 
 
@@ -247,7 +247,7 @@ def send_reports():
         # Create a new Flask-Mail Message
         if send_emails is not None:
             msg = Message(
-                'Mich PMT Systems - Monthly Property Performance Report',
+                'Mich Manage - Monthly Property Performance Report',
                 sender='michpmts@gmail.com',
                 recipients=[email]
             )
@@ -458,7 +458,7 @@ def send_message():
         msg.html = f"""
         <html>
         <body>
-        <p>{name} has just contacted Mich PMTS</p>
+        <p>{name} has just contacted Mich ManageS</p>
         <p>Phone number: {phone}</p>
         <p>Email: {email}</p>
         <p><b style="font-size: 20px;">Message</b></p>
@@ -706,9 +706,9 @@ def send_verification_email(manager_email, manager_name, code):
         <p>We've received a request to reset the password associated with your account</p>
         <p>To proceed with the password reset process, please use the following verification code:</p>
         <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
-        <p>Please note that this code is only valid for 5 minutes from the time of this email. For security reasons, please do not share this code with anyone, including Mich PMT support staff.</p>
+        <p>Please note that this code is only valid for 5 minutes from the time of this email. For security reasons, please do not share this code with anyone, including Mich Manage support staff.</p>
         <p>If you did not request this password reset, please disregard this email. Your account security is important to us.</p>
-        <p>Thank you for choosing Mich PMT</p>
+        <p>Thank you for choosing Mich Manage</p>
         <p>Best Regards,</p>
         <p>Mich Manage</p>
         </body>
@@ -796,10 +796,10 @@ def password_reset_verifying_user():
         <html>
         <body>
         <p>Dear manager,</p>
-        <p>We're writing to inform you that the password for your account at Mich PMT has been successfully reset.</p>
+        <p>We're writing to inform you that the password for your account at Mich Manage has been successfully reset.</p>
         <p>If you initiated this password reset, you can now log in to your account using your new password. Please keep this password secure and do not share it with anyone.</p>
         <p>If you did not request this password reset, or if you have any concerns about the security of your account, please contact our support team immediately.</p>
-        <p>Thank you for choosing Mich PMT. If you have any further questions or need assistance, please don't hesitate to reach out.</p>
+        <p>Thank you for choosing Mich Manage. If you have any further questions or need assistance, please don't hesitate to reach out.</p>
         <p>Best Regards,</p>
         <p>Mich Manage</p>
         </body>
