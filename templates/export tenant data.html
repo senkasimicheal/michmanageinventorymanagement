@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Add Contracts</title>
+  <title>Export Tenant Data</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -208,7 +208,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Add a contract</h4>
+            <h4 class="mb-0">Export Tenant Data</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -345,21 +345,12 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('upload_contract')}}" method="POST" enctype="multipart/form-data">
-            <label class="input_labels" for="">Upload Contract Document</label>
-            <input type="file" accept=".pdf,.doc,.docx" name="contract_document" id="docUpload" required><br>
-            <label class="input_labels" for="">Receiver</label>
-            <select class="property_inputs" name="receiver" id="property" required>
-              <option value="none" disabled selected>Select Tenant</option>
-              {% for name in tenant_names %}
-              <option value="{{ name }}">{{ name }}</option>
-              {% endfor %}
-            </select><br>
-            <label class="input_labels" for="">Contract Start Date</label>
-            <input type="date" name="start_date" id="start_date" required><br>
-            <label class="input_labels" for="">Contract End Date</label>
-            <input type="date" name="end_date" id="end_date" required><br>
-            <input required type="submit" class="btn" value="Submit">
+          <form id="myForm" class="property_forn content-pannel" action="{{url_for('download')}}" method="POST" enctype="multipart/form-data">
+            <label class="input_labels" for="">From date</label>
+            <input class="property_inputs" type="date" name="startdate" id="" placeholder="enter start date" required><br>
+            <label class="input_labels" for="">To date</label>
+            <input class="property_inputs" type="date" name="enddate" id="" placeholder="enter end date" required>
+            <input required type="submit" class="btn" value="Export">
           </form>
         </div>
         <!-- content-wrapper ends -->

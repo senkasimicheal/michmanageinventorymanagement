@@ -12,7 +12,7 @@
   <meta name="description" content="" />
   <meta name="author" content="" />
 
-  <title>Verify username</title>
+  <title>Tenant Login</title>
 
   <!-- bootstrap core css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
@@ -72,6 +72,15 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('manager_login_page') }}" id="login">Manager Login</a>
+                <a href="{{ url_for('tenant_login_page') }}" id="tenant-login">Tenant Login</a>
+                <a href="{{ url_for('manager_register_page') }}" id="signup">Manager Sign Up</a>
+                <a href="{{ url_for('tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
+                <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('contact') }}">Contact Us</a>
+                <a href="{{ url_for('download_apk') }}" id="install-link" style="display: none;">Install App</a>
               </div>
             </div>
           </div>
@@ -93,22 +102,42 @@
     <!-- slider section -->
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
-          <form id="myForm" class="property_forn" action="{{url_for('send_verification_code')}}" method="POST">
-              <h3>Verify Your Username</h3>
-              <h6>Verify that you are the one</h6>
-              <label class="input_labels" for="">Username</label>
-              <input class="property_inputs" type="text" name="username" 
-              oninput="this.value = this.value.replace(/[^a-zA-Z]/g, '').toLowerCase()" 
-              pattern="[a-z]*" 
-              title="Lowercase letters only, no spaces allowed, no numbers or punctuation marks" 
-              required>
-              <br>
-              <input style="margin-bottom: 5px;" required type="submit" class="btn" value="Verify">
-          </form>
+        <form class="property_form" action="{{url_for('tenant_login')}}" method="POST">
+          <h6>Login</h6>
+          <label class="input_labels" for="tenantUsername">Username</label>
+          <input class="property_inputs" type="text" name="username" id="tenantUsername"
+          oninput="this.value = this.value.replace(/[^a-zA-Z]/g, '').toLowerCase(); validateForm();"
+          pattern="[a-z]*"
+          title="Lowercase letters only, no spaces allowed, no numbers or punctuation marks"
+          required><br>
+          <label class="input_labels" for="tenantPassword">Password</label>
+          <div class="password-container">
+            <input class="property_inputs" type="password" name="password" id="tenantPassword" oninput="validateForm()" required>
+            <span class="toggle-password" onclick="togglePasswordVisibility('tenantPassword', this)">👁️</span>
+          </div>
+          <br>
+          <input style="margin-bottom: 5px;" type="submit" class="btn" value="Login" id="submitButton" disabled>
+        </form>                
       </div>
     </section>
     <!-- end slider section -->
   </div>
+
+  <script>
+    function togglePasswordVisibility(passwordId, toggleIcon) {
+      const passwordInput = document.getElementById(passwordId);
+      const type = passwordInput.type === 'password' ? 'text' : 'password';
+      passwordInput.type = type;
+      toggleIcon.textContent = type === 'password' ? '👁️' : '👁️';
+    }
+  
+    function validateForm() {
+      const username = document.getElementById('tenantUsername').value.trim();
+      const password = document.getElementById('tenantPassword').value.trim();
+      const submitButton = document.getElementById('submitButton');
+      submitButton.disabled = !(username && password);
+    }
+  </script>    
 
   <script>
     document.getElementById('myForm').addEventListener('submit', function(event) {

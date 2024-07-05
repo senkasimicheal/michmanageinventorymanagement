@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Add Contracts</title>
+  <title>Add Tenants</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -208,7 +208,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Add a contract</h4>
+            <h4 class="mb-0">Add Tenants</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -344,22 +344,84 @@
               {% endif %}
           {% endwith %}
         </div>
-        <div class="content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('upload_contract')}}" method="POST" enctype="multipart/form-data">
-            <label class="input_labels" for="">Upload Contract Document</label>
-            <input type="file" accept=".pdf,.doc,.docx" name="contract_document" id="docUpload" required><br>
-            <label class="input_labels" for="">Receiver</label>
-            <select class="property_inputs" name="receiver" id="property" required>
-              <option value="none" disabled selected>Select Tenant</option>
-              {% for name in tenant_names %}
-              <option value="{{ name }}">{{ name }}</option>
-              {% endfor %}
+        <div class="add-property-forms content-wrapper" id="stock-form">
+          <form id="myForm" class="property_forn content-pannel" action="{{url_for('add_tenant')}}" method="POST" enctype="multipart/form-data">
+            <h4>Add new tenant</h4>
+            <label class="input_labels" for="">Tenant Name</label>
+            <input class="property_inputs" type="text" name="tenantName" required><br>
+            <label class="input_labels" for="">Gender</label>
+            <select class="property_inputs" name="gender" required>
+              <option value="" disabled selected>Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
             </select><br>
-            <label class="input_labels" for="">Contract Start Date</label>
-            <input type="date" name="start_date" id="start_date" required><br>
-            <label class="input_labels" for="">Contract End Date</label>
-            <input type="date" name="end_date" id="end_date" required><br>
-            <input required type="submit" class="btn" value="Submit">
+            <label class="input_labels" for="">Household size</label>
+            <select class="property_inputs" name="household_size" required>
+              <option value="" disabled selected>Select</option>
+              <option value="1-2">1-2 people</option>
+              <option value="3-4">3-4 people</option>
+              <option value="5+">5 or more people</option>
+            </select><br>
+            <label class="input_labels" for="">Tenant Email</label>
+            <input class="property_inputs" type="email" name="tenantEmail" required><br>
+            <label class="input_labels" for="">Tenant Phone</label>
+            <input class="property_inputs" type="tel" name="tenantPhone" required><br>
+            <label class="input_labels" for="">Attach To Property</label>
+            <select class="property_inputs" name="propertyName" id="property" required>
+              <option value="" disabled selected>Select property</option>
+              {% if property_data%}
+                {% for property in property_data.keys() %}
+                  <option value="{{ property }}">{{ property }}</option>
+                {% endfor %}
+              {% endif %}
+            </select><br>
+            <label class="input_labels" for="">Tenant Section On Property</label>
+            <select class="property_inputs" name="selected_section" id="section" required>
+                <!-- Options will be populated by JavaScript -->
+            </select><br>
+            <label class="input_labels" for="">Section Value</label>
+            <input class="property_inputs" type="number" min="100000" name="section_value" required><br>
+            <label class="input_labels" for="">Payment Type</label>
+            <select class="property_inputs" name="payment_type" id="payment_type" required>
+              <option value="" disabled selected>Select type</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
+              <option value="Annualy">Annualy</option>
+            </select><br>
+            <label class="input_labels" for="">Payment period</label>
+            <select class="property_inputs" name="months_paid" id="months_paid" required>
+              <option value="" disabled selected>Select period</option>
+              <option value="January">January</option>
+              <option value="February">February</option>
+              <option value="March">March</option>
+              <option value="April">April</option>
+              <option value="May">May</option>
+              <option value="June">June</option>
+              <option value="July">July</option>
+              <option value="August">August</option>
+              <option value="September">September</option>
+              <option value="October">October</option>
+              <option value="November">November</option>
+              <option value="December">December</option>
+            </select><br>
+            <label class="input_labels" for="">Date</label>
+            <input class="property_inputs" type="date" name="date_last_paid" required><br>
+            <label class="input_labels" for="">Amount Paid</label>
+            <input class="property_inputs" type="number" min="5000" name="amount" required><span><select name="currency" id="" required>
+                <option value="UGX">UGX</option>
+                <option value="USD">USD</option>
+            </select></span><br>
+            <label class="input_labels" for="">Mode Of Payment</label>
+            <select class="property_inputs" name="payment_mode" id="" required>
+              <option value="" disabled selected>Select payment mode</option>
+              <option value="Cash">Cash</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Bank">Bank</option>
+              <option value="PayPal">PayPal</option>
+              <option value="MasterCard">MasterCard</option>
+              <option value="Momo Pay">Momo Pay</option>
+            </select><br>
+            <input required type="submit" class="btn" value="Add">
           </form>
         </div>
         <!-- content-wrapper ends -->
@@ -450,6 +512,21 @@
             alert("End date should be after start date.");
             this.value = '';
         }
+    });
+  </script>
+
+  <script>
+    $(document).ready(function(){
+        var data = {{ property_data|default("{}")|tojson|safe }};
+        $('#property').change(function(){
+            var property_name = $(this).val();
+            var sections = data[property_name] || []; // Default to an empty array if sections are not available
+            var select = $('#section');
+            select.empty();
+            $.each(sections, function(index, value) {
+                select.append('<option value="' + value + '">' + value + '</option>');
+            });
+        });
     });
   </script>
 

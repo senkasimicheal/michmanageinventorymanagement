@@ -250,6 +250,24 @@
               <div class="badge badge-danger">new</div>
             </a>
           </li>
+          {% if session.get('add_properties') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('add_properties') }}" id="add-property">
+              <i class="typcn typcn-document-text menu-icon"></i>
+              <span class="menu-title">Add property</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('add_tenants') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('add_tenants') }}" id="add-tenant">
+              <i class="typcn typcn-film menu-icon"></i>
+              <span class="menu-title">Add Tenants</span>
+              <i class="menu-arrow"></i>
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('update_tenant_info') }}">
               <i class="typcn typcn-chart-pie-outline menu-icon"></i>
@@ -295,6 +313,12 @@
               <i class="typcn typcn-key menu-icon"></i>
               <span class="menu-title">Passwords</span>
               <i class="menu-arrow"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('export_tenant_data') }}" id="export">
+              <i class="typcn typcn-mortar-board menu-icon"></i>
+              <span class="menu-title">Export</span>
             </a>
           </li>
           {% endif %}

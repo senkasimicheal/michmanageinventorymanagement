@@ -413,19 +413,7 @@ scheduler.add_job('send_contract_expiry_reminders', send_contract_expiry_reminde
     
 @app.route("/")
 def index():
-    db, fs = get_db_and_fs()
-    companies = db.managers.find({}, {"name": 1})
-    company_names = [company['name'] for company in companies]
-    
-    cursor = list(db.property_managed.find())
-    df = pd.DataFrame(cursor)
-    if 'propertyName' in df.columns:
-        property_data = df['propertyName'].tolist()
-    else:
-        property_data = []
-
-    resp = make_response(render_template("index.html", property_data=property_data, company_names=company_names))
-    return resp
+    return render_template('index.html')
 
 @app.route('/download-apk')
 def download_apk():
@@ -483,6 +471,227 @@ def logout():
     session.clear()
     return redirect('/', code=303)
 
+@app.route('/manager login page')
+def manager_login_page():
+    return render_template('manager login.html')
+
+@app.route('/tenant login page')
+def tenant_login_page():
+    return render_template('tenant login.html')
+
+@app.route('/manager register')
+def manager_register_page():
+    db, fs = get_db_and_fs()
+    companies = db.managers.find({}, {"name": 1})
+    company_names = [company['name'] for company in companies]
+    
+    cursor = list(db.property_managed.find())
+    df = pd.DataFrame(cursor)
+    if 'propertyName' in df.columns:
+        property_data = df['propertyName'].tolist()
+    else:
+        property_data = []
+
+    resp = make_response(render_template("manager register.html", property_data=property_data, company_names=company_names))
+    return resp
+
+@app.route('/tenant register')
+def tenant_register_page():
+    db, fs = get_db_and_fs()
+    companies = db.managers.find({}, {"name": 1})
+    company_names = [company['name'] for company in companies]
+    
+    cursor = list(db.property_managed.find())
+    df = pd.DataFrame(cursor)
+    if 'propertyName' in df.columns:
+        property_data = df['propertyName'].tolist()
+    else:
+        property_data = []
+
+    resp = make_response(render_template("tenant register.html", property_data=property_data, company_names=company_names))
+    return resp
+
+@app.route('/add properties')
+def add_properties():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+    return render_template('add property page.html', dp=dp_str)
+
+@app.route('/add tenants')
+def add_tenants():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+        is_manager = db.managers.find_one({'manager_email': company['email']})        
+
+        if is_manager is None:
+            user_query  = {'username': login_data, 'company_name': company['company_name']}
+        else:
+            user_query  = {'company_name': company['company_name']}
+
+        property_data_list = list(db.property_managed.find(user_query))
+        tenant_data_cursor = db.tenants.find(user_query)
+                
+        property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
+        for tenant_exists in tenant_data_cursor:
+            tenant_property_name = tenant_exists.get('propertyName', '').strip()
+            selected_section = tenant_exists.get('selected_section', '').strip()
+            # Check if the property exists in updated_property_data and the section is in the property's sections
+            if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
+                # Remove the section
+                property_data_dict[tenant_property_name].remove(selected_section)
+                # If there are no more sections for this property, remove the property
+                if not property_data_dict[tenant_property_name]:
+                    del property_data_dict[tenant_property_name]
+        return render_template('add tenants page.html', dp=dp_str, property_data=property_data_dict)
+
+@app.route('/export tenant data')
+def export_tenant_data():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+    return render_template('export tenant data.html', dp=dp_str)
+
+@app.route('/add new stock page')
+def add_new_stock_page():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+    return render_template('add new stock.html', dp=dp_str)
+
+@app.route('/update existing stock')
+def update_existing_stock():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+        
+        items_to_update = []
+        available_items = list(db.inventories.find({'company_name': company['company_name']}))
+        if len(available_items) != 0:
+            for item in available_items:
+                items_to_update.append(item['itemName'])
+
+    return render_template('update existing stock.html', dp=dp_str, items_to_update=items_to_update)
+
+@app.route('/update sales page')
+def update_sales_page():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+
+        available_itemNames = []
+        available_items = list(db.inventories.find({'company_name': company['company_name']}))
+        if len(available_items) != 0:
+            for item in available_items:
+                if 'available_quantity' in item:
+                    if item['available_quantity'] > 0:
+                        available_itemNames.append(item['itemName'])
+                else:
+                    available_itemNames.append(item['itemName'])
+
+    return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
+
+@app.route('/update production activity')
+def update_production_activity():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+        
+        available_itemNames = []
+        available_items = list(db.inventories.find({'company_name': company['company_name']}))
+        if len(available_items) != 0:
+            for item in available_items:
+                if 'available_quantity' in item:
+                    if item['available_quantity'] > 0:
+                        available_itemNames.append(item['itemName'])
+                else:
+                    available_itemNames.append(item['itemName'])
+
+    return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
+
+@app.route('/update inhouse use page')
+def update_inhouse_use_page():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+
+        available_itemNames = []
+        available_items = list(db.inventories.find({'company_name': company['company_name']}))
+        if len(available_items) != 0:
+            for item in available_items:
+                if 'available_quantity' in item:
+                    if item['available_quantity'] > 0:
+                        available_itemNames.append(item['itemName'])
+                else:
+                    available_itemNames.append(item['itemName'])
+
+    return render_template('update inhouse use.html', dp=dp_str, available_itemNames=available_itemNames)
+
 @app.route('/logout-admin')
 def logout_admin():
     session.clear()
@@ -492,8 +701,8 @@ def logout_admin():
 def before_request():
     if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
-                                                               'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'search_apartment', 'authentication',
-                                                               'tenant_account_setup_page', 'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk'):
+                                                               'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page',
+                                                               'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -3786,20 +3995,7 @@ def load_dashboard_page():
             '2024': 12, '2025': 12, '2026': 12
         }
 
-        company = db.registered_managers.find_one({'username': login_data})
-
-        available_itemNames = []
-        items_to_update = []
-        available_items = list(db.inventories.find({'company_name': company['company_name']}))
-        if len(available_items) != 0:
-            for item in available_items:
-                if 'available_quantity' in item:
-                    if item['available_quantity'] > 0:
-                        available_itemNames.append(item['itemName'])
-                else:
-                    available_itemNames.append(item['itemName'])
-            for item in available_items:
-                items_to_update.append(item['itemName'])
+        company = db.registered_managers.find_one({'username': login_data})        
         
         subscription = db.managers.find_one({'name': company['company_name']})
         account_type = subscription['account_type']
@@ -3841,7 +4037,7 @@ def load_dashboard_page():
                 property_data = list(db.property_managed.find(user_query))
                 if len(property_data) == 0:
                     flash('No property data found', 'error')
-                    return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
+                    return render_template('dashboard.html',dp=dp_str)
                 else:
                     property_data_list = list(db.property_managed.find(user_query))
                     tenant_data_cursor = db.tenants.find(user_query)
@@ -3862,7 +4058,7 @@ def load_dashboard_page():
                                 del property_data_dict[tenant_property_name]
 
                     flash('No tenant data found', 'error')
-                    return render_template('dashboard.html',property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
+                    return render_template('dashboard.html',property_occupancy=property_occupancy, dp=dp_str)
             latest_year = latest_document['date_last_paid'].year
 
             startdate = datetime(latest_year, 1, 1)
@@ -3910,7 +4106,7 @@ def load_dashboard_page():
         property_data = list(db.property_managed.find(user_query))
         if len(property_data) == 0:
             flash('No property data found', 'error')
-            return render_template('dashboard.html',dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
+            return render_template('dashboard.html',dp=dp_str)
         else:
             property_data_list = list(db.property_managed.find(user_query))
             tenant_data_cursor = db.tenants.find(user_query)
@@ -3970,13 +4166,13 @@ def load_dashboard_page():
                 property_performance_bar_chart = create_stacked_bar_chart(property_performance, 'propertyName', f'Property Performance', 'Property Name', 'Value')
                 line_chart = create_line_chart(property_performance_line, f'Rent Payments {enddate.year}', 'Month', 'Amount Paid')
 
-                return render_template('dashboard.html',count_property=count_property,available_amount=available_amount, available_itemNames=available_itemNames,items_to_update=items_to_update,
-                                    count_current_tenants=count_current_tenants, property_data=property_data_dict, property_occupancy=property_occupancy,
+                return render_template('dashboard.html',count_property=count_property,available_amount=available_amount,
+                                    count_current_tenants=count_current_tenants, property_occupancy=property_occupancy,
                                     property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
                                     line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
             else:
                 flash('No tenant data found', 'error')
-                return render_template('dashboard.html', property_data=property_data_dict, property_occupancy=property_occupancy, dp=dp_str, available_itemNames=available_itemNames,items_to_update=items_to_update)
+                return render_template('dashboard.html', property_occupancy=property_occupancy, dp=dp_str)
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])
@@ -4831,13 +5027,17 @@ def update_new_stock():
 
         if existing_item:
             if 'available_quantity' in existing_item:
-                old_total_price = existing_item['available_quantity'] * existing_item['unitPrice']
-                # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
-                item['totalPrice'] = item['unitPrice'] * item['quantity'] + old_total_price
-                new_available_quantity = existing_item['available_quantity'] + item['quantity']
-                item['available_quantity'] = new_available_quantity
+                if existing_item['available_quantity'] > 0:
+                    # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
+                    item['totalPrice'] = item['quantity']*item['unitPrice']
+                    item['oldTotalPrice'] = existing_item['totalPrice']
+                    item['oldUnitPrice'] = existing_item['unitPrice']
+                    new_available_quantity = existing_item['available_quantity'] + item['quantity']
+                    item['available_quantity'] = new_available_quantity
+                else:
+                    item['totalPrice'] = item['quantity']*item['unitPrice']
             else:
-                item['totalPrice'] = item['unitPrice'] * item['quantity'] + existing_item['totalPrice']
+                item['totalPrice'] = item['quantity']*item['unitPrice']
 
             # Insert the new stock entry into MongoDB
             db.inventories.insert_one(item)
@@ -4927,6 +5127,7 @@ def inhouse():
     itemQuantities = []
     itemStockDates = []
     itemUnitPrices = []
+    itemOldUnitPrices = []
     
     # Extract productName, productQuantity, productPrice, useDate from the first itemObject
     productName = all_items[0]['productName']
@@ -4969,6 +5170,10 @@ def inhouse():
                         in_stockID.append(existing_item['_id'])
                         in_stockQty.append(available_quantity)
                         itemUnitPrices.append(existing_item['unitPrice'])
+                        if 'oldUnitPrice' in existing_item:
+                            itemOldUnitPrices.append(existing_item['oldUnitPrice'])
+                        else:
+                            itemOldUnitPrices.append(0)
                         flash(f'Inhouse use of {item["itemName"]} updated successfully', 'success')
             else:
                 if item['itemQuantity'] > existing_item['quantity']:
@@ -4980,6 +5185,10 @@ def inhouse():
                     in_stockID.append(existing_item['_id'])
                     in_stockQty.append(available_quantity)
                     itemUnitPrices.append(existing_item['unitPrice'])
+                    if 'oldUnitPrice' in existing_item:
+                        itemOldUnitPrices.append(existing_item['oldUnitPrice'])
+                    else:
+                        itemOldUnitPrices.append(0)
                     flash(f'Inhouse use of {item["itemName"]} updated successfully', 'success')
 
     if out_of_stock_items:
@@ -4996,6 +5205,7 @@ def inhouse():
             'itemName': itemNames,
             'itemQuantity': itemQuantities,
             'itemUnitPrices': itemUnitPrices,
+            'itemOldUnitPrices': itemOldUnitPrices,
             'itemStockDates': itemStockDates,
             'company_name': company_name
         }
@@ -5024,6 +5234,7 @@ def inhouse_used_items():
         itemStockDates = []
         itemUseDates = []
         itemUnitPrices = []
+        itemOldUnitPrices = []
         
         company_name = company['company_name']
 
@@ -5061,6 +5272,10 @@ def inhouse_used_items():
                             in_stockID.append(existing_item['_id'])
                             in_stockQty.append(available_quantity)
                             itemUnitPrices.append(existing_item['unitPrice'])
+                            if 'oldUnitPrice' in existing_item:
+                                itemOldUnitPrices.append(existing_item['oldUnitPrice'])
+                            else:
+                                itemOldUnitPrices.append(0)
                             flash(f'Inhouse use of {item["usedItemName"]} updated successfully', 'success')
 
                 else:
@@ -5073,6 +5288,10 @@ def inhouse_used_items():
                         in_stockID.append(existing_item['_id'])
                         in_stockQty.append(available_quantity)
                         itemUnitPrices.append(existing_item['unitPrice'])
+                        if 'oldUnitPrice' in existing_item:
+                            itemOldUnitPrices.append(existing_item['oldUnitPrice'])
+                        else:
+                            itemOldUnitPrices.append(0)
                         flash(f'Inhouse use of {item["usedItemName"]} updated successfully', 'success')
 
         if out_of_stock_items:
@@ -5085,6 +5304,7 @@ def inhouse_used_items():
                 'itemName': itemNames,
                 'itemQuantity': itemQuantities,
                 'itemUnitPrices': itemUnitPrices,
+                'itemOldUnitPrices': itemOldUnitPrices,
                 'itemStockDates': itemStockDates,
                 'useDate': itemUseDates,
                 'company_name': company_name
@@ -5123,7 +5343,7 @@ def revenue_details():
                 },
                 {
                     '$group': {
-                        '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
+                        '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                         'totalRevenue': {'$sum': '$revenue'},
                         'quantitysold': {'$sum': '$quantity'}
                     }
@@ -5150,7 +5370,12 @@ def revenue_details():
                                     'quantity': 1,
                                     'unitPrice': 1,
                                     'stockDate': 1,
-                                    'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                                    'totalPrice': {
+                                        '$add': [
+                                            '$totalPrice',
+                                            {'$ifNull': ['$oldTotalPrice', 0]}
+                                        ]
+                                    }
                                 }
                             }
                         ],
@@ -5176,7 +5401,7 @@ def revenue_details():
                     items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('revenue info.html', revenue_info = revenue_info, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
+            return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
 
 @app.route('/sales-details')
 def sales_details():
@@ -5215,7 +5440,7 @@ def sales_details():
                     items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('sales info.html', sales_info = sales_info, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
+            return render_template('sales info.html', sales_info = sales_info, dp=dp_str)
 
 @app.route('/stock-details')
 def stock_details():
@@ -5254,7 +5479,7 @@ def stock_details():
                     items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('stock info.html', stock_info = stock_info, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
+            return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
 
 @app.route('/inhouse-item-use-details')
 def inhouse_items_use_details():
@@ -5291,7 +5516,7 @@ def inhouse_items_use_details():
                     items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
+            return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, dp=dp_str)
 
 @app.route('/stock-overview', methods=["GET", "POST"])
 def stock_overview():
@@ -5367,7 +5592,12 @@ def stock_overview():
                                 'quantity': 1,
                                 'unitPrice': 1,
                                 'stockDate': 1,
-                                'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                                'totalPrice': {
+                                    '$add': [
+                                        '$totalPrice',
+                                        {'$ifNull': ['$oldTotalPrice', 0]}
+                                    ]
+                                }
                             }
                         }
                     ],
@@ -5480,7 +5710,12 @@ def stock_overview():
                                 'quantity': 1,
                                 'unitPrice': 1,
                                 'stockDate': 1,
-                                'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                                'totalPrice': {
+                                    '$add': [
+                                        '$totalPrice',
+                                        {'$ifNull': ['$oldTotalPrice', 0]}
+                                    ]
+                                }
                             }
                         }
                     ],
@@ -5489,6 +5724,7 @@ def stock_overview():
             }
         ]
         profit_info = list(db.stock_sales.aggregate(pipeline_profits))
+        print(profit_info)
 
         profit_item_names = []
         profit_data = []
@@ -5496,6 +5732,7 @@ def stock_overview():
 
 
         for profit_record in profit_info:
+            print(profit_record)
             profit_item_names.append(profit_record['_id']['itemName'])
             profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
             profit_stock_dates.append(profit_record['_id']['stockDate'])
@@ -5606,23 +5843,10 @@ def stock_overview():
         inhouse_revenue_fig.update_layout(showlegend=False)
         inhouse_revenue_chart = json.dumps(inhouse_revenue_fig, cls=plotly.utils.PlotlyJSONEncoder)
 
-        available_itemNames = []
-        items_to_update = []
-        available_items = list(db.inventories.find({'company_name': company['company_name']}))
-        if len(available_items) != 0:
-            for item in available_items:
-                if 'available_quantity' in item:
-                    if item['available_quantity'] > 0:
-                        available_itemNames.append(item['itemName'])
-                else:
-                    available_itemNames.append(item['itemName'])
-            for item in available_items:
-                items_to_update.append(item['itemName'])
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-        return render_template('stock dashboard.html',available_itemNames=available_itemNames,items_to_update=items_to_update,profits_chart=profits_chart,
-                               Losses_chart=Losses_chart,revenue=revenue, quantity_sold_stocked=quantity_sold_stocked,
-                               trended_profit=trended_profit,inhouse_cost_chart=inhouse_cost_chart,
+        return render_template('stock dashboard.html',profits_chart=profits_chart,Losses_chart=Losses_chart,revenue=revenue,
+                               quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit,inhouse_cost_chart=inhouse_cost_chart,
                                inhouse_revenue_chart=inhouse_revenue_chart,start_of_previous_month=start_of_previous_month,
                                first_day_of_current_month=first_day_of_current_month, dp=dp_str)
     
@@ -5740,7 +5964,12 @@ def download_revenue_data():
                                 'quantity': 1,
                                 'unitPrice': 1,
                                 'stockDate': 1,
-                                'totalPrice': {'$multiply': ['$quantity', '$unitPrice']}
+                                'totalPrice': {
+                                    '$add': [
+                                        '$totalPrice',
+                                        {'$ifNull': ['$oldTotalPrice', 0]}
+                                    ]
+                                }
                             }
                         }
                     ],
@@ -5863,6 +6092,7 @@ def view_production_info():
         inhouse_itemName = []
         inhouse_itemQuantity = []
         inhouse_itemUnitPrices = []
+        inhouse_itemAverageUnitPrices = []
         inhouse_itemStockDates = []
 
         for record in inhouse_info:
@@ -5874,6 +6104,10 @@ def view_production_info():
             item_name = record['itemName']
             item_quantity = record['itemQuantity']
             item_unit_price = record['itemUnitPrices']
+            if 'itemOldUnitPrices' in record:
+                item_old_unit_price = (record['itemOldUnitPrices']+record['itemUnitPrices'])/2
+            else:
+                item_old_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
         
             inhouse_product_ids.append(productID)
@@ -5884,6 +6118,7 @@ def view_production_info():
             inhouse_itemName.append(item_name)
             inhouse_itemQuantity.append(item_quantity)
             inhouse_itemUnitPrices.append(item_unit_price)
+            inhouse_itemAverageUnitPrices.append(item_old_unit_price)
             inhouse_itemStockDates.append(itemStockDates)
 
         # Create the DataFrame
@@ -5896,6 +6131,7 @@ def view_production_info():
             'Item Used': inhouse_itemName,
             'Item Quantity': inhouse_itemQuantity,
             'Item Unit Price': inhouse_itemUnitPrices,
+            'Item Average Unit Price': inhouse_itemAverageUnitPrices,
             'Item Stock Date': inhouse_itemStockDates
         })
 
@@ -5908,27 +6144,16 @@ def view_production_info():
         inhouse_df_exploded = inhouse_df.explode('Item Used')
         inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
         inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
+        inhouse_df_exploded['Item Average Unit Price'] = inhouse_df.explode('Item Average Unit Price')['Item Average Unit Price']
         inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
         inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
 
-        inhouse_df_exploded['Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Unit Price']
+        inhouse_df_exploded['Average Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Average Unit Price']
         products = inhouse_df_exploded.to_dict(orient='records')
 
-        available_itemNames = []
-        items_to_update = []
-        available_items = list(db.inventories.find({'company_name': company['company_name']}))
-        if len(available_items) != 0:
-            for item in available_items:
-                if 'available_quantity' in item:
-                    if item['available_quantity'] > 0:
-                        available_itemNames.append(item['itemName'])
-                else:
-                    available_itemNames.append(item['itemName'])
-            for item in available_items:
-                items_to_update.append(item['itemName'])
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-        return render_template('production info.html', products = products, available_itemNames=available_itemNames,items_to_update=items_to_update, dp=dp_str)
+        return render_template('production info.html', products = products, dp=dp_str)
        
 ###DOANLOAD SALES DATA   
 @app.route('/download-inhouse-data', methods=["POST"])
@@ -5957,6 +6182,7 @@ def download_inhouse():
         inhouse_itemName = []
         inhouse_itemQuantity = []
         inhouse_itemUnitPrices = []
+        inhouse_itemAverageUnitPrices = []
         inhouse_itemStockDates = []
 
         for record in inhouse_info:
@@ -5968,6 +6194,10 @@ def download_inhouse():
             item_name = record['itemName']
             item_quantity = record['itemQuantity']
             item_unit_price = record['itemUnitPrices']
+            if 'itemOldUnitPrices' in record:
+                item_old_unit_price = (record['itemOldUnitPrices']+record['itemUnitPrices'])/2
+            else:
+                item_old_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
         
             inhouse_product_ids.append(productID)
@@ -5978,6 +6208,7 @@ def download_inhouse():
             inhouse_itemName.append(item_name)
             inhouse_itemQuantity.append(item_quantity)
             inhouse_itemUnitPrices.append(item_unit_price)
+            inhouse_itemAverageUnitPrices.append(item_old_unit_price)
             inhouse_itemStockDates.append(itemStockDates)
 
         # Create the DataFrame
@@ -5990,6 +6221,7 @@ def download_inhouse():
             'Item Used': inhouse_itemName,
             'Item Quantity': inhouse_itemQuantity,
             'Item Unit Price': inhouse_itemUnitPrices,
+            'Item Average Unit Price': inhouse_itemAverageUnitPrices,
             'Item Stock Date': inhouse_itemStockDates
         })
 
@@ -6002,10 +6234,11 @@ def download_inhouse():
         inhouse_df_exploded = inhouse_df.explode('Item Used')
         inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
         inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
+        inhouse_df_exploded['Item Average Unit Price'] = inhouse_df.explode('Item Average Unit Price')['Item Average Unit Price']
         inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
         inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
 
-        inhouse_df_exploded['Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Unit Price']
+        inhouse_df_exploded['Average Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Average Unit Price']
 
         output = BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -6019,7 +6252,7 @@ def download_inhouse():
 
         return response
     
-@app.route('/download-inhouse-item--data', methods=["POST"])
+@app.route('/download-inhouse-item-data', methods=["POST"])
 def download_inhouse_item_use():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6040,20 +6273,23 @@ def download_inhouse_item_use():
         inhouse_itemName = []
         inhouse_useDate = []
         inhouse_itemQuantity = []
-        inhouse_itemUnitPrices = []
+        inhouse_itemAverageUnitPrices = []
         inhouse_itemStockDates = []
 
         for record in inhouse_info:
             item_name = record['itemName']
             useDate = record['useDate']
             item_quantity = record['itemQuantity']
-            item_unit_price = record['itemUnitPrices']
+            if 'oldUnitPrice' in record:
+                average_unit_price = (record['oldUnitPrice']+record['itemUnitPrices'])/2
+            else:
+                average_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
         
             inhouse_itemName.append(item_name)
             inhouse_useDate.append(useDate)
             inhouse_itemQuantity.append(item_quantity)
-            inhouse_itemUnitPrices.append(item_unit_price)
+            inhouse_itemAverageUnitPrices.append(average_unit_price)
             inhouse_itemStockDates.append(itemStockDates)
 
         # Create the DataFrame
@@ -6061,7 +6297,7 @@ def download_inhouse_item_use():
             'Item Used': inhouse_itemName,
             'Date Used':inhouse_useDate,
             'Item Quantity': inhouse_itemQuantity,
-            'Item Unit Price': inhouse_itemUnitPrices,
+            'Item Average Price': inhouse_itemAverageUnitPrices,
             'Item Stock Date': inhouse_itemStockDates
         })
 
@@ -6069,11 +6305,11 @@ def download_inhouse_item_use():
         inhouse_df_exploded = inhouse_df.explode('Item Used')
         inhouse_df_exploded['Date Used'] = inhouse_df.explode('Date Used')['Date Used']
         inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
-        inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
+        inhouse_df_exploded['Item Average Price'] = inhouse_df.explode('Item Average Price')['Item Average Price']
         inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
         inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
 
-        inhouse_df_exploded['Total Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Unit Price']
+        inhouse_df_exploded['Average Total Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Average Price']
 
         output = BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:

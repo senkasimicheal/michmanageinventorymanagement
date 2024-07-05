@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Add Contracts</title>
+  <title>Update Stock</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -105,7 +105,6 @@
                   </p>
                 </div>
               </a>
-              {% if session['is_manager'] == 'is_manager' %}
               <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
@@ -133,26 +132,6 @@
                   </p>
                 </div>
               </a>
-              {% if session['account_type'] == 'all_accounts' or session['account_type'] == 'Property Management' %}
-              <a class="dropdown-item preview-item" href="{{url_for('assign_properties')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Assign properties
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Assign properties to managers
-                  </p>
-                </div>
-              </a>
-              <a class="dropdown-item preview-item" href="{{url_for('unassign_properties')}}">
-                <div class="preview-item-content flex-grow">
-                  <h6 class="preview-subject ellipsis font-weight-normal">Unassign properties
-                  </h6>
-                  <p class="font-weight-light small-text text-muted mb-0">
-                    Unassign properties from managers
-                  </p>
-                </div>
-              </a>
-              {% endif %}
               <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
@@ -171,7 +150,6 @@
                   </p>
                 </div>
               </a>
-              {% endif %}
               <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Log Out
@@ -208,7 +186,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Add a contract</h4>
+            <h4 class="mb-0">Update Stock</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -243,89 +221,94 @@
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
           {% if session['account_type'] == 'all_accounts' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_overview') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Go To ERP</span>
-            </a>
-          </li>
-          {% endif %}
+          {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Overview</span>
-              <div class="badge badge-danger">new</div>
-            </a>
-          </li>
-          {% if session.get('add_properties') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('add_properties') }}" id="add-property">
-              <i class="typcn typcn-document-text menu-icon"></i>
-              <span class="menu-title">Add property</span>
-              <i class="menu-arrow"></i>
+              <span class="menu-title">Go To Property Mgt</span>
             </a>
           </li>
           {% endif %}
-          {% if session.get('add_tenants') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('add_tenants') }}" id="add-tenant">
-              <i class="typcn typcn-film menu-icon"></i>
-              <span class="menu-title">Add Tenants</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_tenant_info') }}">
-              <i class="typcn typcn-chart-pie-outline menu-icon"></i>
-              <span class="menu-title">Tenants</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% if session.get('add_properties') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_property_info') }}">
-              <i class="typcn typcn-th-small-outline menu-icon"></i>
-              <span class="menu-title">Properties</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('resolve_complaints') }}">
-              <i class="typcn typcn-compass menu-icon"></i>
-              <span class="menu-title">Complaints</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          {% if session.get('manage_contracts') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('manage_contracts') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Contracts</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Add Contracts</span>
-              <i class="menu-arrow"></i>
-            </a>
-          </li>
           {% endif %}
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_file_passwords') }}">
-              <i class="typcn typcn-key menu-icon"></i>
-              <span class="menu-title">Passwords</span>
-              <i class="menu-arrow"></i>
+            <a class="nav-link" href="{{ url_for('stock_overview') }}">
+              <i class="typcn typcn-device-desktop menu-icon"></i>
+              <span class="menu-title">ERP Overview</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('add_stock') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('add_new_stock_page') }}" id="new-stock">
+              <i class="typcn typcn-document-add menu-icon"></i>
+              <span class="menu-title">New Stock</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('update_stock') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('update_existing_stock') }}" id="update-new-stock">
+              <i class="typcn typcn-briefcase menu-icon"></i>
+              <span class="menu-title">Update Stock</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('update_sales') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('update_sales_page') }}" id="update-sale">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Update Sales</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('inhouse') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('update_production_activity') }}" id="inhouse">
+              <i class="typcn typcn-document-add menu-icon"></i>
+              <span class="menu-title">Production</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('export_tenant_data') }}" id="export">
-              <i class="typcn typcn-mortar-board menu-icon"></i>
-              <span class="menu-title">Export</span>
+            <a class="nav-link" href="{{ url_for('update_inhouse_use_page') }}" id="inhouse-use">
+              <i class="typcn typcn-document-add menu-icon"></i>
+              <span class="menu-title">In-House Use</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('inhouse_items_use_details') }}">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">In-House Info</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('view_production_info') }}">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">Production Info</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('view_stock_info') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_details') }}">
+              <i class="typcn typcn-cloud-storage menu-icon"></i>
+              <span class="menu-title">Stock Info</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('view_revenue') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('revenue_details') }}">
+              <i class="typcn typcn-business-card menu-icon"></i>
+              <span class="menu-title">Sales Revenue</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('view_sales') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('sales_details') }}">
+              <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+              <span class="menu-title">Sales</span>
             </a>
           </li>
           {% endif %}
@@ -344,22 +327,31 @@
               {% endif %}
           {% endwith %}
         </div>
-        <div class="content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('upload_contract')}}" method="POST" enctype="multipart/form-data">
-            <label class="input_labels" for="">Upload Contract Document</label>
-            <input type="file" accept=".pdf,.doc,.docx" name="contract_document" id="docUpload" required><br>
-            <label class="input_labels" for="">Receiver</label>
-            <select class="property_inputs" name="receiver" id="property" required>
-              <option value="none" disabled selected>Select Tenant</option>
-              {% for name in tenant_names %}
-              <option value="{{ name }}">{{ name }}</option>
-              {% endfor %}
-            </select><br>
-            <label class="input_labels" for="">Contract Start Date</label>
-            <input type="date" name="start_date" id="start_date" required><br>
-            <label class="input_labels" for="">Contract End Date</label>
-            <input type="date" name="end_date" id="end_date" required><br>
-            <input required type="submit" class="btn" value="Submit">
+
+        <div class="update-new-stock-form content-wrapper">
+          <form id="myForm" class="property_forn content-pannel" action="{{url_for('update_new_stock')}}" method="POST">
+            <label class="input_labels" for="">Item Name</label>
+            <select name="item_name" id="">
+              <option value="" disabled selected>Select item</option>
+                {% for item in items_to_update %}
+                  <option value="{{ item }}">{{ item }}</option>
+                {% endfor %}
+            </select>
+            <label class="input_labels" for="">Quantity</label>
+            <input class="property_inputs" type="number" name="update_quantity" min="1">
+            <label class="input_labels" for="">Unit Of Measurement</label>
+            <select name="update_unit_of_measurement" id="">
+              <option value="" disabled selected>Select one</option>
+              <option value="Kilogram">Kilogram</option>
+              <option value="Litres">Litres</option>
+              <option value="Pieces">Pieces</option>
+            </select>
+            <label class="input_labels" for="">Unit Price</label>
+            <input class="property_inputs" type="number" name="update_unit_price" min="1">
+            <label class="input_labels" for="">Stock Date</label>
+            <input class="property_inputs" type="date" name="update_stockdatee" id="update_stockdatee" placeholder="enter start date"><br>
+            <button type="button" id="update-item-button">Add Item</button>
+            <input type="submit" class="btn" value="Submit">
           </form>
         </div>
         <!-- content-wrapper ends -->
@@ -383,28 +375,6 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
-
-  <script>
-    document.getElementById('myForm').addEventListener('submit', function(event) {
-        var radios = document.getElementsByTagName('input');
-        var allAnswered = true;
-        for (var i = 0; i < radios.length; i++) {
-            if (radios[i].type === 'radio' && !radios[i].checked) {
-                allAnswered = false;
-                break;
-            }
-        }
-        if (!allAnswered) {
-            if (!confirm('Confirm Contract Upload')) {
-                event.preventDefault();
-            }
-        } else {
-            if (!confirm('Confirm Contract Upload')) {
-                event.preventDefault();
-            }
-        }
-    });
-  </script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -433,16 +403,6 @@
   </script>
 
   <script>
-    document.getElementById('docUpload').addEventListener('change', function (e) {
-      var file = e.target.files[0];
-      if(file.size > 200 * 1024) {
-        alert("File size must be less than 200KB.");
-        this.value = '';
-      }
-    });
-  </script>
-
-  <script>
     document.getElementById('end_date').addEventListener('change', function () {
         var startDate = new Date(document.getElementById('start_date').value);
         var endDate = new Date(this.value);
@@ -451,6 +411,103 @@
             this.value = '';
         }
     });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      let itemsArray = [];
+
+      document.getElementById('update-item-button').addEventListener('click', () => {
+        // Get the form values
+        const itemName = document.querySelector('select[name="item_name"]').value;
+        const quantity = document.querySelector('input[name="update_quantity"]').value;
+        const unitOfMeasurement = document.querySelector('select[name="update_unit_of_measurement"]').value;
+        const unitPrice = document.querySelector('input[name="update_unit_price"]').value;
+        const stockDate = document.querySelector('input[name="update_stockdatee"]').value;
+
+        // Check if any of the fields are empty
+        if (!itemName || !quantity || !unitOfMeasurement || !unitPrice || !stockDate) {
+          alert("Please fill in all fields before updating an item.");
+          return; // Stop here if any field is empty
+        }
+
+        // Create an object with the form data
+        const itemObject = {
+          itemName,
+          quantity,
+          unitOfMeasurement,
+          unitPrice,
+          stockDate
+        };
+
+        // Add the object to the array
+        itemsArray.push(itemObject);       
+
+        // Clear the input fields
+        document.querySelector('select[name="item_name"]').selectedIndex = 0;
+        document.querySelector('input[name="update_quantity"]').value = '';
+        document.querySelector('select[name="update_unit_of_measurement"]').selectedIndex = 0;
+        document.querySelector('input[name="update_unit_price"]').value = '';
+        document.querySelector('input[name="update_stockdatee"]').value = '';
+      });
+
+      // Handle the form submission
+      document.querySelector('.update-new-stock-form form').addEventListener('submit', (e) => {
+        e.preventDefault(); // Prevent the default form submission
+
+        if (itemsArray.length === 0) {
+          alert("Please update at least one item.");
+          return; // Stop here if no items have been added
+        }
+
+        // Send the itemsArray to your Flask app using fetch or another method
+        fetch('{{url_for('update_new_stock')}}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ items: itemsArray })
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data); // Handle the response from your Flask app
+          // Clear the array after successful submission
+          itemsArray = [];
+          
+          // Optionally, clear all input fields here as well
+          if (data.redirect) {
+              window.location.href = data.redirect; // Redirect to the new URL
+          } else {
+              alert(data.message);
+          }
+          
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          alert("An error occurred while submitting updates.");
+        });
+      });
+    });
+  </script>
+
+  <script>
+    window.onload = function(){
+      var date = new Date();
+      var day = date.getDate();
+      var month = date.getMonth() + 1;
+      var year = date.getFullYear();
+
+      if(month < 10) month = "0" + month;
+      if(day < 10) day = "0" + day;
+
+      var today = year + "-" + month + "-" + day;
+
+      var enddateFields = document.getElementsByName("update_stockdatee");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+
+    }
   </script>
 
   <!-- base:js -->

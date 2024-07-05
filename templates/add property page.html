@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Add Contracts</title>
+  <title>Add Properties</title>
   <!-- base:css -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
@@ -208,7 +208,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Add a contract</h4>
+            <h4 class="mb-0">Add Properties</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -344,22 +344,49 @@
               {% endif %}
           {% endwith %}
         </div>
-        <div class="content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('upload_contract')}}" method="POST" enctype="multipart/form-data">
-            <label class="input_labels" for="">Upload Contract Document</label>
-            <input type="file" accept=".pdf,.doc,.docx" name="contract_document" id="docUpload" required><br>
-            <label class="input_labels" for="">Receiver</label>
-            <select class="property_inputs" name="receiver" id="property" required>
-              <option value="none" disabled selected>Select Tenant</option>
-              {% for name in tenant_names %}
-              <option value="{{ name }}">{{ name }}</option>
-              {% endfor %}
+        <div class="add-property-forms content-wrapper">
+          <form id="myForm" class="property_forn content-pannel" action="{{url_for('add_property')}}" method="POST" enctype="multipart/form-data">
+            <h4>Add new property</h4>
+            <label class="input_labels" for="">Property Unique Name</label>
+            <input class="property_inputs" type="text" name="propertyName" required><br>
+            <label class="input_labels" for="">Property Type</label>
+            <select class="property_inputs" name="type" id="" required>
+                <option value="" disabled selected>Select type</option>
+                <option value="Studio Apartments">Studio Apartments</option>
+                <option value="One-Bedroom Apartments">One-Bedroom Apartments</option>
+                <option value="Two-Bedroom Apartments">Two-Bedroom Apartments</option>
+                <option value="Three-Bedroom Apartments">Three-Bedroom Apartments</option>
+                <option value="Serviced Apartments">Serviced Apartments</option>
+                <option value="Maisonette Apartments">Maisonette Apartments</option>
+                <option value="Office building">Office space</option>
+                <option value="Retail space">Retail space</option>
+                <option value="Warehouse">Warehouse space</option>
+                <option value="Hotel">Hotel</option>
+                <option value="Motel">Motel</option>
             </select><br>
-            <label class="input_labels" for="">Contract Start Date</label>
-            <input type="date" name="start_date" id="start_date" required><br>
-            <label class="input_labels" for="">Contract End Date</label>
-            <input type="date" name="end_date" id="end_date" required><br>
-            <input required type="submit" class="btn" value="Submit">
+            <label class="input_labels" for="">Property Sections</label>
+            <input class="property_inputs" type="text" id="values" name="sections" pattern="[^ ]*" title="No spaces allowed, use commas instead of spaces" multiple><br>
+            <label class="input_labels" for="">Overall Property Value</label>
+            <input class="property_inputs" type="number" min="100000" name="property_value" required><br>
+            <label class="input_labels" for="">Late payment day</label>
+            <input class="property_inputs" type="number" min="6" name="late_payment_day" required><br>
+            <label class="input_labels" for="">Property Address</label>
+            <input class="property_inputs" type="text" name="address" required><br>
+            <label class="input_labels" for="">City</label>
+            <input class="property_inputs" type="text" name="city" required><br>
+            <label class="input_labels" for="">State/Province</label>
+            <input class="property_inputs" type="text" name="state" required><br>
+            <label class="input_labels" for="">County/Parish</label>
+            <input class="property_inputs" type="text" name="parish" required><br>
+            <label class="input_labels" for="">Owner Name</label>
+            <input class="property_inputs" type="text" name="owner_name" required><br>
+            <label class="input_labels" for="">Email Address</label>
+            <input class="property_inputs" type="email" name="owner_email" required><br>
+            <label class="input_labels" for="">Phone Number</label>
+            <input class="property_inputs" type="tel" name="owner_phone" required><br>
+            <label class="input_labels" for="">Residence</label>
+            <input class="property_inputs" type="text" name="owner_residence" required>
+            <input required type="submit" class="btn" value="Add">
           </form>
         </div>
         <!-- content-wrapper ends -->

@@ -53,6 +53,15 @@ body {
   background-size: cover;
 }
 
+/*header section*/
+.hero_area2 {
+  /* Your existing background image settings */
+  background-image: url(../images/hero-bg.webp);
+  background-repeat: no-repeat;
+  background-position: top right;
+  background-size: cover;
+}
+
 .form-background-image {
   background-image: url(../images/hero-bg.webp);
   background-repeat: no-repeat;
@@ -67,6 +76,12 @@ body {
 }
 
 .sub_page .hero_area1 {
+  height: auto;
+  background: none;
+  background-color: #0f2480;
+}
+
+.sub_page .hero_area2 {
   height: auto;
   background: none;
   background-color: #0f2480;
@@ -966,12 +981,17 @@ input[type="number"] {
   display: inline-block;
   width: 100%;
 }
+
 .input_labels {
   margin-top: -20px;
 }
 .property_inputs {
   width: 80%;
   float: left;
+}
+
+.password-container {
+  width: 100%;
 }
 
 h6{
@@ -1232,11 +1252,20 @@ p {
   transition: opacity 1s ease-in-out;
 }
 
+.hero_area2 {
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
 .hero_area.visible {
   opacity: 1;
 }
 
 .hero_area1.visible {
+  opacity: 1;
+}
+
+.hero_area2.visible {
   opacity: 1;
 }
 
@@ -1366,210 +1395,6 @@ input::placeholder {
 
 .sale_section h3{
   font-size: 20px;
-}
-
-.login-form{
-  height: 100%;
-  width: 100%;
-  position: fixed;
-  top: -120%; left: 0;
-  z-index: 1000;
-  background: rgba(0,0,0,.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-}
-
-.login-form.popup{
-  top: 0;
-}
-
-.login-form form{
-  margin-top: -100px !important;
-  width: 25rem;
-  background: #fff;
-  margin-left: 2rem;
-  margin-right: 2rem;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  border-radius: .5rem;
-  box-shadow: 0 .1rem .3rem #333;
-  position: relative;
-}
-
-.login-form form .btn{
-  width: 100%;
-  margin: 2rem 0;
-}
-
-.login-form form .btn:hover{
-  background: #444;
-}
-
-.login-form form .fa-times{
-  position: absolute;
-  top: 1rem; right: 1rem;
-  cursor: pointer;
-  color: #999;
-}
-
-.login-form form .fa-times:hover{
-  color: #444;
-}
-
-.fa-times{
-  transform: rotate(180deg);
-}
-
-.signup-form{
-  height: 100%;
-  width: 100%;
-  position: fixed;
-  top: -120%; left: 0;
-  z-index: 1;
-  background: rgba(0,0,0,.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-}
-
-.signup-form.popup{
-  top: 0;
-}
-
-.signup-form form{
-  width: 25rem;
-  background: #fff;
-  margin-left: 2rem;
-  margin-right: 2rem;
-  margin-top: 25rem;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  border-radius: .5rem;
-  box-shadow: 0 .1rem .3rem #333;
-  position: relative;
-}
-
-.signup-form form .btn{
-  width: 100%;
-  margin: 2rem 0;
-}
-
-.signup-form form .btn:hover{
-  background: #444;
-}
-
-.signup-form form .fa-times{
-  position: absolute;
-  top: 1rem; right: 1rem;
-  cursor: pointer;
-  color: #999;
-}
-
-.signup-form form .fa-times:hover{
-  color: #444;
-}
-
-.tanant-login-form{
-  height: 100%;
-  width: 100%;
-  position: fixed;
-  top: -120%; left: 0;
-  z-index: 1000;
-  background: rgba(0,0,0,.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-}
-
-.tanant-login-form.popup{
-  top: 0;
-}
-
-.tanant-login-form form{
-  width: 25rem;
-  background: #fff;
-  margin-left: 2rem;
-  margin-right: 2rem;
-  margin-top: -5rem;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  border-radius: .5rem;
-  box-shadow: 0 .1rem .3rem #333;
-  position: relative;
-}
-
-.tanant-login-form form .btn{
-  width: 100%;
-  margin: 2rem 0;
-}
-
-.tanant-login-form form .btn:hover{
-  background: #444;
-}
-
-.tanant-login-form form .fa-times{
-  position: absolute;
-  top: 1rem; right: 1rem;
-  cursor: pointer;
-  color: #999;
-}
-
-.tanant-login-form form .fa-times:hover{
-  color: #444;
-}
-
-.tenant-signup-form{
-  height: 100%;
-  width: 100%;
-  position: fixed;
-  top: -120%; left: 0;
-  z-index: 1000;
-  background: rgba(0,0,0,.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-}
-
-.tenant-signup-form.popup{
-  top: 0;
-}
-
-.tenant-signup-form form{
-  width: 25rem;
-  background: #fff;
-  margin-left: 2rem;
-  margin-right: 2rem;
-  margin-top: 15rem;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  border-radius: .5rem;
-  box-shadow: 0 .1rem .3rem #333;
-  position: relative;
-}
-
-.tenant-signup-form form .btn{
-  width: 100%;
-  margin: 2rem 0;
-}
-
-.tenant-signup-form form .btn:hover{
-  background: #444;
-}
-
-.tenant-signup-form form .fa-times{
-  position: absolute;
-  top: 1rem; right: 1rem;
-  cursor: pointer;
-  color: #999;
-}
-
-.tenant-signup-form form .fa-times:hover{
-  color: #444;
 }
 
 form input{
