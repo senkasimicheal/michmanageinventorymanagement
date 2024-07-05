@@ -4967,8 +4967,10 @@ def add_new_stock():
     company = db.registered_managers.find_one({'username': login_data})
     all_items = request.json['items']  # Access the JSON data sent from the client
     skipped_items = []  # List to hold names of items that were not added
+    added_items = []  # List to hold names of items that were successfully added
 
     for item in all_items:
+        item['itemName'] = item['itemName'].strip()
         # Convert 'quantity' and 'unitPrice' to integers
         item['quantity'] = int(item['quantity'])
         item['unitPrice'] = int(item['unitPrice'])
@@ -4990,14 +4992,22 @@ def add_new_stock():
 
         # Insert the new stock entry into MongoDB
         db.inventories.insert_one(item)
-        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Added new item to stock', 'Item': 'Items', 'timestamp': datetime.now()})
-    
-    message = 'New stock added successfully'
-    if skipped_items:
-        message += '. The following items were not added because they already exist: ' + ', '.join(skipped_items)
+        db.audit_logs.insert_one({
+            'user': login_data,
+            'Activity': 'Added new item to stock',
+            'Item': item['itemName'],
+            'timestamp': datetime.now()
+        })
+        added_items.append(item['itemName'])
 
-    flash(message, 'success')
-    return jsonify({'redirect': url_for('stock_overview')})
+    if added_items:
+        message += '. The following items were added: ' + ', '.join(added_items)
+        flash(message, 'success')
+    if skipped_items:
+        message_skipped = 'The following items were not added because they already exist: ' + ', '.join(skipped_items)
+        flash(message_skipped, 'error')
+
+    return jsonify({'redirect': url_for('add_new_stock_page')})
     
 @app.route('/update-new-stock', methods=['POST'])
 def update_new_stock():
@@ -5048,7 +5058,7 @@ def update_new_stock():
     
     flash('Stock updated successfully', 'success')
     
-    return jsonify({'redirect': url_for('stock_overview')})
+    return jsonify({'redirect': url_for('update_existing_stock')})
     
 @app.route('/update-sale', methods=['POST'])
 def update_sale():
@@ -5108,7 +5118,7 @@ def update_sale():
     if over_quantified:
         flash(f'Enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
 
-    return jsonify({'redirect': url_for('stock_overview')})
+    return jsonify({'redirect': url_for('update_sales_page')})
     
 @app.route('/in-house-use', methods=['POST'])
 def inhouse():
@@ -5214,7 +5224,7 @@ def inhouse():
         db.inhouse.insert_one(document)
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse production', 'Item': 'Items', 'timestamp': datetime.now()})
 
-    return jsonify({'redirect': url_for('stock_overview')})
+    return jsonify({'redirect': url_for('update_production_activity')})
 
 @app.route('/in-house-used-items', methods=['POST'])
 def inhouse_used_items():
@@ -5314,7 +5324,7 @@ def inhouse_used_items():
             db.inhouse_use.insert_one(document)
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse use of items', 'Item': 'Items', 'timestamp': datetime.now()})
 
-    return jsonify({'redirect': url_for('stock_overview')})
+    return jsonify({'redirect': url_for('update_inhouse_use_page')})
     
 @app.route('/revenue-details')
 def revenue_details():
