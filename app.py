@@ -4973,6 +4973,7 @@ def add_new_stock():
         item['itemName'] = item['itemName'].strip()
         # Convert 'quantity' and 'unitPrice' to integers
         item['quantity'] = int(item['quantity'])
+        item['available_quantity'] = item['quantity']
         item['unitPrice'] = int(item['unitPrice'])
         item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
 
@@ -5046,8 +5047,12 @@ def update_new_stock():
                     new_available_quantity = existing_item['available_quantity'] + item['quantity']
                     item['available_quantity'] = new_available_quantity
                 else:
+                    new_available_quantity = existing_item['available_quantity'] + item['quantity']
+                    item['available_quantity'] = new_available_quantity
                     item['totalPrice'] = item['quantity']*item['unitPrice']
             else:
+                new_available_quantity = item['quantity']
+                item['available_quantity'] = new_available_quantity
                 item['totalPrice'] = item['quantity']*item['unitPrice']
 
             # Insert the new stock entry into MongoDB
@@ -6115,8 +6120,8 @@ def view_production_info():
             item_name = record['itemName']
             item_quantity = record['itemQuantity']
             item_unit_price = record['itemUnitPrices']
-            if 'itemOldUnitPrices' in record:
-                item_old_unit_price = (record['itemOldUnitPrices']+record['itemUnitPrices'])/2
+            if 'itemOldUnitPrices' in record and any(record['itemOldUnitPrices']):
+                item_old_unit_price = [(old_price + new_price) / 2 for old_price, new_price in zip(record['itemOldUnitPrices'], record['itemUnitPrices'])]
             else:
                 item_old_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
@@ -6205,8 +6210,8 @@ def download_inhouse():
             item_name = record['itemName']
             item_quantity = record['itemQuantity']
             item_unit_price = record['itemUnitPrices']
-            if 'itemOldUnitPrices' in record:
-                item_old_unit_price = (record['itemOldUnitPrices']+record['itemUnitPrices'])/2
+            if 'itemOldUnitPrices' in record and any(record['itemOldUnitPrices']):
+                item_old_unit_price = [(old_price + new_price) / 2 for old_price, new_price in zip(record['itemOldUnitPrices'], record['itemUnitPrices'])]
             else:
                 item_old_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
