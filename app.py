@@ -5000,6 +5000,7 @@ def add_new_stock():
         })
         added_items.append(item['itemName'])
 
+    message = ""
     if added_items:
         message += '. The following items were added: ' + ', '.join(added_items)
         flash(message, 'success')

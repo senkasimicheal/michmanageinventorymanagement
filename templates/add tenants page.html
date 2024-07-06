@@ -407,10 +407,11 @@
             <label class="input_labels" for="">Date</label>
             <input class="property_inputs" type="date" name="date_last_paid" required><br>
             <label class="input_labels" for="">Amount Paid</label>
-            <input class="property_inputs" type="number" min="5000" name="amount" required><span><select name="currency" id="" required>
+            <input class="property_inputs" type="number" min="5000" name="amount" required><br>
+            <select name="currency" id="" required>
                 <option value="UGX">UGX</option>
                 <option value="USD">USD</option>
-            </select></span><br>
+            </select><br>
             <label class="input_labels" for="">Mode Of Payment</label>
             <select class="property_inputs" name="payment_mode" id="" required>
               <option value="" disabled selected>Select payment mode</option>
@@ -457,11 +458,11 @@
             }
         }
         if (!allAnswered) {
-            if (!confirm('Confirm Contract Upload')) {
+            if (!confirm('Are you sure you want to add this tenant?')) {
                 event.preventDefault();
             }
         } else {
-            if (!confirm('Confirm Contract Upload')) {
+            if (!confirm('Are you sure you want to add this tenant?')) {
                 event.preventDefault();
             }
         }
