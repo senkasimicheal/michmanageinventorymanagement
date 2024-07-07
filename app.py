@@ -5638,10 +5638,21 @@ def stock_overview():
         for record in revenue_info:
             item_names.append(record['_id']['itemName'])
             quantities_sold.append(record['quantitysold'])
-            quantities_stocked.append(record['inventoryDetails'][0]['quantity'])
             total_revenues.append(record['totalRevenue'])
-            total_prices.append(record['inventoryDetails'][0]['totalPrice'])
-            profits.append(record['totalRevenue'] - record['inventoryDetails'][0]['totalPrice'])
+
+            quantities_stocked = 0
+            total_prices = 0
+            profits = 0
+
+            # Check if 'inventoryDetails' is in record and has the necessary structure
+            if 'inventoryDetails' in record and record['inventoryDetails']:
+                quantities_stocked = record['inventoryDetails'][0].get('quantity', 0)
+                total_prices = record['inventoryDetails'][0].get('total_price', 0)
+                profits = record['inventoryDetails'][0].get('profit', 0)
+            else:
+                quantities_stocked = 0
+                total_prices = 0
+                profits = 0
 
         # Create the DataFrame
         df = pd.DataFrame({
@@ -5651,6 +5662,15 @@ def stock_overview():
             'Total Revenue': total_revenues,
             'Total Price': total_prices,
             'Profit': profits
+        })
+
+        # Group by 'Item Name' and aggregate using sum
+        df = df.groupby('Item Name', as_index=False).agg({
+            'Quantity Sold': 'sum',
+            'Quantity Stocked': 'sum',
+            'Total Revenue': 'sum',
+            'Total Price': 'sum',
+            'Profit': 'sum'
         })
 
 
@@ -5745,7 +5765,6 @@ def stock_overview():
             }
         ]
         profit_info = list(db.stock_sales.aggregate(pipeline_profits))
-        print(profit_info)
 
         profit_item_names = []
         profit_data = []
@@ -5753,7 +5772,6 @@ def stock_overview():
 
 
         for profit_record in profit_info:
-            print(profit_record)
             profit_item_names.append(profit_record['_id']['itemName'])
             profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
             profit_stock_dates.append(profit_record['_id']['stockDate'])
@@ -6090,6 +6108,13 @@ def download_sales_data():
 
         return response
 
+# Function to calculate total production cost
+def calculate_total_cost(row):
+    total_cost = 0
+    for qty, prices in zip(row['Item Quantity'], row['Item Unit Price']):
+        total_cost += np.sum(np.array(qty) * np.array(prices))
+    return total_cost
+
 @app.route('/view-production-info')
 def view_production_info():
     db, fs = get_db_and_fs()
@@ -6113,7 +6138,6 @@ def view_production_info():
         inhouse_itemName = []
         inhouse_itemQuantity = []
         inhouse_itemUnitPrices = []
-        inhouse_itemAverageUnitPrices = []
         inhouse_itemStockDates = []
 
         for record in inhouse_info:
@@ -6125,10 +6149,6 @@ def view_production_info():
             item_name = record['itemName']
             item_quantity = record['itemQuantity']
             item_unit_price = record['itemUnitPrices']
-            if 'itemOldUnitPrices' in record and any(record['itemOldUnitPrices']):
-                item_old_unit_price = [(old_price + new_price) / 2 for old_price, new_price in zip(record['itemOldUnitPrices'], record['itemUnitPrices'])]
-            else:
-                item_old_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
         
             inhouse_product_ids.append(productID)
@@ -6139,7 +6159,6 @@ def view_production_info():
             inhouse_itemName.append(item_name)
             inhouse_itemQuantity.append(item_quantity)
             inhouse_itemUnitPrices.append(item_unit_price)
-            inhouse_itemAverageUnitPrices.append(item_old_unit_price)
             inhouse_itemStockDates.append(itemStockDates)
 
         # Create the DataFrame
@@ -6152,29 +6171,16 @@ def view_production_info():
             'Item Used': inhouse_itemName,
             'Item Quantity': inhouse_itemQuantity,
             'Item Unit Price': inhouse_itemUnitPrices,
-            'Item Average Unit Price': inhouse_itemAverageUnitPrices,
             'Item Stock Date': inhouse_itemStockDates
         })
 
-        # Assuming you have the DataFrame 'inhouse_df_new'
-        inhouse_df_exploded = inhouse_df.explode('Product ID')
-        inhouse_df_exploded = inhouse_df.explode('Product Name')
-        inhouse_df_exploded = inhouse_df.explode('Product Quantity')
-        inhouse_df_exploded = inhouse_df.explode('Product Unit Price')
-        inhouse_df_exploded = inhouse_df.explode('Date Produced')
-        inhouse_df_exploded = inhouse_df.explode('Item Used')
-        inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
-        inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
-        inhouse_df_exploded['Item Average Unit Price'] = inhouse_df.explode('Item Average Unit Price')['Item Average Unit Price']
-        inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
-        inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
-
-        inhouse_df_exploded['Average Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Average Unit Price']
-        products = inhouse_df_exploded.to_dict(orient='records')
+        # Apply the function to each row to calculate 'Total Production Cost'
+        inhouse_df['Total Production Cost'] = inhouse_df.apply(calculate_total_cost, axis=1)
+        inhouse_df_sorted = inhouse_df.sort_values(by='Date Produced')
 
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-        return render_template('production info.html', products = products, dp=dp_str)
+        return render_template('production info.html', inhouse_df = inhouse_df_sorted, dp=dp_str)
        
 ###DOANLOAD SALES DATA   
 @app.route('/download-inhouse-data', methods=["POST"])
@@ -6203,7 +6209,6 @@ def download_inhouse():
         inhouse_itemName = []
         inhouse_itemQuantity = []
         inhouse_itemUnitPrices = []
-        inhouse_itemAverageUnitPrices = []
         inhouse_itemStockDates = []
 
         for record in inhouse_info:
@@ -6215,10 +6220,6 @@ def download_inhouse():
             item_name = record['itemName']
             item_quantity = record['itemQuantity']
             item_unit_price = record['itemUnitPrices']
-            if 'itemOldUnitPrices' in record and any(record['itemOldUnitPrices']):
-                item_old_unit_price = [(old_price + new_price) / 2 for old_price, new_price in zip(record['itemOldUnitPrices'], record['itemUnitPrices'])]
-            else:
-                item_old_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
         
             inhouse_product_ids.append(productID)
@@ -6229,7 +6230,6 @@ def download_inhouse():
             inhouse_itemName.append(item_name)
             inhouse_itemQuantity.append(item_quantity)
             inhouse_itemUnitPrices.append(item_unit_price)
-            inhouse_itemAverageUnitPrices.append(item_old_unit_price)
             inhouse_itemStockDates.append(itemStockDates)
 
         # Create the DataFrame
@@ -6242,28 +6242,16 @@ def download_inhouse():
             'Item Used': inhouse_itemName,
             'Item Quantity': inhouse_itemQuantity,
             'Item Unit Price': inhouse_itemUnitPrices,
-            'Item Average Unit Price': inhouse_itemAverageUnitPrices,
             'Item Stock Date': inhouse_itemStockDates
         })
 
-        # Assuming you have the DataFrame 'inhouse_df_new'
-        inhouse_df_exploded = inhouse_df.explode('Product ID')
-        inhouse_df_exploded = inhouse_df.explode('Product Name')
-        inhouse_df_exploded = inhouse_df.explode('Product Quantity')
-        inhouse_df_exploded = inhouse_df.explode('Product Unit Price')
-        inhouse_df_exploded = inhouse_df.explode('Date Produced')
-        inhouse_df_exploded = inhouse_df.explode('Item Used')
-        inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
-        inhouse_df_exploded['Item Unit Price'] = inhouse_df.explode('Item Unit Price')['Item Unit Price']
-        inhouse_df_exploded['Item Average Unit Price'] = inhouse_df.explode('Item Average Unit Price')['Item Average Unit Price']
-        inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
-        inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
-
-        inhouse_df_exploded['Average Production Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Average Unit Price']
+        # Apply the function to each row to calculate 'Total Production Cost'
+        inhouse_df['Total Production Cost'] = inhouse_df.apply(calculate_total_cost, axis=1)
+        inhouse_df_sorted = inhouse_df.sort_values(by='Date Produced')
 
         output = BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            inhouse_df_exploded.to_excel(writer, sheet_name='Revenue data', index=False)
+            inhouse_df_sorted.to_excel(writer, sheet_name='Revenue data', index=False)
         output.seek(0)
 
         # Create the response

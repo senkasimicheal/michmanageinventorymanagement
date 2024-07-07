@@ -366,22 +366,34 @@
                     <th>Product Price</th>
                     <th>Item Used</th>
                     <th>Item Quantity</th>
-                    <th>Item Average Price</th>
+                    <th>Item Price</th>
                     <th>Item Stock Date</th>
-                    <th>Average Production Cost</th>
+                    <th>Total Production Cost</th>
                 </tr>
-                {% for product in products %}
+                {% for index, product in inhouse_df.iterrows() %}
                 <tr title="{{ product['Product Name'] }}" style="cursor: pointer;">
-                    <td>{{ loop.index }}</td>
+                    <td>{{ index + 1 }}</td>
                     <td>{{ product['Product Name'] }}</td>
-                    <td>{{ product['Date Produced'].strftime('%Y-%m-%d') }}</td>
+                    <td>{{ product['Date Produced'].strftime('%Y-%m-%d') if product['Date Produced'] else '' }}</td>
                     <td>{{ product['Product Quantity'] }}</td>
                     <td>{{ '{:,.0f}'.format(product['Product Unit Price']) }}</td>
                     <td>{{ product['Item Used'] }}</td>
-                    <td>{{ product['Item Quantity'] }}</td>
-                    <td>{{ '{:,.0f}'.format(product['Item Average Unit Price']) }}</td>
-                    <td>{{ product['Item Stock Date'].strftime('%Y-%m-%d') }}</td>
-                    <td>{{ '{:,.0f}'.format(product['Average Production Cost']) }}</td>
+                    <td>
+                        {% for qty in product['Item Quantity'] %}
+                        {{ qty }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for avg_price in product['Item Average Unit Price'] %}
+                        {{ '{:,.0f}'.format(avg_price) }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for stock_date in product['Item Stock Date'] %}
+                        {{ stock_date.strftime('%Y-%m-%d') if stock_date else '' }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ '{:,.0f}'.format(product['Total Production Cost']) }}</td>
                 </tr>
                 {% endfor %}
             </table>
