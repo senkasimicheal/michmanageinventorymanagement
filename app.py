@@ -317,7 +317,7 @@ def send_payment_reminders():
                 <p>I hope this message finds you well. I wanted to bring to your attention that the rent payment for <b style="font-size: 20px;">{tenant['tenantName']}</b> on <b style="font-size: 20px;">{tenant['propertyName']}</b> is overdue.</p>
                 <p>Number of Days Overdue: <b style="font-size: 20px;">{-1*remaining_days}</b></p>
                 <p>If you have any questions or concerns, feel free to reach out to us.</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Visit Our Website</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -340,7 +340,7 @@ def send_payment_reminders():
                 <p>This is a friendly reminder that your rent payment for <b style="font-size: 20px;">{tenant['months_paid']}</b> is due in <b style="font-size: 20px;">{remaining_days}</b> days.</p>
                 <p>Please ensure that your payment is submitted on time to avoid any late fees or disruptions to your tenancy.</p>
                 <p>If you have any questions or concerns, feel free to reach out to us.</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Visit Our Website</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -399,7 +399,7 @@ def send_contract_expiry_reminders():
             <p><b style="font-size: 20px;">{tenants_str}</b></p>
             <p>Please take the necessary actions to renew these contracts if needed.</p>
             <p>If you have any questions or concerns, feel free to reach out to us.</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Visit Our Website</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -451,7 +451,7 @@ def send_message():
         <p>Email: {email}</p>
         <p><b style="font-size: 20px;">Message</b></p>
         <p>{message}</p>
-        <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Visit Our Website</a></b></p>
+        <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Visit Our Platform</a></b></p>
         </body>
         </html>
         """
@@ -599,18 +599,22 @@ def update_existing_stock():
     if login_data is None:
         flash('Login first', 'error')
         return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data})
-        if 'dp' in company:
-            dp_str = company['dp']
-        else:
-            dp_str = None
-        
-        items_to_update = []
-        available_items = list(db.inventories.find({'company_name': company['company_name']}))
-        if len(available_items) != 0:
-            for item in available_items:
-                items_to_update.append(item['itemName'])
+    
+    company = db.registered_managers.find_one({'username': login_data})
+    if not company:
+        flash('Company not found', 'error')
+        return redirect('/')
+    
+    dp_str = company.get('dp')
+    items_to_update = []
+    available_items = db.inventories.find({'company_name': company['company_name']})
+    for item in available_items:
+        item_details = {
+            'itemName': item['itemName'],
+            'available_quantity': item.get('available_quantity', ''),
+            'unitOfMeasurement': item.get('unitOfMeasurement', '')
+        }
+        items_to_update.append(item_details)
 
     return render_template('update existing stock.html', dp=dp_str, items_to_update=items_to_update)
 
@@ -621,22 +625,22 @@ def update_sales_page():
     if login_data is None:
         flash('Login first', 'error')
         return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data})
-        if 'dp' in company:
-            dp_str = company['dp']
-        else:
-            dp_str = None
-
-        available_itemNames = []
-        available_items = list(db.inventories.find({'company_name': company['company_name']}))
-        if len(available_items) != 0:
-            for item in available_items:
-                if 'available_quantity' in item:
-                    if item['available_quantity'] > 0:
-                        available_itemNames.append(item['itemName'])
-                else:
-                    available_itemNames.append(item['itemName'])
+    
+    company = db.registered_managers.find_one({'username': login_data})
+    if not company:
+        flash('Company not found', 'error')
+        return redirect('/')
+    
+    dp_str = company.get('dp')
+    available_itemNames = []
+    available_items = db.inventories.find({'company_name': company['company_name']})
+    for item in available_items:
+        if item.get('available_quantity', 0) > 0:
+            available_itemNames.append({
+                'itemName': item['itemName'],
+                'available_quantity': item['available_quantity'],
+                'unitOfMeasurement': item['unitOfMeasurement']
+            })
 
     return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
 
@@ -655,14 +659,14 @@ def update_production_activity():
             dp_str = None
         
         available_itemNames = []
-        available_items = list(db.inventories.find({'company_name': company['company_name']}))
-        if len(available_items) != 0:
-            for item in available_items:
-                if 'available_quantity' in item:
-                    if item['available_quantity'] > 0:
-                        available_itemNames.append(item['itemName'])
-                else:
-                    available_itemNames.append(item['itemName'])
+        available_items = db.inventories.find({'company_name': company['company_name']})
+        for item in available_items:
+            if item.get('available_quantity', 0) > 0:
+                available_itemNames.append({
+                    'itemName': item['itemName'],
+                    'available_quantity': item['available_quantity'],
+                    'unitOfMeasurement': item['unitOfMeasurement']
+                })
 
     return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
 
@@ -681,14 +685,14 @@ def update_inhouse_use_page():
             dp_str = None
 
         available_itemNames = []
-        available_items = list(db.inventories.find({'company_name': company['company_name']}))
-        if len(available_items) != 0:
-            for item in available_items:
-                if 'available_quantity' in item:
-                    if item['available_quantity'] > 0:
-                        available_itemNames.append(item['itemName'])
-                else:
-                    available_itemNames.append(item['itemName'])
+        available_items = db.inventories.find({'company_name': company['company_name']})
+        for item in available_items:
+            if item.get('available_quantity', 0) > 0:
+                available_itemNames.append({
+                    'itemName': item['itemName'],
+                    'available_quantity': item['available_quantity'],
+                    'unitOfMeasurement': item['unitOfMeasurement']
+                })
 
     return render_template('update inhouse use.html', dp=dp_str, available_itemNames=available_itemNames)
 
@@ -1675,7 +1679,7 @@ def add_complaint():
             <body>
             <p>Dear Manager,</p>
             <p>You have a new complaint from {tenant['tenantName']}, please login below to check complaint:</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Login</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -1776,7 +1780,7 @@ def tenant_reply_complaint():
             <body>
             <p>Dear Manager,</p>
             <p>You have a new reply from {tenant_managed['tenantName']}, please login below to check reply:</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Login</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -1903,7 +1907,7 @@ def update_complaint():
             <body>
             <p>Dear tenant,</p>
             <p>You have a new reply from manager of {tenant_object_id['propertyName']}, please login below to check reply:</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Login</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -2371,7 +2375,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2397,7 +2401,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2427,7 +2431,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2453,7 +2457,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2490,7 +2494,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2516,7 +2520,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2545,7 +2549,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2571,7 +2575,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2700,7 +2704,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -2726,7 +2730,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -2752,7 +2756,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -2786,7 +2790,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -2812,7 +2816,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -2838,7 +2842,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -3267,7 +3271,7 @@ def make_edits():
                 <body>
                 <p>Dear {tenant['tenantName']},</p>
                 <p>Please find attached your payment receipt for {tenant['months_paid']} {date_last_paid.year}.</p>
-                <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -3557,7 +3561,7 @@ def add_tenant():
                     <body>
                     <p>Dear {tenantName},</p>
                     <p>Please find attached your payment receipt for {receipt_month} {date_last_paid.year}.</p>
-                    <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                     <p>Best Regards,</p>
                     <p>Mich Manage</p>
                     </body>
@@ -3610,7 +3614,7 @@ def add_tenant():
                     <body>
                     <p>Dear {tenantName},</p>
                     <p>Please find attached your payment receipt for {months_paid} {date_last_paid.year}.</p>
-                    <p><b><a href="https://michmanager.onrender.com">Visit us on</a></b></p>
+                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
                     <p>Best Regards,</p>
                     <p>Mich Manage</p>
                     </body>
@@ -3745,7 +3749,7 @@ def add_property_manager():
                 <body>
                 <p>Dear Manager,</p>
                 <p>You have been granted permission to create an account with Mich Manage. Please click the link below to register:</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Register Here</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20register">Register Now</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -5042,6 +5046,7 @@ def update_new_stock():
                 if existing_item['available_quantity'] > 0:
                     # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
                     item['totalPrice'] = item['quantity']*item['unitPrice']
+                    item['unitOfMeasurement'] = existing_item['unitOfMeasurement']
                     item['oldTotalPrice'] = existing_item['totalPrice']
                     item['oldUnitPrice'] = existing_item['unitPrice']
                     new_available_quantity = existing_item['available_quantity'] + item['quantity']

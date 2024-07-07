@@ -329,25 +329,21 @@
         </div>
 
         <div class="update-new-stock-form content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('update_new_stock')}}" method="POST">
+          <form id="myForm" class="property_forn content-pannel" action="{{ url_for('update_new_stock') }}" method="POST">
             <label class="input_labels" for="">Item Name</label>
-            <select name="item_name" id="">
+            <select name="item_name" id="item_name_select">
               <option value="" disabled selected>Select item</option>
-                {% for item in items_to_update %}
-                  <option value="{{ item }}">{{ item }}</option>
-                {% endfor %}
+              {% for item in items_to_update %}
+                <option value="{{ item.itemName }}" 
+                        data-available_quantity="{{ item.available_quantity }}" 
+                        data-unit_of_measurement="{{ item.unitOfMeasurement }}">
+                  {{ item.itemName }}
+                </option>
+              {% endfor %}
             </select>
+            <p id="stock_details"></p> <!-- This will show the stock details dynamically -->
             <label class="input_labels" for="">Quantity</label>
             <input class="property_inputs" type="number" name="update_quantity" min="1">
-            <label class="input_labels" for="">Unit Of Measurement</label>
-            <select name="update_unit_of_measurement" id="">
-              <option value="" disabled selected>Select one</option>
-              <option value="Kilogram">Kilogram</option>
-              <option value="Litres">Litres</option>
-              <option value="Pieces">Pieces</option>
-              <option value="Boxes">Boxes</option>
-              <option value="Tins">Tins</option>
-            </select>
             <label class="input_labels" for="">Unit Price</label>
             <input class="property_inputs" type="number" name="update_unit_price" min="1">
             <label class="input_labels" for="">Stock Date</label>
@@ -356,6 +352,20 @@
             <input type="submit" class="btn" value="Submit">
           </form>
         </div>
+        
+        <script>
+          document.getElementById('item_name_select').addEventListener('change', function() {
+            var selectedOption = this.options[this.selectedIndex];
+            var availableQuantity = selectedOption.getAttribute('data-available_quantity');
+            var unitOfMeasurement = selectedOption.getAttribute('data-unit_of_measurement');
+            
+            var stockDetails = 'Available Quantity: ' + availableQuantity + ' ' + unitOfMeasurement;
+            var stockDetailsElement = document.getElementById('stock_details');
+            
+            stockDetailsElement.innerText = stockDetails;
+            stockDetailsElement.style.color = 'green';
+          });
+        </script>        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
@@ -423,12 +433,11 @@
         // Get the form values
         const itemName = document.querySelector('select[name="item_name"]').value;
         const quantity = document.querySelector('input[name="update_quantity"]').value;
-        const unitOfMeasurement = document.querySelector('select[name="update_unit_of_measurement"]').value;
         const unitPrice = document.querySelector('input[name="update_unit_price"]').value;
         const stockDate = document.querySelector('input[name="update_stockdatee"]').value;
 
         // Check if any of the fields are empty
-        if (!itemName || !quantity || !unitOfMeasurement || !unitPrice || !stockDate) {
+        if (!itemName || !quantity || !unitPrice || !stockDate) {
           alert("Please fill in all fields before updating an item.");
           return; // Stop here if any field is empty
         }
@@ -437,7 +446,6 @@
         const itemObject = {
           itemName,
           quantity,
-          unitOfMeasurement,
           unitPrice,
           stockDate
         };
@@ -448,7 +456,6 @@
         // Clear the input fields
         document.querySelector('select[name="item_name"]').selectedIndex = 0;
         document.querySelector('input[name="update_quantity"]').value = '';
-        document.querySelector('select[name="update_unit_of_measurement"]').selectedIndex = 0;
         document.querySelector('input[name="update_unit_price"]').value = '';
         document.querySelector('input[name="update_stockdatee"]').value = '';
       });

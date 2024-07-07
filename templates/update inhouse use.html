@@ -331,20 +331,67 @@
         <div class="inhouse-use-form content-wrapper">
           <form id="myForm" class="property_forn content-pannel" action="{{url_for('inhouse_used_items')}}" method="POST">
             <label class="input_labels" for="">Item Used</label>
-            <select name="inhouse_use_item" id="">
+            <select name="inhouse_use_item" id="item_name_select">
               <option value="" disabled selected>Select item</option>
-                {% for item in available_itemNames %}
-                  <option value="{{ item }}">{{ item }}</option>
-                {% endfor %}
+              {% for item in available_itemNames %}
+                <option value="{{ item.itemName }}" 
+                        data-available_quantity="{{ item.available_quantity }}" 
+                        data-unit_of_measurement="{{ item.unitOfMeasurement }}">
+                  {{ item.itemName }}
+                </option>
+              {% endfor %}
             </select>
+            <p id="stock_details"></p> <!-- This will show the stock details dynamically -->
             <label class="input_labels" for="">Quantity Used</label>
-            <input class="property_inputs" type="number" name="inhouse_use_quantity" min="1">
+            <input class="property_inputs" type="number" name="inhouse_use_quantity" id="update_sale_quantity" min="1">
+            <span id="quantity_warning" style="color: red; display: none;">Can not add item, Quantity used exceeds available stock!</span>
             <label class="input_labels" for="">Date</label>
             <input class="property_inputs" type="date" name="inhouse_use_date" id="inhouse_use_date" placeholder="enter start date"><br>
             <button type="button" id="inhouse-use-button">Add Item</button>
-            <input type="submit" class="btn" value="Submit">
+            <input type="submit" id="submit-button" class="btn" value="Submit">
           </form>
         </div>
+
+        <script>
+          document.getElementById('item_name_select').addEventListener('change', function() {
+            var selectedOption = this.options[this.selectedIndex];
+            var availableQuantity = selectedOption.getAttribute('data-available_quantity');
+            var unitOfMeasurement = selectedOption.getAttribute('data-unit_of_measurement');
+            
+            var stockDetails = 'Available Quantity: ' + availableQuantity + ' ' + unitOfMeasurement;
+            var stockDetailsElement = document.getElementById('stock_details');
+            
+            stockDetailsElement.innerText = stockDetails;
+            stockDetailsElement.style.color = 'green';
+          });
+        
+          document.getElementById('update_sale_quantity').addEventListener('input', function() {
+            var selectedOption = document.getElementById('item_name_select').options[document.getElementById('item_name_select').selectedIndex];
+            var availableQuantity = parseInt(selectedOption.getAttribute('data-available_quantity'));
+            var quantitySold = parseInt(this.value);
+            
+            var warningMessage = document.getElementById('quantity_warning');
+            var addItemButton = document.getElementById('inhouse-use-button');
+            var submitButton = document.getElementById('submit-button');
+            
+            if (quantitySold > availableQuantity) {
+              warningMessage.style.display = 'block';
+              addItemButton.disabled = true;
+              submitButton.disabled = true;
+            } else {
+              warningMessage.style.display = 'none';
+              addItemButton.disabled = false;
+              submitButton.disabled = false;
+            }
+          });
+        
+          document.getElementById('inhouse-use-button').addEventListener('click', function() {
+            var addItemButton = document.getElementById('inhouse-use-button');
+            if (addItemButton.disabled) {
+              alert('Cannot add item. Quantity used exceeds available stock.');
+            }
+          });
+        </script>        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
