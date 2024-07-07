@@ -370,10 +370,24 @@
             <label class="input_labels" for="">Address</label>
             <input class="property_inputs" type="tel" name="address"><br>
             <label class="input_labels" for="">Upload Profile Picture</label>
-            <input type="file" accept="image/*" name="dp" id="imageUpload"><br>
+            <input type="file" accept=".jpg, .jpeg, .png" name="dp" id="imageUpload" onchange="validateFile()"><br>
             <input required type="submit" class="btn" value="Save">
           </form>
         </div>
+        
+        <script>
+          function validateFile() {
+            const fileInput = document.getElementById('imageUpload');
+            const filePath = fileInput.value;
+            const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
+        
+            if (!allowedExtensions.exec(filePath)) {
+              alert('Please upload file having extensions .jpeg/.jpg/.png only.');
+              fileInput.value = '';
+              return false;
+            }
+          }
+        </script>        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">

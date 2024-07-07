@@ -214,10 +214,24 @@
             <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch" onclick="updateHiddenInput()"><br>
             <input type="hidden" id="hiddenInput" name="switchState" value="no">
             <label class="input_labels" for="">Upload Profile Picture</label>
-            <input type="file" accept="image/*" name="dp" id="imageUpload"><br>
+            <input type="file" accept="image/jpeg, image/png" name="dp" id="imageUpload" onchange="validateFile()"><br>
             <input required type="submit" class="btn" value="Save">
           </form>
         </div>
+        
+        <script>       
+          function validateFile() {
+            const fileInput = document.getElementById('imageUpload');
+            const filePath = fileInput.value;
+            const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
+        
+            if (!allowedExtensions.exec(filePath)) {
+              alert('Please upload file having extensions .jpeg/.jpg/.png only.');
+              fileInput.value = '';
+              return false;
+            }
+          }
+        </script>        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">

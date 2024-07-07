@@ -215,9 +215,9 @@
             <input type="text" name="complaint_heading" required maxlength="25" placeholder="Enter complaint heading"><br>
             <label class="input_labels" for="">Details</label>
             <textarea class="complaint_details" name="details" required maxlength="200"></textarea><br>
-            <input type="file" id="complaint_image" name="complaint_image" accept="image/*" style="display: none;">
+            <input type="file" id="complaint_image" name="complaint_image" accept="image/jpeg, image/png" style="display: none;" onchange="handleFileSelect(event)">
             <label for="complaint_image" class="upload_icon">
-                <i class="fas fa-paperclip"></i>
+              <i class="fas fa-paperclip"></i> Attach Image
             </label>
             <span class="file-name" id="fileName"></span>
             <span class="error" id="fileSizeError">File size should not exceed 2MB</span>
@@ -227,6 +227,18 @@
             <input style="margin-bottom: 10px;" required type="submit" class="btn" value="Submit">
           </form>
         </div>
+        
+        <script>
+          function handleFileSelect(event) {
+            if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+              alert('Please upload only JPEG or PNG images.');
+              document.getElementById('complaint_image').value = ''; // Clear the file input
+              document.getElementById('fileName').innerText = '';
+              return false;
+            }
+          }
+        </script>
+        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">

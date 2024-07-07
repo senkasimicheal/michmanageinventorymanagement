@@ -347,9 +347,9 @@
         <div class="content-wrapper">
           <form id="myForm" class="property_forn content-pannel" action="{{url_for('download')}}" method="POST" enctype="multipart/form-data">
             <label class="input_labels" for="">From date</label>
-            <input class="property_inputs" type="date" name="startdate" id="" placeholder="enter start date" required><br>
+            <input class="property_inputs" type="date" name="startdate" id="start_date" placeholder="enter start date" required><br>
             <label class="input_labels" for="">To date</label>
-            <input class="property_inputs" type="date" name="enddate" id="" placeholder="enter end date" required>
+            <input class="property_inputs" type="date" name="enddate" id="end_date" placeholder="enter end date" required>
             <input required type="submit" class="btn" value="Export">
           </form>
         </div>
@@ -376,6 +376,31 @@
   <!-- container-scroller -->
 
   <script>
+    window.onload = function(){
+      var date = new Date();
+      var day = date.getDate();
+      var month = date.getMonth() + 1;
+      var year = date.getFullYear();
+
+      if(month < 10) month = "0" + month;
+      if(day < 10) day = "0" + day;
+
+      var today = year + "-" + month + "-" + day;
+
+      var startdateFields = document.getElementsByName("startdate");
+      for(var i = 0; i < startdateFields.length; i++){
+        startdateFields[i].setAttribute("max", today);
+      }
+
+      var enddateFields = document.getElementsByName("enddate");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+
+    }
+  </script>
+
+<script>
     document.getElementById('myForm').addEventListener('submit', function(event) {
         var radios = document.getElementsByTagName('input');
         var allAnswered = true;
