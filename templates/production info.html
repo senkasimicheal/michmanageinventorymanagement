@@ -384,7 +384,7 @@
                         {% endfor %}
                     </td>
                     <td>
-                        {% for avg_price in product['Item Average Unit Price'] %}
+                        {% for avg_price in product['Item Unit Price'] %}
                         {{ '{:,.0f}'.format(avg_price) }}{% if not loop.last %}, {% endif %}
                         {% endfor %}
                     </td>
