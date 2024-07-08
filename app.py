@@ -4549,7 +4549,6 @@ def manage_user_rights():
         registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': login_data}}))
         if not registered_managers:
             flash("We did not find other registered users", 'error')
-            return redirect('/load-dashboard-page')
 
         # Prepare managers data
         managers = get_managers_data(registered_managers)
