@@ -765,21 +765,21 @@ def register_account():
     # Check if passwords match
     if password != confirm_password:
         flash('Passwords do not match', 'error')
-        return redirect('/register')
+        return redirect('/manager register')
 
     # Check if user is a manager
     company = db.managers.find_one({'name': company_name})
     if email not in company.get('managers', []):
         flash('Not a manager in the registered companies', 'error')
-        return redirect('/')
+        return redirect('/manager register')
 
     # Check if username or email already exists
     if db.registered_managers.find_one({'username': username}):
         flash('Username already taken', 'error')
-        return redirect('/')
+        return redirect('/manager register')
     if db.registered_managers.find_one({'email': email, 'company_name': company_name}):
-        flash('User already registered', 'success')
-        return redirect('/')
+        flash('User already registered', 'error')
+        return redirect('/manager register')
 
     # Generate verification code
     code = generate_code()
@@ -1044,14 +1044,14 @@ def userlogin():
     manager = db.registered_managers.find_one({'username':username})
     if manager is None:
         flash('Not a manager', 'error')
-        return redirect('/')
+        return redirect('/manager login page')
     else:
         subscription = db.managers.find_one({'name': manager['company_name']})
 
         stored_password = manager['password']
         if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
             flash('Wrong Password', 'error')
-            return redirect('/')
+            return redirect('/manager login page')
 
         remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
         if remaining_days <= 0:
@@ -1388,7 +1388,7 @@ def tenant_register_account():
 
     if password != confirm_password:
         flash('Passwords do not match', 'error')
-        return redirect('/tenant-register')
+        return redirect('/tenant register')
     else:
         tenant_exists = db.tenant_user_accounts.find_one({'tenantEmail': email, 'propertyName': propertyName})
         user = db.tenant_user_accounts.find_one({'username': username})
@@ -1397,7 +1397,7 @@ def tenant_register_account():
                 tenant = db.tenants.find_one({'propertyName': propertyName, 'tenantEmail': email})
                 if tenant is None:
                     flash('Entered tenant is not attached to any property', 'error')
-                    return redirect('/tenant-register')
+                    return redirect('/tenant register')
                 else:
                     hashed_password = bcrypt.hashpw(confirm_password.encode('utf-8'), bcrypt.gensalt())
                     tenant_data = {'account_manager': tenant['username'], 'tenantEmail': email, 'username': username, 'propertyName': propertyName,
@@ -1407,7 +1407,7 @@ def tenant_register_account():
                     return redirect('/')
             else:
                 flash('Username already taken', 'error')
-                return redirect('/')
+                return redirect('/tenant register')
         else:
             flash('Tenant already registered', 'error')
             return redirect('/')
@@ -1433,7 +1433,7 @@ def tenant_login():
     tenant = db.tenant_user_accounts.find_one({'username': username})
     if tenant is None:
         flash('Not a registered tenant', 'error')
-        return redirect('/tenant-login-page')
+        return redirect('/tenant login page')
     else:
         stored_password = tenant['password']
         if bcrypt.checkpw(password.encode('utf-8'), stored_password):
@@ -1484,7 +1484,7 @@ def tenant_login():
                 return redirect('/tenant-data')
         else:
             flash('Wrong Password', 'error')
-            return redirect('/tenant-login-page')
+            return redirect('/tenant login page')
 
 #USER AUTHENTICATION
 @app.route("/tenant-authentication", methods=["POST"])
@@ -3038,13 +3038,11 @@ def view_user_accounts():
     is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
     if not is_manager:
         flash("You do not have rights to view other users", 'error')
-        return redirect('/load-dashboard-page')
 
     # Get registered managers data
     registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': username}}))
     if not registered_managers:
         flash("We did not find other registered users", 'error')
-        return redirect('/load-dashboard-page')
 
     # Prepare managers data
     managers = get_managers_data(registered_managers)
@@ -4430,7 +4428,8 @@ def upload_contract():
             return redirect('/upload-contract-page')
         if file:
             filename = secure_filename(file.filename)
-            file_id = fs.put(file.read(), filename=filename)
+            content_type = file.content_type
+            file_id = fs.put(file.read(), filename=filename, content_type=content_type)
             company = db.registered_managers.find_one({'username': login_data})
             receiver = request.form.get('receiver')
             start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
@@ -4447,7 +4446,7 @@ def upload_contract():
             }
 
             db.contracts.insert_one(contract)
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new contract', 'file_id':file_id, 'timestamp': datetime.now()})
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new contract', 'file_id': file_id, 'timestamp': datetime.now()})
             flash("Contract was uploaded successfully", 'success')
             return redirect('/upload-contract-page')
 
@@ -4502,7 +4501,8 @@ def updated_contract():
             return redirect('/manage-contracts')
         if file:
             filename = secure_filename(file.filename)
-            file_id = fs.put(file.read(), filename=filename)
+            content_type = file.content_type
+            file_id = fs.put(file.read(), filename=filename, content_type=content_type)
             end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
             contractID = request.form.get('contractID')
 
@@ -4514,7 +4514,7 @@ def updated_contract():
                     {'_id': ObjectId(contractID)},
                     {'$set': {'file_id': file_id, 'end_date': end_date}}
                 )
-                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update contract', 'file_id':file_id, 'timestamp': datetime.now()})
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update contract', 'file_id': file_id, 'timestamp': datetime.now()})
                 flash("Contract was updated successfully", 'success')
                 return redirect('/manage-contracts')
             else:
@@ -4526,7 +4526,7 @@ def download_contract(fileID):
     db, fs = get_db_and_fs()
     file = fs.get(ObjectId(fileID))
     response = make_response(file.read())
-    response.mimetype = 'application/octet-stream'
+    response.mimetype = file.content_type
     response.headers.set('Content-Disposition', 'attachment', filename=file.filename)
     return response
 

@@ -355,6 +355,21 @@
             <input required type="submit" class="btn" value="Submit">
           </form>
         </div>
+        <script>
+        document.getElementById('docUpload').addEventListener('change', function (e) {
+          var file = e.target.files[0];
+          var validExtensions = ['pdf', 'doc', 'docx'];
+          var fileExtension = file.name.split('.').pop().toLowerCase();
+        
+          if (!validExtensions.includes(fileExtension)) {
+            alert("Invalid file type. Only .pdf, .doc, and .docx files are allowed.");
+            this.value = '';
+          } else if (file.size > 200 * 1024) {
+            alert("File size must be less than 200KB.");
+            this.value = '';
+          }
+        });
+        </script>        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
@@ -423,16 +438,6 @@
         clearInterval(intervalId);
       }
     }, 100); // Adjust this value to control the speed of the counter
-  </script>
-
-  <script>
-    document.getElementById('docUpload').addEventListener('change', function (e) {
-      var file = e.target.files[0];
-      if(file.size > 200 * 1024) {
-        alert("File size must be less than 200KB.");
-        this.value = '';
-      }
-    });
   </script>
 
   <script>
