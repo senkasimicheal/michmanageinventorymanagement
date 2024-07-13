@@ -1035,6 +1035,12 @@ h6{
   font-size: 15px;
 }
 
+@media screen and (min-width: 761px) {
+  .doc-section .menu-image{
+    width: 600px;
+  }
+}
+
 @media screen and (max-width: 760px) {
   .tenant-signup-form form{
     margin-top: 15rem !important;
@@ -1042,6 +1048,10 @@ h6{
 
   .signup-form form{
     margin-top: 26rem !important;
+  }
+
+  .doc-section .menu-image{
+    width: 100%;
   }
 }
 
@@ -1527,4 +1537,46 @@ table td {
   color: #721c24;
   background-color: #f8d7da;
   border-color: #f5c6cb;
+}
+
+.doc-section .content {
+  display: none;
+}
+
+.documentation h2{
+  color: black;
+  text-decoration: underline;
+  margin-bottom: 2rem;
+  margin-top: 2rem;
+  font-size: 20px !important;
+  font-weight: normal !important;
+}
+
+.doc-section h3{
+  color: blue;
+  width: 70%;
+  font-size: 20px;
+  margin-top: 1rem;
+}
+
+.doc-section h3:hover{
+  cursor: pointer;
+  color: green;
+}
+
+.documentation{
+  padding-left: 1rem;
+}
+
+.documentation h1{
+  font-size: 25px;
+}
+
+.documentation h4{
+  font-size: 20px !important;
+  margin-top: 1rem;
+}
+
+.documentation p{
+  margin-top: 1rem;
 }

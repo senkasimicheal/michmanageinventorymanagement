@@ -382,32 +382,33 @@ def send_contract_expiry_reminders():
                 if remaining_days <= 15:
                     tenants.append(contract['receiver'])
 
-        manager_email = manager['email']
-        # Prepare the list of tenants as a string
-        tenants_str = ', '.join(tenants)
+        if tenants:
+            manager_email = manager['email']
+            # Prepare the list of tenants as a string
+            tenants_str = ', '.join(tenants)
 
-        # Sending reminder message
-        if send_emails is not None:
-            msg = Message('Contract Expiry Reminder - Mich Manage', 
-            sender='michpmts@gmail.com', 
-            recipients=[manager_email])
-            msg.html = f"""
-            <html>
-            <body>
-            <p>Dear {manager['name']},</p>
-            <p>I hope this message finds you well. This is a reminder that the contracts for the following tenants are due to expire in 15 days or less:</p>
-            <p><b style="font-size: 20px;">{tenants_str}</b></p>
-            <p>Please take the necessary actions to renew these contracts if needed.</p>
-            <p>If you have any questions or concerns, feel free to reach out to us.</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
-            <p>Best Regards,</p>
-            <p>Mich Manage</p>
-            </body>
-            </html>
-            """
-            # Send the email
-            with app.app_context():
-                mail.send(msg)
+            # Sending reminder message
+            if send_emails is not None:
+                msg = Message('Contract Expiry Reminder - Mich Manage', 
+                sender='michpmts@gmail.com', 
+                recipients=[manager_email])
+                msg.html = f"""
+                <html>
+                <body>
+                <p>Dear {manager['name']},</p>
+                <p>I hope this message finds you well. This is a reminder that the contracts for the following tenants are due to expire in 15 days or less:</p>
+                <p><b style="font-size: 20px;">{tenants_str}</b></p>
+                <p>Please take the necessary actions to renew these contracts if needed.</p>
+                <p>If you have any questions or concerns, feel free to reach out to us.</p>
+                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
+                <p>Best Regards,</p>
+                <p>Mich Manage</p>
+                </body>
+                </html>
+                """
+                # Send the email
+                with app.app_context():
+                    mail.send(msg)
 
 scheduler.add_job('send_contract_expiry_reminders', send_contract_expiry_reminders, trigger='cron', day_of_week='fri', hour=9)
     
@@ -474,6 +475,10 @@ def logout():
 @app.route('/manager login page')
 def manager_login_page():
     return render_template('manager login.html')
+
+@app.route('/documentation')
+def documentation():
+    return render_template('documentation.html')
 
 @app.route('/tenant login page')
 def tenant_login_page():
@@ -706,7 +711,7 @@ def before_request():
     if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page',
-                                                               'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page'):
+                                                               'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -5565,12 +5570,17 @@ def stock_overview():
             start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
             first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
         else:
+            # Get today's date
             today = datetime.today()
-            first_day_of_current_month = today.replace(day=1)
-            first_day_of_current_month = first_day_of_current_month.replace(hour=0, minute=0, second=0, microsecond=0)
-            start_of_previous_month = first_day_of_current_month - timedelta(days=1)
-            start_of_previous_month = start_of_previous_month.replace(hour=0, minute=0, second=0, microsecond=0)
-            start_of_previous_month = start_of_previous_month.replace(day=1)
+
+            # Get the first day of the current month
+            start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+            # Calculate the first day of the next month
+            if today.month == 12:  # If it's December, the next month is January of the next year
+                first_day_of_current_month = today.replace(year=today.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            else:
+                first_day_of_current_month = today.replace(month=today.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
         pipeline = [
             {
@@ -5633,7 +5643,6 @@ def stock_overview():
         total_revenues = []
         total_prices = []
         profits = []
-
         for record in revenue_info:
             item_names.append(record['_id']['itemName'])
             quantities_sold.append(record['quantitysold'])
@@ -5646,8 +5655,10 @@ def stock_overview():
             # Check if 'inventoryDetails' is in record and has the necessary structure
             if 'inventoryDetails' in record and record['inventoryDetails']:
                 quantities_stocked = record['inventoryDetails'][0].get('quantity', 0)
-                total_prices = record['inventoryDetails'][0].get('total_price', 0)
-                profits = record['inventoryDetails'][0].get('profit', 0)
+                unitPrice = record['inventoryDetails'][0].get('unitPrice', 0)
+                quantitysold = record['quantitysold']
+                total_prices = unitPrice*quantitysold
+                profits = record['totalRevenue'] - total_prices
             else:
                 quantities_stocked = 0
                 total_prices = 0
@@ -5671,7 +5682,6 @@ def stock_overview():
             'Total Price': 'sum',
             'Profit': 'sum'
         })
-
 
         #####PLOTS
         #profits and losses
