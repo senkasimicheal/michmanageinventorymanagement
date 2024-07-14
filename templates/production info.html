@@ -349,53 +349,63 @@
             <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Download">
           </form>
           <div style="width: 100%; height: 100%; overflow: auto;">
-            <table class="tenant_table">
-                <tr>
-                    <th>No.</th>
-                    <th>
-                      Product Name
-                      <br>
-                      <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for item names...">
-                    </th>
-                    <th>
-                      Production Date
-                      <br>
-                      <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
-                    </th>
-                    <th>Quantity Produced</th>
-                    <th>Product Price</th>
-                    <th>Item Used</th>
-                    <th>Item Quantity</th>
-                    <th>Item Price</th>
-                    <th>Item Stock Date</th>
-                    <th>Total Production Cost</th>
-                </tr>
-                {% for index, product in inhouse_df.iterrows() %}
-                <tr title="{{ product['Product Name'] }}" style="cursor: pointer;">
-                    <td>{{ index + 1 }}</td>
-                    <td>{{ product['Product Name'] }}</td>
-                    <td>{{ product['Date Produced'].strftime('%Y-%m-%d') if product['Date Produced'] else '' }}</td>
-                    <td>{{ product['Product Quantity'] }}</td>
-                    <td>{{ '{:,.0f}'.format(product['Product Unit Price']) }}</td>
-                    <td>{{ product['Item Used'] }}</td>
-                    <td>
-                        {% for qty in product['Item Quantity'] %}
-                        {{ qty }}{% if not loop.last %}, {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>
-                        {% for avg_price in product['Item Unit Price'] %}
-                        {{ '{:,.0f}'.format(avg_price) }}{% if not loop.last %}, {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>
-                        {% for stock_date in product['Item Stock Date'] %}
-                        {{ stock_date.strftime('%Y-%m-%d') if stock_date else '' }}{% if not loop.last %}, {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>{{ '{:,.0f}'.format(product['Total Production Cost']) }}</td>
-                </tr>
-                {% endfor %}
+            <table class="tenant_table" id="tenantTable">
+              <thead>
+                  <tr>
+                      <!-- <th>No.</th> -->
+                      <th>
+                          Product Name
+                          <br>
+                          <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 0)" placeholder="Search for item names...">
+                      </th>
+                      <th>
+                          Production Date
+                          <br>
+                          <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 1)" placeholder="YYYY-MM-DD">
+                      </th>
+                      <th>Quantity Produced</th>
+                      <th>Product Price</th>
+                      <th>Item Used</th>
+                      <th>Item Quantity</th>
+                      <th>Item Price</th>
+                      <th>Item Stock Date</th>
+                      <th>Total Production Cost</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for index, product in inhouse_df.iterrows() %}
+                  <tr title="{{ product['Product Name'] }}" style="cursor: pointer;">
+                      <!-- <td>{{ index + 1 }}</td> -->
+                      <td>{{ product['Product Name'] }}</td>
+                      <td>{{ product['Date Produced'].strftime('%Y-%m-%d') if product['Date Produced'] else '' }}</td>
+                      <td>{{ product['Product Quantity'] }}</td>
+                      <td class="product-price">{{ '{:,.0f}'.format(product['Product Unit Price']) }}</td>
+                      <td>{{ product['Item Used'] }}</td>
+                      <td>
+                          {% for qty in product['Item Quantity'] %}
+                          {{ qty }}{% if not loop.last %}, {% endif %}
+                          {% endfor %}
+                      </td>
+                      <td>
+                          {% for avg_price in product['Item Unit Price'] %}
+                          {{ '{:,.0f}'.format(avg_price) }}{% if not loop.last %}, {% endif %}
+                          {% endfor %}
+                      </td>
+                      <td>
+                          {% for stock_date in product['Item Stock Date'] %}
+                          {{ stock_date.strftime('%Y-%m-%d') if stock_date else '' }}{% if not loop.last %}, {% endif %}
+                          {% endfor %}
+                      </td>
+                      <td class="total-production-cost">{{ '{:,.0f}'.format(product['Total Production Cost']) }}</td>
+                  </tr>
+                  {% endfor %}
+                  <tr id="totalRow">
+                      <td style="font-weight: bold;" colspan="3">Total</td>
+                      <td style="font-weight: bold;" id="totalProductPrice">0</td>
+                      <td colspan="4"></td> <!-- Adjust colspan to match number of columns -->
+                      <td style="font-weight: bold;" id="totalProductionCost">0</td>
+                  </tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -422,6 +432,33 @@
   <!-- container-scroller -->
 
   <script>
+    function calculateTotals() {
+        let table = document.getElementById("tenantTable");
+        let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+        let totalProductPrice = 0;
+        let totalProductionCost = 0;
+
+        for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
+            let productPriceCell = rows[i].getElementsByClassName("product-price")[0];
+            let productionCostCell = rows[i].getElementsByClassName("total-production-cost")[0];
+
+            if (productPriceCell && productionCostCell && rows[i].style.display !== "none") {
+                let productPrice = parseFloat(productPriceCell.textContent.replace(/,/g, '')) || 0;
+                let productionCost = parseFloat(productionCostCell.textContent.replace(/,/g, '')) || 0;
+
+                totalProductPrice += productPrice;
+                totalProductionCost += productionCost;
+            }
+        }
+
+        document.getElementById("totalProductPrice").textContent = totalProductPrice.toFixed(0);
+        document.getElementById("totalProductionCost").textContent = totalProductionCost.toFixed(0);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        calculateTotals();
+    });
+
     function filterTable(inputId, columnIndex) {
         // Get the input field and its value
         var input = document.getElementById(inputId);
@@ -432,17 +469,30 @@
         var rows = table.getElementsByTagName("tr");
 
         // Loop through the rows and hide those that don't match the filter
-        for (var i = 0; i < rows.length; i++) {
+        for (var i = 0; i < rows.length - 1; i++) { // Exclude the last row
             var cell = rows[i].getElementsByTagName("td")[columnIndex];
             if (cell) {
                 var cellText = cell.textContent || cell.innerText;
-                if (cellText.toLowerCase().indexOf(filter) > -1) {
-                    rows[i].style.display = "";
+
+                // Special handling for date column (columnIndex === 1)
+                if (columnIndex === 1) {
+                    var dateText = cellText.trim();
+                    if (dateText.indexOf(filter) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
                 } else {
-                    rows[i].style.display = "none";
+                    if (cellText.toLowerCase().indexOf(filter) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
                 }
             }
         }
+
+        calculateTotals(); // Recalculate totals after filtering
     }
   </script>
 

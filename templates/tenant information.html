@@ -347,55 +347,59 @@
         <div class="content-wrapper">
           <div style="width: 100%; height: 100%; overflow: auto;" class="content-pannel">
             {% if session['is_manager'] == 'is_manager' %}
-            <table class="tenant_table">
-                <tr>
-                    <th>No.</th>
-                    <th>
+            <table class="tenant_table" id="tenantTable">
+              <tr>
+                  <th>No.</th>
+                  <th>
                       Tenant Name
                       <br>
                       <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for tenant...">
-                    </th>
-                    <th>Telephone</th>
-                    <th>Property Name</th>
-                    <th>Section</th>
-                    <th>Mode</th>
-                    <th>Period</th>
-                    <th>Receipt</th>
-                    <th>Last Payment</th>
-                    <th>Amount Demanded</th>
-                    <th>Section Value</th>
-                    <th>Last Paid</th>
-                    <th>Remaining Period</th>
-                    <th>Edit</th>
-                    <th>Delete</th>
-                </tr>
-                {% for tenantName, tenantPhone, tenantEmail, propertyName,selected_section,
-                    payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid,
-                      remaining_days, time_unit, overdue_status in tenant_data %}
-                <tr title="{{ tenantName }}" style="cursor: pointer;" onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';">
-                    <td>{{ loop.index }}</td>
-                    <td>{{ tenantName }}</td>
-                    <td>{{ tenantPhone }} <a href="tel:{{ tenantPhone }}" class="btn-primary">&#9742;</a></td>
-                    <td>{{ propertyName }}</td>
-                    <td>{{ selected_section }}</td>
-                    <td>{{ payment_mode }}</td>
-                    <td>{{ months_paid }}</td>
-                    <td>
+                  </th>
+                  <th>Telephone</th>
+                  <th>Property Name</th>
+                  <th>Section</th>
+                  <th>Mode</th>
+                  <th>Period</th>
+                  <th>Receipt</th>
+                  <th>Amount Paid</th>
+                  <th>Amount Demanded</th>
+                  <th>Section Value</th>
+                  <th>Last Paid</th>
+                  <th>Remaining Period</th>
+                  <th>Edit</th>
+                  <th>Delete</th>
+              </tr>
+              {% for tenantName, tenantPhone, tenantEmail, propertyName, selected_section, payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid, remaining_days, time_unit, overdue_status in tenant_data %}
+              <tr title="{{ tenantName }}" style="cursor: pointer;" onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';">
+                  <td>{{ loop.index }}</td>
+                  <td>{{ tenantName }}</td>
+                  <td>{{ tenantPhone }} <a href="tel:{{ tenantPhone }}" class="btn-primary">&#9742;</a></td>
+                  <td>{{ propertyName }}</td>
+                  <td>{{ selected_section }}</td>
+                  <td>{{ payment_mode }}</td>
+                  <td>{{ months_paid }}</td>
+                  <td>
                       <a href="{{ url_for('view_receipt', tenant_email=tenantEmail, property_name=propertyName, selected_section=selected_section) }}" class="btn btn-primary">View</a>
-                    </td>
-                    <td>{{ amount }}</td>
-                    <td>{{ amount_demanded }}</td>
-                    <td>{{ section_value }}</td>
-                    <td>{{ date_last_paid }}</td>
-                    <td>{{overdue_status}} {{ remaining_days }} {{time_unit}}</td>
-                    <td>
+                  </td>
+                  <td class="amount-paid">{{ amount }}</td>
+                  <td class="amount-demanded">{{ amount_demanded }}</td>
+                  <td>{{ section_value }}</td>
+                  <td>{{ date_last_paid }}</td>
+                  <td>{{ overdue_status }} {{ remaining_days }} {{ time_unit }}</td>
+                  <td>
                       <a href="{{ url_for('edit', tenantName=tenantName, email=tenantEmail, property_name=propertyName, selected_section=selected_section, payment_type=payment_type) }}">Edit</a>
-                    </td>
-                    <td>
+                  </td>
+                  <td>
                       <a href="{{ url_for('delete_tenant', tenantEmail=tenantEmail,propertyName=propertyName,selected_section=selected_section) }}" onclick="event.stopPropagation(); return confirmDelete();">Delete</a>
-                    </td>
-                </tr>
-                {% endfor %}
+                  </td>
+              </tr>
+              {% endfor %}
+              <tr>
+                  <td colspan="8" style="font-weight: bold;">Total</td>
+                  <td style="font-weight: bold;" id="totalAmountPaid">0</td>
+                  <td style="font-weight: bold;" id="totalAmountDemanded">0</td>
+                  <td colspan="5"></td>
+              </tr>
             </table>
             {% else %}
             <table class="tenant_table">
@@ -456,6 +460,58 @@
             {% endif %}
           </div>
         </div>
+
+        <script>
+          function calculateTotals() {
+              let table = document.getElementById("tenantTable");
+              let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+              let totalAmountPaid = 0;
+              let totalAmountDemanded = 0;
+          
+              for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
+                  let amountPaidCell = rows[i].getElementsByClassName("amount-paid")[0];
+                  let amountDemandedCell = rows[i].getElementsByClassName("amount-demanded")[0];
+          
+                  if (amountPaidCell && amountDemandedCell && rows[i].style.display !== "none") {
+                      totalAmountPaid += parseFloat(amountPaidCell.textContent) || 0;
+                      totalAmountDemanded += parseFloat(amountDemandedCell.textContent) || 0;
+                  }
+              }
+          
+              document.getElementById("totalAmountPaid").textContent = totalAmountPaid.toFixed(0);
+              document.getElementById("totalAmountDemanded").textContent = totalAmountDemanded.toFixed(0);
+          }
+          
+          document.addEventListener("DOMContentLoaded", function() {
+              calculateTotals();
+          });
+          
+          function filterTable(inputId, columnIndex) {
+              // Get the input field and its value
+              var input = document.getElementById(inputId);
+              var filter = input.value.toLowerCase();
+              
+              // Get the table and its rows
+              var table = document.querySelector(".tenant_table tbody");
+              var rows = table.getElementsByTagName("tr");
+          
+              // Loop through the rows and hide those that don't match the filter
+              for (var i = 0; i < rows.length - 1; i++) { // Exclude the last row
+                  var cell = rows[i].getElementsByTagName("td")[columnIndex];
+                  if (cell) {
+                      var cellText = cell.textContent || cell.innerText;
+                      if (cellText.toLowerCase().indexOf(filter) > -1) {
+                          rows[i].style.display = "";
+                      } else {
+                          rows[i].style.display = "none";
+                      }
+                  }
+              }
+          
+              calculateTotals(); // Recalculate totals after filtering
+          }
+        </script>
+
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
@@ -477,31 +533,6 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
-
-  <script>
-    function filterTable(inputId, columnIndex) {
-        // Get the input field and its value
-        var input = document.getElementById(inputId);
-        var filter = input.value.toLowerCase();
-        
-        // Get the table and its rows
-        var table = document.querySelector(".tenant_table tbody");
-        var rows = table.getElementsByTagName("tr");
-
-        // Loop through the rows and hide those that don't match the filter
-        for (var i = 0; i < rows.length; i++) {
-            var cell = rows[i].getElementsByTagName("td")[columnIndex];
-            if (cell) {
-                var cellText = cell.textContent || cell.innerText;
-                if (cellText.toLowerCase().indexOf(filter) > -1) {
-                    rows[i].style.display = "";
-                } else {
-                    rows[i].style.display = "none";
-                }
-            }
-        }
-    }
-  </script>
 
   <script>
     function confirmDelete() {

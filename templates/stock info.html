@@ -349,41 +349,50 @@
             <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Download">
           </form>
           <div style="width: 100%; height: 100%; overflow: auto;">
-            <table class="tenant_table">
-                <tr>
-                    <th>No.</th>
-                    <th>
-                      Item Name
-                      <br>
-                      <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for item names...">
-                    </th>
-                    <th>
-                      Stock Date
-                      <br>
-                      <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
-                    </th>
-                    <th>Stocked Quantity</th>
-                    <th>Buying Price</th>
-                    <th>Total Buying Price</th>
-                    <th>Available Stock</th>
-                </tr>
-                {% for stock in stock_info %}
-                <tr title="{{ stock['itemName'] }}" style="cursor: pointer;">
-                    <td>{{ loop.index }}</td>
-                    <td>{{ stock['itemName'] }}</td>
-                    <td>{{ stock['stockDate'].strftime('%Y-%m-%d') }}</td>
-                    <td>{{ stock['quantity'] }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
-                    <td>{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
-                    <td>
-                      {% if 'available_quantity' in stock %}
-                      {{ stock['available_quantity'] }}
-                      {% else %}
-                      {{ stock['quantity'] }}
-                      {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
+            <table class="tenant_table" id="tenantTable">
+              <thead>
+                  <tr>
+                      <th>No.</th>
+                      <th>
+                          Item Name
+                          <br>
+                          <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for item names...">
+                      </th>
+                      <th>
+                          Stock Date
+                          <br>
+                          <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
+                      </th>
+                      <th>Stocked Quantity</th>
+                      <th>Buying Price</th>
+                      <th>Total Buying Price</th>
+                      <th>Available Stock</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for stock in stock_info %}
+                  <tr title="{{ stock['itemName'] }}" style="cursor: pointer;">
+                      <td>{{ loop.index }}</td>
+                      <td>{{ stock['itemName'] }}</td>
+                      <td>{{ stock['stockDate'].strftime('%Y-%m-%d') }}</td>
+                      <td>{{ stock['quantity'] }}</td>
+                      <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
+                      <td class="total-buying-price">{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
+                      <td>
+                          {% if 'available_quantity' in stock %}
+                          {{ stock['available_quantity'] }}
+                          {% else %}
+                          {{ stock['quantity'] }}
+                          {% endif %}
+                      </td>
+                  </tr>
+                  {% endfor %}
+                  <tr id="totalRow">
+                      <td style="font-weight: bold;" colspan="5">Total</td>
+                      <td style="font-weight: bold;" id="totalBuyingPrice">0</td>
+                      <td></td>
+                  </tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -410,6 +419,27 @@
   <!-- container-scroller -->
 
   <script>
+    function calculateTotals() {
+        let table = document.getElementById("tenantTable");
+        let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+        let totalBuyingPrice = 0;
+    
+        for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
+            let buyingPriceCell = rows[i].getElementsByClassName("total-buying-price")[0];
+    
+            if (buyingPriceCell && rows[i].style.display !== "none") {
+                let buyingPrice = parseFloat(buyingPriceCell.textContent.replace(/,/g, '')) || 0;
+                totalBuyingPrice += buyingPrice;
+            }
+        }
+    
+        document.getElementById("totalBuyingPrice").textContent = totalBuyingPrice.toFixed(0);
+    }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        calculateTotals();
+    });
+    
     function filterTable(inputId, columnIndex) {
         // Get the input field and its value
         var input = document.getElementById(inputId);
@@ -418,9 +448,9 @@
         // Get the table and its rows
         var table = document.querySelector(".tenant_table tbody");
         var rows = table.getElementsByTagName("tr");
-
+    
         // Loop through the rows and hide those that don't match the filter
-        for (var i = 0; i < rows.length; i++) {
+        for (var i = 0; i < rows.length - 1; i++) { // Exclude the last row
             var cell = rows[i].getElementsByTagName("td")[columnIndex];
             if (cell) {
                 var cellText = cell.textContent || cell.innerText;
@@ -431,6 +461,8 @@
                 }
             }
         }
+    
+        calculateTotals(); // Recalculate totals after filtering
     }
   </script>
 

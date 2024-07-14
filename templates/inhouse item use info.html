@@ -349,44 +349,51 @@
             <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Download">
           </form>
           <div style="width: 100%; height: 100%; overflow: auto;">
-            <table class="tenant_table">
-                <tr>
-                    <th>No.</th>
-                    <th>
-                      Items Used
-                      <br>
-                      <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)" placeholder="Search for item names...">
-                    </th>
-                    <th>
-                      Date Used
-                      <br>
-                      <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
-                    </th>
-                    <th>Stock Date</th>
-                    <th>Quantity Used</th>
-                    <th>Average Cost</th>
-                    <th>Average Total Cost</th>
-                </tr>
-                {% for item in inhouse_item_use %}
-                {% for i in range(item.itemName|length) %}
-                <tr title="{{ item.itemName[i] }}" style="cursor: pointer;">
-                    <td>{{ loop.index }}</td>
-                    <td>{{ item.itemName[i] }}</td>
-                    <td>{{ item.useDate[i].strftime('%Y-%m-%d') }}</td>
-                    <td>{{ item.itemStockDates[i].strftime('%Y-%m-%d') }}</td>
-                    <td>{{ item.itemQuantity[i] }}</td>
-                    <td>
-                      {% set old_price = item.itemOldUnitPrices[i] if 'itemOldUnitPrices' in item and item.itemOldUnitPrices[i] is not none else 0 %}
-                      {% set price = ((item.itemUnitPrices[i] + old_price) / 2) if old_price > 0 else item.itemUnitPrices[i] %}
-                      {{ '{:,.0f}'.format(price) }}
-                    </td>
-                    <td>
-                      {{ '{:,.0f}'.format(item.itemQuantity[i] * price) }}
-                    </td>
-                </tr>
-                {% endfor %}
-                {% endfor %}
-            </table>
+            <table class="tenant_table" id="tenantTable">
+              <thead>
+                  <tr>
+                      <th>
+                          Items Used
+                          <br>
+                          <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 0)" placeholder="Search for item names...">
+                      </th>
+                      <th>
+                          Date Used
+                          <br>
+                          <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 1)" placeholder="YYYY-MM-DD">
+                      </th>
+                      <th>Stock Date</th>
+                      <th>Quantity Used</th>
+                      <th>Average Cost</th>
+                      <th>Average Total Cost</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for item in inhouse_item_use %}
+                      {% for index in range(item.itemName|length) %}
+                          {% set itemName = item.itemName[index] %}
+                          {% set useDate = item.useDate[index] %}
+                          {% set itemStockDate = item.itemStockDates[index] %}
+                          {% set itemQuantity = item.itemQuantity[index] %}
+                          {% set old_price = item.itemOldUnitPrices[index] if 'itemOldUnitPrices' in item and item.itemOldUnitPrices[index] is not none else 0 %}
+                          {% set price = ((item.itemUnitPrices[index] + old_price) / 2) if old_price > 0 else item.itemUnitPrices[index] %}
+                          {% set averageTotalCost = itemQuantity * price %}
+                          <tr title="{{ itemName }}" style="cursor: pointer;">
+                              <td>{{ itemName }}</td>
+                              <td>{{ useDate.strftime('%Y-%m-%d') }}</td>
+                              <td>{{ itemStockDate.strftime('%Y-%m-%d') }}</td>
+                              <td class="quantity-used">{{ itemQuantity }}</td>
+                              <td class="average-cost">{{ '{:,.0f}'.format(price) }}</td>
+                              <td class="average-total-cost">{{ '{:,.0f}'.format(averageTotalCost) }}</td>
+                          </tr>
+                      {% endfor %}
+                  {% endfor %}
+                  <tr id="totalRow">
+                      <td style="font-weight: bold;" colspan="5">Total</td>
+                      <td style="font-weight: bold;" id="totalAverageTotalCost">0</td>
+                  </tr>
+              </tbody>
+          </table>
           </div>
         </div>
         <!-- content-wrapper ends -->
@@ -412,6 +419,31 @@
   <!-- container-scroller -->
 
   <script>
+    function calculateTotals() {
+      let table = document.getElementById("tenantTable");
+      let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+      let totalAverageTotalCost = 0;
+
+      for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
+          let quantityUsedCell = rows[i].getElementsByClassName("quantity-used")[0];
+          let averageCostCell = rows[i].getElementsByClassName("average-cost")[0];
+
+          if (quantityUsedCell && averageCostCell && rows[i].style.display !== "none") {
+              let quantityUsed = parseFloat(quantityUsedCell.textContent) || 0;
+              let averageCost = parseFloat(averageCostCell.textContent.replace(/,/g, '')) || 0;
+              let averageTotalCost = quantityUsed * averageCost;
+
+              totalAverageTotalCost += averageTotalCost;
+          }
+      }
+
+      document.getElementById("totalAverageTotalCost").textContent = totalAverageTotalCost.toLocaleString(); // Format with comma every 3 zeros
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        calculateTotals();
+    });
+
     function filterTable(inputId, columnIndex) {
         // Get the input field and its value
         var input = document.getElementById(inputId);
@@ -422,7 +454,7 @@
         var rows = table.getElementsByTagName("tr");
 
         // Loop through the rows and hide those that don't match the filter
-        for (var i = 0; i < rows.length; i++) {
+        for (var i = 0; i < rows.length - 1; i++) { // Exclude the last row
             var cell = rows[i].getElementsByTagName("td")[columnIndex];
             if (cell) {
                 var cellText = cell.textContent || cell.innerText;
@@ -433,6 +465,8 @@
                 }
             }
         }
+
+        calculateTotals(); // Recalculate totals after filtering
     }
   </script>
 
