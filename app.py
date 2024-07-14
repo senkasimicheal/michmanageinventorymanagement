@@ -5643,29 +5643,33 @@ def stock_overview():
         total_revenues = []
         total_prices = []
         profits = []
+
         for record in revenue_info:
             item_names.append(record['_id']['itemName'])
             quantities_sold.append(record['quantitysold'])
             total_revenues.append(record['totalRevenue'])
 
-            quantities_stocked = 0
-            total_prices = 0
-            profits = 0
+            # Initialize variables for each iteration
+            quantities_stocked_iter = 0
+            total_price_iter = 0
+            profit_iter = 0
 
             # Check if 'inventoryDetails' is in record and has the necessary structure
             if 'inventoryDetails' in record and record['inventoryDetails']:
-                quantities_stocked = record['inventoryDetails'][0].get('quantity', 0)
+                quantity_stocked = record['inventoryDetails'][0].get('quantity', 0)
+                quantities_stocked_iter = quantity_stocked
                 unitPrice = record['inventoryDetails'][0].get('unitPrice', 0)
                 quantitysold = record['quantitysold']
-                total_prices = unitPrice*quantitysold
-                profits = record['totalRevenue'] - total_prices
-            else:
-                quantities_stocked = 0
-                total_prices = 0
-                profits = 0
+                total_price_iter = unitPrice * quantitysold
+                profit_iter = record['totalRevenue'] - total_price_iter
+
+            # Append values for this iteration to the lists
+            quantities_stocked.append(quantities_stocked_iter)
+            total_prices.append(total_price_iter)
+            profits.append(profit_iter)
 
         # Create the DataFrame
-        df = pd.DataFrame({
+        df_ungrouped = pd.DataFrame({
             'Item Name': item_names,
             'Quantity Sold': quantities_sold,
             'Quantity Stocked': quantities_stocked,
@@ -5675,7 +5679,7 @@ def stock_overview():
         })
 
         # Group by 'Item Name' and aggregate using sum
-        df = df.groupby('Item Name', as_index=False).agg({
+        df = df_ungrouped.groupby('Item Name', as_index=False).agg({
             'Quantity Sold': 'sum',
             'Quantity Stocked': 'sum',
             'Total Revenue': 'sum',
