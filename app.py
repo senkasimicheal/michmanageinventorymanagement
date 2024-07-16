@@ -5909,11 +5909,14 @@ def stock_overview():
         })
 
         inhouse_revenue_df['Revenue'] = inhouse_revenue_df['Quantity']*inhouse_revenue_df['Unit Price']
+
+        # Group by 'Product Name' and sum 'Revenue'
+        product_revenue_summary = inhouse_revenue_df.groupby('Product Name', as_index=False)['Revenue'].sum()
         
         ##total inhouse revenue
-        if not inhouse_revenue_df.empty:
+        if not product_revenue_summary.empty:
             session['inhouse_revenue_chart'] = 'inhouse_revenue_chart'
-        inhouse_revenue_fig = px.bar(inhouse_revenue_df, x='Product Name', y='Revenue', title='Inhouse Revenue')
+        inhouse_revenue_fig = px.bar(product_revenue_summary, x='Product Name', y='Revenue', title='Inhouse Revenue')
         inhouse_revenue_fig.update_traces(texttemplate='%{y}', textposition='inside')
         inhouse_revenue_fig.update_layout(showlegend=False)
         inhouse_revenue_chart = json.dumps(inhouse_revenue_fig, cls=plotly.utils.PlotlyJSONEncoder)
