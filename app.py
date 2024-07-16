@@ -1046,7 +1046,17 @@ def userlogin():
     username = request.form.get('username')
     password = request.form.get('password')
 
+    session.permanent = False
+    
     manager = db.registered_managers.find_one({'username':username})
+    if 'dark_mode' in manager:
+        if manager['dark_mode'] == 'yes':
+            session['dark_mode'] = 'yes'
+        else:
+            session['dark_mode'] = 'no'
+    else:
+        session['dark_mode'] = 'no'
+
     if manager is None:
         flash('Not a manager', 'error')
         return redirect('/manager login page')
@@ -1282,10 +1292,20 @@ def account_setup_page():
         return redirect('/')
     else:
         company = db.registered_managers.find_one({'username': login_data})
+
+        if 'dark_mode' in company:
+            if company['dark_mode'] == 'yes':
+                session['dark_mode'] = 'yes'
+            else:
+                session['dark_mode'] = 'no'
+        else:
+            session['dark_mode'] = 'no'
+    
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         auth = company.get('auth', "no")
-        return render_template("account setting.html", dp=dp_str, auth=auth)
+        dark_mode = company.get('dark_mode', "no")
+        return render_template("account setting.html", dp=dp_str, auth=auth, dark_mode=dark_mode)
 
 ##ACCOUNT SETTING
 @app.route('/account-setup-initiated', methods=["POST"])
@@ -1297,6 +1317,7 @@ def account_setup_initiated():
         return redirect('/')
     else:
         auth = request.form.get("switchState")
+        dark_mode = request.form.get("switchState1")
         name = request.form.get("name")
         phone_number = request.form.get("phone_number")
         address = request.form.get("address")
@@ -1306,6 +1327,8 @@ def account_setup_initiated():
 
         if auth:
             update_fields['auth'] = auth
+        if dark_mode:
+            update_fields['dark_mode'] = dark_mode
         if name:
             update_fields['name'] = name
         if phone_number:

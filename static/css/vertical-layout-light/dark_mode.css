@@ -1,0 +1,48 @@
+body {
+    background-color: #121212 !important;
+    color: #ffffff;
+}
+
+/* Additional styles to ensure visibility in dark mode */
+a {
+    color: white !important;
+}
+
+a:hover{
+    background-color: #121212 !important;
+}
+
+.sidebar, .footer, .navbar-breadcrumb,
+.main-panel, .container-fluid, .navbar-brand-wrapper,
+.navbar-menu-wrapper, .dropdown-menu, .navbar-nav, .card-body {
+    background-color: #1f1f1f !important;
+    color: #ffffff;
+}
+
+.btn {
+    background-color: #333333;
+    color: #ffffff;
+    border-color: #444444;
+}
+
+.btn:hover {
+    background-color: #444444;
+}
+
+table {
+    background-color: white;
+    color: #ffffff;
+}
+
+h1, h2, h3, h4, h5, h6, span, p{
+    color: white !important;
+}
+
+.manager-reply, .other-reply {
+    text-align: right;
+    background-color: #121212 !important;
+}
+
+.user-reply {
+    background-color: #121201 !important;
+}
