@@ -26105,3 +26105,8 @@ table td {
 .add-property-forms .property_inputs{
   margin-bottom: -1rem;
 }
+
+.disabled {
+  pointer-events: none;
+  color: gray;
+}

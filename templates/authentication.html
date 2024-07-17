@@ -80,79 +80,106 @@
     </script>
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
-          <form id="myForm" action="{{url_for('authentication')}}" method="POST">
-              <h3>Verify Your Identity</h3>
-              {% if session['no_send_emails_code'] %}
-              <ul class="code">
-                <li tabindex="0" class="digit" title="{{no_send_emails_code}}"><span>Tap To View Code</span></li>
-              </ul>
-              {% else %}
-              <h6>Enter 6 digit code sent to your email</h6>
-              {% endif %}
-              <label class="input_labels" for="">Code</label>
-              <input class="property_inputs" type="number" placeholder="enter code here" name="code" required><br>
-              <input style="margin-top: 10px; margin-bottom: 10px;" required type="submit" class="btn" value="Submit">
-          </form>
+        <form id="myForm" action="{{url_for('authentication')}}" method="POST">
+          <h3>Verify Your Identity</h3>
+          {% if session['no_send_emails_code'] %}
+          <ul class="code">
+            <li tabindex="0" class="digit" title="{{no_send_emails_code}}"><span>Tap To View Code</span></li>
+          </ul>
+          {% else %}
+          <h6>Enter 6 digit code sent to your email</h6>
+          {% endif %}
+          <label class="input_labels" for="">Enter Code</label>
+          <input class="property_inputs verification-code" type="number" placeholder="××××××" name="code" id="codeInput" required><br>
+          <input hidden style="margin-top: 10px; margin-bottom: 10px;" required type="submit" class="btn" value="Verify"><br>
+          <br>
+          <a id="resendLink" href="{{ url_for('resend_auth_code', username=username) }}" class="disabled">Resend Code</a>
+          <div id="countdownTimer"></div>
+        </form>
       </div>
     </section>
     <!-- end slider section -->
   </div>
 
   <script>
-    document.getElementById('myForm').addEventListener('submit', function(event) {
-        var radios = document.getElementsByTagName('input');
-        var allAnswered = true;
-        for (var i = 0; i < radios.length; i++) {
-            if (radios[i].type === 'radio' && !radios[i].checked) {
-                allAnswered = false;
-                break;
-            }
-        }
-        if (!allAnswered) {
-            if (!confirm('Confirm submission')) {
-                event.preventDefault();
-            }
+    document.addEventListener('DOMContentLoaded', function () {
+      var resendLink = document.getElementById('resendLink');
+      var countdownTimer = document.getElementById('countdownTimer');
+      var codeInput = document.getElementById('codeInput');
+      var form = document.getElementById('myForm');
+  
+      var countdownDuration = 300; // 5 minutes in seconds
+      var countdown = countdownDuration;
+  
+      function updateTimer() {
+        var minutes = Math.floor(countdown / 60);
+        var seconds = countdown % 60;
+        countdownTimer.innerHTML = minutes + "m " + seconds + "s";
+        countdown--;
+  
+        if (countdown < 0) {
+          resendLink.classList.remove('disabled');
+          countdownTimer.innerHTML = "You can resend the code now.";
         } else {
-            if (!confirm('Confirm submission')) {
-                event.preventDefault();
-            }
+          setTimeout(updateTimer, 1000);
         }
+      }
+  
+      // Initially start the timer
+      updateTimer();
+  
+      // Disable the resend link initially
+      resendLink.classList.add('disabled');
+  
+      // Check the code input length and submit form automatically
+      codeInput.addEventListener('input', function () {
+        if (this.value.length === 6) {
+          form.submit();
+        }
+      });
+  
+      // Prevent the resend link from being clickable while disabled
+      resendLink.addEventListener('click', function (e) {
+        if (this.classList.contains('disabled')) {
+          e.preventDefault();
+        }
+      });
     });
-</script>
+  </script>
 
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-      // Hide all alerts after 5 seconds
-      setTimeout(function() {
-          var alerts = document.querySelectorAll('.alert');
-          alerts.forEach(function(alert) {
-              alert.style.display = 'none';
-          });
-      }, 5000);
-  });
-</script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Hide all alerts after 5 seconds
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+    });
+  </script>
 
-<script type="text/javascript">
-  window.history.forward();
-  function noBack() { window.history.forward(); }
-</script>
+  <script type="text/javascript">
+    window.history.forward();
+    function noBack() { window.history.forward(); }
+  </script>
 
-<script>
-  let counter = 0;
-  const spinner = document.getElementById('spinner');
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
 
-  const intervalId = setInterval(() => {
-    counter++;
-    spinner.textContent = `${counter}%`;
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
 
-    if (counter === 100) {
-      clearInterval(intervalId);
-    }
-  }, 100); // Adjust this value to control the speed of the counter
-</script>
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
 
-<script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
-<script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
 
 </body>
 

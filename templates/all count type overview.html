@@ -343,6 +343,11 @@
     }, 100); // Adjust this value to control the speed of the counter
   </script>
 
+  <script type="text/javascript">
+    window.history.forward();
+    function noBack() { window.history.forward(); }
+  </script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <!-- base:js -->
@@ -360,13 +365,6 @@
   <!-- endinject -->
 
   <!-- End custom js for this page-->
-
-  <script>
-    window.history.pushState(null, "", window.location.href);
-    window.onpopstate = function () {
-        window.history.pushState(null, "", window.location.href);
-    };
-  </script>
 </body>
 
 </html>

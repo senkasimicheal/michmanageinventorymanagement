@@ -19,7 +19,6 @@ from bson.objectid import ObjectId
 import cv2
 import numpy as np
 import io
-import io
 import base64
 import calendar
 import random
@@ -35,12 +34,14 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import tempfile
 import string
 import qrcode
+import threading
+from docx2pdf import convert
+import PyPDF2
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
-    # Connect to MongoDB using the connection string
     # client = MongoClient('mongodb://localhost:27017/')
     client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
@@ -51,6 +52,21 @@ def get_db_and_fs():
     db = client.PropertyManagement
     fs = GridFS(db, collection='contracts')
     return db, fs
+
+app.config.update(
+    MAIL_SERVER='smtp.sendgrid.net',
+    MAIL_PORT=587,
+    MAIL_USERNAME='apikey',
+    MAIL_PASSWORD='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',
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False
+)
+
+mail = Mail(app)
+
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
 
 scheduler = APScheduler()
 scheduler.init_app(app)
@@ -64,17 +80,29 @@ def generate_file_password(length=12):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
+def convert_docx_to_pdf(docx_path):
+    convert(docx_path)
+    pdf_path = docx_path.replace('.docx', '.pdf')
+    return pdf_path
+
+def add_password_to_pdf(pdf_path, password):
+    output_path = pdf_path.replace('.pdf', '_protected.pdf')
+    pdf_writer = PyPDF2.PdfWriter()
+    pdf_reader = PyPDF2.PdfReader(pdf_path)
+    
+    for page_num in range(len(pdf_reader.pages)):
+        pdf_writer.add_page(pdf_reader.pages[page_num])
+    
+    pdf_writer.encrypt(user_pwd=password, owner_pwd=None, use_128bit=True)
+    
+    with open(output_path, 'wb') as f:
+        pdf_writer.write(f)
+    
+    return output_path
+
 def send_reports():
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
 
     current_year = datetime.now().year
     current_month = datetime.now().month
@@ -244,6 +272,15 @@ def send_reports():
         report_filename = f'{email}_report.docx'
         doc.save(report_filename)
 
+        pdf_filename = convert_docx_to_pdf(report_filename)
+        password = generate_file_password()
+        protected_pdf_filename = add_password_to_pdf(pdf_filename, password)
+
+        existing_password = db.file_passwords.find_one({'username':registered_doc['username'], 'detail': 'Montly Report'})
+        if existing_password:
+            db.file_passwords.delete_one({'username':registered_doc['username'], 'detail': 'Montly Report'})
+        db.file_passwords.insert_one({'username':registered_doc['username'], 'password': password, 'detail': 'Montly Report'})
+
         # Create a new Flask-Mail Message
         if send_emails is not None:
             msg = Message(
@@ -253,8 +290,8 @@ def send_reports():
             )
 
             # Attach the report
-            with app.open_resource(report_filename) as fp:
-                msg.attach(report_filename, "application/docx", fp.read())
+            with app.open_resource(protected_pdf_filename) as fp:
+                msg.attach(protected_pdf_filename, "application/pdf", fp.read())
 
             # Set the HTML body of the email
             msg.html = f"""
@@ -262,6 +299,7 @@ def send_reports():
             <body>
             <p>Dear {company_name},</p>
             <p>Please find attached your monthly report.</p>
+            <p>To unlock file, find your password in Passwords when you login</p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -270,9 +308,12 @@ def send_reports():
 
             # Send the email
             with app.app_context():
-                mail.send(msg)
+                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                thread.start()
             # Delete the report
             os.remove(report_filename)
+            os.remove(pdf_filename)
+            os.remove(protected_pdf_filename)
 
 scheduler.add_job('send_reports', send_reports, trigger='cron', day='1', hour=11, minute=59)
 
@@ -280,14 +321,6 @@ scheduler.add_job('send_reports', send_reports, trigger='cron', day='1', hour=11
 def send_payment_reminders():
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
 
     current_year = datetime.now().year
     month_mapping = {
@@ -325,7 +358,8 @@ def send_payment_reminders():
                 """
                 # Send the email
                 with app.app_context():
-                    mail.send(msg)
+                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                    thread.start()
         elif remaining_days >= 0 and remaining_days < 10:
             tenant_email = tenant['tenantEmail']
             #Sending reminder message
@@ -348,7 +382,8 @@ def send_payment_reminders():
                 """
                 # Send the email
                 with app.app_context():
-                    mail.send(msg)
+                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                    thread.start()
 
 scheduler.add_job('send_payment_reminders', send_payment_reminders, trigger='cron', day_of_week='wed', hour=9)
 
@@ -356,14 +391,6 @@ scheduler.add_job('send_payment_reminders', send_payment_reminders, trigger='cro
 def send_contract_expiry_reminders():
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
 
     managers = list(db.managers.find())
     for manager in managers:
@@ -408,7 +435,8 @@ def send_contract_expiry_reminders():
                 """
                 # Send the email
                 with app.app_context():
-                    mail.send(msg)
+                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                    thread.start()
 
 scheduler.add_job('send_contract_expiry_reminders', send_contract_expiry_reminders, trigger='cron', day_of_week='fri', hour=9)
     
@@ -425,14 +453,6 @@ def download_apk():
 def send_message():
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
         
     name = request.form.get('name')
     email = request.form.get('email')
@@ -456,7 +476,8 @@ def send_message():
         </body>
         </html>
         """
-        mail.send(msg)
+        thread = threading.Thread(target=send_async_email, args=[app, msg])
+        thread.start()
     flash('Your inquiry was sent', 'success')
     return redirect('/')
 
@@ -710,7 +731,7 @@ def logout_admin():
 def before_request():
     if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
-                                                               'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page',
+                                                               'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation'):
         return redirect('/')
     
@@ -747,14 +768,6 @@ def generate_code(length=6):
 def register_account():
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
         
     # Get form data
     form_data = request.form
@@ -851,7 +864,8 @@ def register_account():
         </body>
         </html>
         """
-        mail.send(msg)
+        thread = threading.Thread(target=send_async_email, args=[app, msg])
+        thread.start()
     else:
         session['no_send_emails_code'] = 'no_send_emails_code'
         no_send_emails_code = code
@@ -904,14 +918,6 @@ def verify_username():
 def send_verification_email(manager_email, manager_name, code):
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
 
     if send_emails is not None:
         msg = Message('Password Reset Verification Code - Mich Manage', 
@@ -932,7 +938,8 @@ def send_verification_email(manager_email, manager_name, code):
         </body>
         </html>
         """
-        mail.send(msg)
+        thread = threading.Thread(target=send_async_email, args=[app, msg])
+        thread.start()
 
 @app.route('/send-verification-code', methods=["POST"])
 def send_verification_code():
@@ -970,14 +977,6 @@ def password_reset_verifying_user():
     db, fs = get_db_and_fs()
 
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
 
     # Get form data
     email = request.form.get('email')
@@ -1023,7 +1022,8 @@ def password_reset_verifying_user():
         </body>
         </html>
         """
-        mail.send(msg)
+        thread = threading.Thread(target=send_async_email, args=[app, msg])
+        thread.start()
 
     flash('Your password was successfully reset', 'success')
     return redirect('/login')
@@ -1035,7 +1035,7 @@ def userlogin():
     session.clear()
     send_emails = db.send_emails.find_one({'emails': "yes"})
     if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
+        app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
         app.config['MAIL_PORT'] = 587
         app.config['MAIL_USERNAME'] = 'apikey'
         app.config['MAIL_PASSWORD'] = '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'
@@ -1083,26 +1083,27 @@ def userlogin():
             #Sending verification code
             if send_emails is not None:
                 msg = Message('Verify Your Identity - Mich Manage', 
-                sender='michpmts@gmail.com', 
-                recipients=[manager["email"]])
+                              sender='michpmts@gmail.com', 
+                              recipients=[manager["email"]])
                 msg.html = f"""
                 <html>
                 <body>
-                <p>Mich Manage Personal Identification</p>
+                <p>Dear Mich Manage user, please verify your identity</p>
                 <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
                 </html>
                 """
-                mail.send(msg)
+                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                thread.start()
             else:
                 session['no_send_emails_code'] = 'no_send_emails_code'
                 no_send_emails_code = code
 
             db.login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
             db.login_auth.insert_one(user_auth)
-            return render_template("authentication.html", no_send_emails_code=no_send_emails_code)
+            return render_template("authentication.html", no_send_emails_code=no_send_emails_code, username=username)
         else:
             user_message1 = f"{manager['name']}"
             login_username = f"{manager['username']}"
@@ -1181,6 +1182,43 @@ def userlogin():
                 # If both are present
                 session['account_type'] = 'all_accounts'
                 return redirect('/all-accounts-overview')
+            
+#RESEND CODE
+@app.route("/resend auth code/<username>")
+def resend_auth_code(username):
+    db, fs = get_db_and_fs()
+    send_emails = db.send_emails.find_one({'emails': "yes"})
+
+    code = generate_code()
+    user_auth = {"username": username, "code": code}
+    db.login_auth.delete_one({"username": username})
+
+    no_send_emails_code = 0
+    manager = db.registered_managers.find_one({'username':username})
+    #Sending verification code
+    if send_emails is not None:
+        msg = Message('Verify Your Identity - Mich Manage', 
+        sender='michpmts@gmail.com', 
+        recipients=[manager["email"]])
+        msg.html = f"""
+        <html>
+        <body>
+        <p>Mich Manage Personal Identification</p>
+        <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
+        <p>Best Regards,</p>
+        <p>Mich Manage</p>
+        </body>
+        </html>
+        """
+        thread = threading.Thread(target=send_async_email, args=[app, msg])
+        thread.start()
+    else:
+        session['no_send_emails_code'] = 'no_send_emails_code'
+        no_send_emails_code = code
+
+    db.login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
+    db.login_auth.insert_one(user_auth)
+    return render_template("authentication.html", no_send_emails_code=no_send_emails_code, username=username)
 
 #USER AUTHENTICATION
 @app.route("/authentication", methods=["POST"])
@@ -1446,14 +1484,6 @@ def tenant_login():
     db, fs = get_db_and_fs()
     session.clear()
     send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER']='smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
 
     username = request.form.get('username')
     password = request.form.get('password')
@@ -1490,7 +1520,8 @@ def tenant_login():
                     </body>
                     </html>
                     """
-                    mail.send(msg)
+                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                    thread.start()
                 else:
                     session['no_send_emails_code'] = 'no_send_emails_code'
                     no_send_emails_code = code
@@ -1713,7 +1744,8 @@ def add_complaint():
             </body>
             </html>
             """
-            mail.send(msg)
+            thread = threading.Thread(target=send_async_email, args=[app, msg])
+            thread.start()
         flash('Complaint submitted, we will get back to you', 'success')
         return redirect('/complaint-form')
     
@@ -1814,7 +1846,8 @@ def tenant_reply_complaint():
             </body>
             </html>
             """
-            mail.send(msg)
+            thread = threading.Thread(target=send_async_email, args=[app, msg])
+            thread.start()
         
         return redirect('/my-complaints')
   
@@ -1941,7 +1974,8 @@ def update_complaint():
             </body>
             </html>
             """
-            mail.send(msg)
+            thread = threading.Thread(target=send_async_email, args=[app, msg])
+            thread.start()
 
         return redirect('/resolve-complaints')
         
@@ -1997,7 +2031,8 @@ def resolved_complaints(complaint_id):
             </body>
             </html>
             """
-            mail.send(msg)
+            thread = threading.Thread(target=send_async_email, args=[app, msg])
+            thread.start()
         flash('Complaint was resolved', 'error')
         return redirect('/resolve-complaints')
        
@@ -2414,7 +2449,8 @@ def update():
                                     msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                     # Send the email
-                                    mail.send(msg)
+                                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                    thread.start()
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                             else:
@@ -2440,7 +2476,8 @@ def update():
                                     msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                     # Send the email
-                                    mail.send(msg)
+                                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                    thread.start()
 
                                 if '_id' in old_data:
                                     del old_data['_id']
@@ -2470,7 +2507,8 @@ def update():
                                 msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                 # Send the email
-                                mail.send(msg)
+                                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                thread.start()
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         else:
@@ -2496,7 +2534,8 @@ def update():
                                 msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                 # Send the email
-                                mail.send(msg)
+                                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                thread.start()
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
@@ -2533,7 +2572,8 @@ def update():
                                     msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                     # Send the email
-                                    mail.send(msg)
+                                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                    thread.start()
                                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                                 flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                             else:
@@ -2559,7 +2599,8 @@ def update():
                                     msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                     # Send the email
-                                    mail.send(msg)
+                                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                    thread.start()
                                 if '_id' in old_data:
                                     del old_data['_id']
                                 db.old_tenant_data.insert_one(old_data)
@@ -2588,7 +2629,8 @@ def update():
                                 msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                 # Send the email
-                                mail.send(msg)
+                                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                thread.start()
                             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantName': old_data['tenantName'], 'timestamp': datetime.now()})
                             flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         else:
@@ -2614,7 +2656,8 @@ def update():
                                 msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                                 # Send the email
-                                mail.send(msg)
+                                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                                thread.start()
                             if '_id' in old_data:
                                 del old_data['_id']
                             db.old_tenant_data.insert_one(old_data)
@@ -2743,7 +2786,8 @@ def update():
                             msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                             # Send the email
-                            mail.send(msg)
+                            thread = threading.Thread(target=send_async_email, args=[app, msg])
+                            thread.start()
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     elif date.year < old_date.year:
@@ -2769,7 +2813,8 @@ def update():
                             msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                             # Send the email
-                            mail.send(msg)
+                            thread = threading.Thread(target=send_async_email, args=[app, msg])
+                            thread.start()
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     else:
@@ -2795,7 +2840,8 @@ def update():
                             msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                             # Send the email
-                            mail.send(msg)
+                            thread = threading.Thread(target=send_async_email, args=[app, msg])
+                            thread.start()
                         if '_id' in old_data:
                             del old_data['_id']
                         db.old_tenant_data.insert_one(old_data)
@@ -2829,7 +2875,8 @@ def update():
                             msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                             # Send the email
-                            mail.send(msg)
+                            thread = threading.Thread(target=send_async_email, args=[app, msg])
+                            thread.start()
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     elif date.year < old_date.year:
@@ -2855,7 +2902,8 @@ def update():
                             msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                             # Send the email
-                            mail.send(msg)
+                            thread = threading.Thread(target=send_async_email, args=[app, msg])
+                            thread.start()
                         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     else:
@@ -2881,7 +2929,8 @@ def update():
                             msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                             # Send the email
-                            mail.send(msg)
+                            thread = threading.Thread(target=send_async_email, args=[app, msg])
+                            thread.start()
                         if '_id' in old_data:
                             del old_data['_id']
                         db.old_tenant_data.insert_one(old_data)
@@ -3308,7 +3357,8 @@ def make_edits():
                 msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                 # Send the email
-                mail.send(msg)
+                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                thread.start()
 
         payment_mode = request.form.get('payment_mode')
         if payment_mode:
@@ -3598,7 +3648,8 @@ def add_tenant():
                     msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                     # Send the email
-                    mail.send(msg)
+                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                    thread.start()
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantName': tenantName, 'timestamp': datetime.now()})
                 flash('Tenant was successfully added', 'success')
                 return redirect('/load-dashboard-page')
@@ -3651,7 +3702,8 @@ def add_tenant():
                     msg.attach("Rent Payment Receipt.pdf", "application/pdf", pdf_data)
 
                     # Send the email
-                    mail.send(msg)
+                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                    thread.start()
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add tenant data', 'tenantName':tenantName, 'timestamp': datetime.now()})
                 flash('Tenant was successfully added', 'success')
                 return redirect('/load-dashboard-page')
@@ -3781,7 +3833,8 @@ def add_property_manager():
                 </body>
                 </html>
                 """
-                mail.send(msg)
+                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                thread.start()
 
             flash('Company managers can now create accounts', 'success')
             return render_template("managers accounts.html", user_data=user_data)
@@ -4293,9 +4346,9 @@ def download():
             file_password = generate_file_password()
             ws.protection.set_password(file_password)
 
-            existing_password = db.file_passwords.find_one({'username':login_data})
+            existing_password = db.file_passwords.find_one({'username':login_data, 'detail': 'Tenant data file'})
             if existing_password:
-                db.file_passwords.delete_one({'username':login_data})
+                db.file_passwords.delete_one({'username':login_data, 'detail': 'Tenant data file'})
             db.file_passwords.insert_one({'username':login_data, 'password': file_password, 'detail': 'Tenant data file'})
 
             # Save the workbook with encryption

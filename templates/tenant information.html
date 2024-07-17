@@ -366,9 +366,9 @@
                   <td>
                       <a href="{{ url_for('view_receipt', tenant_email=tenantEmail, property_name=propertyName, selected_section=selected_section) }}" class="btn btn-primary">View</a>
                   </td>
-                  <td class="amount-paid">{{ amount }}</td>
-                  <td class="amount-demanded">{{ amount_demanded }}</td>
-                  <td>{{ section_value }}</td>
+                  <td class="amount-paid">{{ '{:,.0f}'.format(amount) }}</td>
+                  <td class="amount-demanded">{{ '{:,.0f}'.format(amount_demanded) }}</td>
+                  <td>{{ '{:,.0f}'.format(section_value) }}</td>
                   <td>{{ date_last_paid }}</td>
                   <td>{{ overdue_status }} {{ remaining_days }} {{ time_unit }}</td>
                   <td>
@@ -427,7 +427,7 @@
                         <td>
                             <a href="{{ url_for('view_receipt', tenant_email=tenantEmail, property_name=propertyName, selected_section=selected_section) }}" class="btn btn-primary">View</a>
                         </td>
-                        <td>{{ amount_demanded }}</td>
+                        <td>{{ '{:,.0f}'.format(amount_demanded) }}</td>
                         <td>{{ date_last_paid }}</td>
                         <td>{{overdue_status}} {{ remaining_days }} {{time_unit}}</td>
                         {% if session.get('edit_tenant') != 'no' %}
@@ -458,13 +458,15 @@
                   let amountDemandedCell = rows[i].getElementsByClassName("amount-demanded")[0];
           
                   if (amountPaidCell && amountDemandedCell && rows[i].style.display !== "none") {
-                      totalAmountPaid += parseFloat(amountPaidCell.textContent) || 0;
-                      totalAmountDemanded += parseFloat(amountDemandedCell.textContent) || 0;
+                      let amountpaid = parseFloat(amountPaidCell.textContent.replace(/,/g, '')) || 0;
+                      let amountdemanded = parseFloat(amountDemandedCell.textContent.replace(/,/g, '')) || 0;
+                      totalAmountPaid += amountpaid;
+                      totalAmountDemanded += amountdemanded;
                   }
               }
           
-              document.getElementById("totalAmountPaid").textContent = totalAmountPaid.toFixed(0);
-              document.getElementById("totalAmountDemanded").textContent = totalAmountDemanded.toFixed(0);
+              document.getElementById("totalAmountPaid").textContent = totalAmountPaid.toLocaleString();
+              document.getElementById("totalAmountDemanded").textContent = totalAmountDemanded.toLocaleString();
           }
           
           document.addEventListener("DOMContentLoaded", function() {

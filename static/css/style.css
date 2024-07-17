@@ -1581,3 +1581,7 @@ table td {
 .documentation p{
   margin-top: 1rem;
 }
+
+.verification-code{
+  width: 70px !important;
+}
