@@ -31,6 +31,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+from zipfile import ZipFile
 import tempfile
 import string
 import qrcode
@@ -4273,23 +4274,18 @@ def download():
         company = db.registered_managers.find_one({'username': login_data})
         is_manager = db.managers.find_one({'manager_email': company['email']})
         if is_manager is None:
-            user_query  = {'username': login_data, 'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
+            user_query = {'username': login_data, 'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
         else:
-            user_query  = {'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
+            user_query = {'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
         projection = {'payment_receipt': 0, '_id': 0, 'marital_status': 0, 'age': 0, 'available_amount': 0, 'payment_completion': 0,
-                      'currency': 0, 'payment_status': 0,	'status': 0,	'household_size': 0}
+                      'currency': 0, 'payment_status': 0, 'status': 0, 'household_size': 0}
     
         current_tenant_data = list(db.tenants.find(user_query, projection))
-
         old_tenant_data = list(db.old_tenant_data.find(user_query, projection))
-
-        if len(current_tenant_data) > 0 or len(old_tenant_data) > 0:                
-            # property_data = list(db.property_managed.find(company_query, projection2))
-
+    
+        if len(current_tenant_data) > 0 or len(old_tenant_data) > 0:
             df1 = pd.DataFrame(old_tenant_data)
             df2 = pd.DataFrame(current_tenant_data)
-            # df3 = pd.DataFrame(property_data)
-
             df_combined_tenants = pd.concat([df1, df2], ignore_index=True)
 
             new_column_names = {
@@ -4318,68 +4314,57 @@ def download():
 
             df_combined_tenants.rename(columns=new_column_names, inplace=True)
 
-            # Set the multi-level index and sort the DataFrame
             month_order = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
             df_combined_tenants['Month paid'] = pd.Categorical(df_combined_tenants['Month paid'], categories=month_order.keys(), ordered=True)
             df_combined_tenants.sort_values(by=['Year', 'Month paid'], inplace=True)
 
             # Create a BytesIO buffer to write the Excel file
             output = BytesIO()
-
-            # Write the DataFrame to the Excel file using openpyxl
             wb = Workbook()
-
-            # Create a worksheet
             ws = wb.active
             ws.title = "Tenants"
 
-            # Write column names
             for col_idx, col_name in enumerate(df_combined_tenants.columns, start=2):
                 ws.cell(row=1, column=col_idx, value=col_name)
 
-            # Write data rows
             for r_idx, row in enumerate(dataframe_to_rows(df_combined_tenants, index=False), start=2):
                 for c_idx, value in enumerate(row, start=1):
                     ws.cell(row=r_idx, column=c_idx, value=value)
 
-            # Set a password
             file_password = generate_file_password()
             ws.protection.set_password(file_password)
 
-            existing_password = db.file_passwords.find_one({'username':login_data, 'detail': 'Tenant data file'})
+            existing_password = db.file_passwords.find_one({'username': login_data, 'detail': 'Tenant data file'})
             if existing_password:
-                db.file_passwords.delete_one({'username':login_data, 'detail': 'Tenant data file'})
-            db.file_passwords.insert_one({'username':login_data, 'password': file_password, 'detail': 'Tenant data file'})
+                db.file_passwords.delete_one({'username': login_data, 'detail': 'Tenant data file'})
+            db.file_passwords.insert_one({'username': login_data, 'password': file_password, 'detail': 'Tenant data file'})
 
-            # Save the workbook with encryption
             protected_file_path = tempfile.NamedTemporaryFile(delete=False, suffix="_protected.xlsx").name
             wb.save(filename=protected_file_path)
-
-            # Clean up temporary file
             wb.close()
 
-            # Load the workbook again to delete the first row
             wb = load_workbook(protected_file_path)
             ws = wb.active
             ws.delete_rows(1)
-
-            # Save the workbook
             wb.save(protected_file_path)
-
-            # Clean up temporary file
             wb.close()
 
-            # Read the password-protected file
             with open(protected_file_path, 'rb') as f:
                 protected_data = f.read()
 
-            # Clean up protected file
             os.remove(protected_file_path)
 
-            # Create the response
-            response = make_response(protected_data)
-            response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx"
-            response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            # Create a zip file containing the password-protected Excel file
+            zip_buffer = BytesIO()
+            with ZipFile(zip_buffer, 'w') as zip_file:
+                zip_file.writestr(f"{company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx", protected_data)
+
+            zip_buffer.seek(0)
+            zip_data = zip_buffer.getvalue()
+
+            response = make_response(zip_data)
+            response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.zip"
+            response.headers['Content-Type'] = 'application/zip'
 
             return response
         else:
@@ -4606,9 +4591,19 @@ def updated_contract():
 def download_contract(fileID):
     db, fs = get_db_and_fs()
     file = fs.get(ObjectId(fileID))
-    response = make_response(file.read())
-    response.mimetype = file.content_type
-    response.headers.set('Content-Disposition', 'attachment', filename=file.filename)
+    
+    # Create a BytesIO buffer to zip the file
+    zip_buffer = BytesIO()
+    with ZipFile(zip_buffer, 'w') as zip_file:
+        zip_file.writestr(file.filename, file.read())
+    
+    zip_buffer.seek(0)
+    zip_data = zip_buffer.getvalue()
+    
+    response = make_response(zip_data)
+    response.headers['Content-Disposition'] = f'attachment; filename={file.filename}.zip'
+    response.headers['Content-Type'] = 'application/zip'
+    
     return response
 
 ####MANAGE USER RIGHTS
@@ -4964,17 +4959,28 @@ def download_audit_logs():
                 timestamp = log.get('timestamp')
                 log['timestamp'] = convert_to_eat(timestamp)
                 renamed_logs.append(renamed_log)
+        
         sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
         df = pd.DataFrame(sorted_logs)
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+
+        # Create an in-memory buffer for the Excel file
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
             df.to_excel(writer, sheet_name='Audit logs', index=False)
-        output.seek(0)
+        excel_buffer.seek(0)
+        
+        # Create a zip file containing the Excel file
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            zip_file.writestr(f"{company['company_name']}_audit_logs_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
+        
+        zip_buffer.seek(0)
+        zip_data = zip_buffer.getvalue()
 
         # Create the response
-        response = make_response(output.read())
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit logs_{startdate_on_str}_{enddate_on_str}.xlsx"
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = make_response(zip_data)
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit_logs_{startdate_on_str}_{enddate_on_str}.zip"
+        response.headers['Content-Type'] = 'application/zip'
 
         return response
 
@@ -5002,17 +5008,28 @@ def download_login_data():
                 timestamp = login.get('timestamp')
                 login['timestamp'] = convert_to_eat(timestamp)
                 logindata.append(formated_time)
+        
         sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
         df = pd.DataFrame(sorted_logins)
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Audit logs', index=False)
-        output.seek(0)
+
+        # Create an in-memory buffer for the Excel file
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Login Data', index=False)
+        excel_buffer.seek(0)
+        
+        # Create a zip file containing the Excel file
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            zip_file.writestr(f"{company['company_name']}_login_data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
+        
+        zip_buffer.seek(0)
+        zip_data = zip_buffer.getvalue()
 
         # Create the response
-        response = make_response(output.read())
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit logs_{startdate_on_str}_{enddate_on_str}.xlsx"
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = make_response(zip_data)
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_login_data_{startdate_on_str}_{enddate_on_str}.zip"
+        response.headers['Content-Type'] = 'application/zip'
 
         return response
 
@@ -6009,12 +6026,19 @@ def download_stock_data():
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
         company = db.registered_managers.find_one({'username': login_data})
 
-        current_stock = db.inventories.find({'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},{'_id':0, 'company_name':0, 'available_quantity':0})
-        old_stock = db.old_inventories.find({'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},{'_id':0, 'company_name':0, 'available_quantity':0})
+        current_stock = db.inventories.find(
+            {'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},
+            {'_id': 0, 'company_name': 0, 'available_quantity': 0}
+        )
+        old_stock = db.old_inventories.find(
+            {'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},
+            {'_id': 0, 'company_name': 0, 'available_quantity': 0}
+        )
         combined_stock = list(current_stock) + list(old_stock)
 
         sorted_combined_stock = sorted(combined_stock, key=lambda x: x["stockDate"], reverse=True)
         df = pd.DataFrame(sorted_combined_stock)
+
         new_column_names = {
             'itemName': 'Item Name',
             'quantity': 'Stocked Quantity',
@@ -6023,18 +6047,26 @@ def download_stock_data():
             'stockDate': 'Stock Date',
             'totalPrice': 'Total Buying Price'
         }
-
         df.rename(columns=new_column_names, inplace=True)
 
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Stock data', index=False)
-        output.seek(0)
+        # Create an in-memory buffer for the Excel file
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Stock Data', index=False)
+        excel_buffer.seek(0)
+
+        # Create a zip file containing the Excel file
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            zip_file.writestr(f"{company['company_name']}_Stock_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
+        
+        zip_buffer.seek(0)
+        zip_data = zip_buffer.getvalue()
 
         # Create the response
-        response = make_response(output.read())
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Stock Data_{startdate_on_str}_{enddate_on_str}.xlsx"
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = make_response(zip_data)
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Stock_Data_{startdate_on_str}_{enddate_on_str}.zip"
+        response.headers['Content-Type'] = 'application/zip'
 
         return response
     
@@ -6067,7 +6099,7 @@ def download_revenue_data():
             },
             {
                 '$group': {
-                    '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
+                    '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                     'totalRevenue': {'$sum': '$revenue'},
                     'quantitysold': {'$sum': '$quantity'}
                 }
@@ -6118,6 +6150,7 @@ def download_revenue_data():
         totalRevenues = []
         profits = []
         revenue_info = list(db.stock_sales.aggregate(pipeline))
+
         if len(revenue_info) != 0:
             for info in revenue_info:
                 itemNames.append(info['_id']['itemName'])
@@ -6131,7 +6164,7 @@ def download_revenue_data():
                     profits.append(profit)
                 quantitiesSold.append(info['quantitysold'])
                 totalRevenues.append(info['totalRevenue'])
-            
+
         revenue_info = pd.DataFrame({
             'Item Name': itemNames,
             'Stock Date': stockDates,
@@ -6145,15 +6178,24 @@ def download_revenue_data():
 
         df = pd.DataFrame(revenue_info)
 
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Revenue data', index=False)
-        output.seek(0)
+        # Create an in-memory buffer for the Excel file
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Revenue Data', index=False)
+        excel_buffer.seek(0)
+
+        # Create a zip file containing the Excel file
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            zip_file.writestr(f"{company['company_name']}_Revenue_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
+        
+        zip_buffer.seek(0)
+        zip_data = zip_buffer.getvalue()
 
         # Create the response
-        response = make_response(output.read())
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Revenue Data_{startdate_on_str}_{enddate_on_str}.xlsx"
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = make_response(zip_data)
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Revenue_Data_{startdate_on_str}_{enddate_on_str}.zip"
+        response.headers['Content-Type'] = 'application/zip'
 
         return response
     
@@ -6174,7 +6216,14 @@ def download_sales_data():
 
         company_name = company['company_name']
 
-        sales_info = list(db.stock_sales.find({'company_name': company_name,'saleDate': {'$gte': startdate, '$lte': enddate}},{'_id':0, 'company_name':0, 'stockDate':0}))
+        sales_info = list(db.stock_sales.find({
+            'company_name': company_name,
+            'saleDate': {'$gte': startdate, '$lte': enddate}
+        }, {
+            '_id': 0,
+            'company_name': 0,
+            'stockDate': 0
+        }))
 
         sorted_sales_info = sorted(sales_info, key=lambda x: x["saleDate"], reverse=True)
         df = pd.DataFrame(sorted_sales_info)
@@ -6188,15 +6237,24 @@ def download_sales_data():
 
         df.rename(columns=new_column_names, inplace=True)
 
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Revenue data', index=False)
-        output.seek(0)
+        # Create an in-memory buffer for the Excel file
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Sales Data', index=False)
+        excel_buffer.seek(0)
+
+        # Create a zip file containing the Excel file
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            zip_file.writestr(f"{company['company_name']}_Sales_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
+        
+        zip_buffer.seek(0)
+        zip_data = zip_buffer.getvalue()
 
         # Create the response
-        response = make_response(output.read())
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Sales Data_{startdate_on_str}_{enddate_on_str}.xlsx"
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = make_response(zip_data)
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Sales_Data_{startdate_on_str}_{enddate_on_str}.zip"
+        response.headers['Content-Type'] = 'application/zip'
 
         return response
 
@@ -6291,7 +6349,12 @@ def download_inhouse():
 
         company_name = company['company_name']
 
-        inhouse_info = list(db.inhouse.find({'company_name': company_name,'useDate': {'$gte': startdate, '$lte': enddate}},{'company_name':0}))
+        inhouse_info = list(db.inhouse.find({
+            'company_name': company_name,
+            'useDate': {'$gte': startdate, '$lte': enddate}
+        }, {
+            'company_name': 0
+        }))
 
         inhouse_product_ids = []
         inhouse_productName = []
@@ -6326,11 +6389,11 @@ def download_inhouse():
 
         # Create the DataFrame
         inhouse_df = pd.DataFrame({
-            'Product ID':inhouse_product_ids,
-            'Product Name':inhouse_productName,
-            'Product Quantity':inhouse_productQuantity,
-            'Product Unit Price':inhouse_productPrice,
-            'Date Produced':inhouse_useDate,
+            'Product ID': inhouse_product_ids,
+            'Product Name': inhouse_productName,
+            'Product Quantity': inhouse_productQuantity,
+            'Product Unit Price': inhouse_productPrice,
+            'Date Produced': inhouse_useDate,
             'Item Used': inhouse_itemName,
             'Item Quantity': inhouse_itemQuantity,
             'Item Unit Price': inhouse_itemUnitPrices,
@@ -6341,15 +6404,24 @@ def download_inhouse():
         inhouse_df['Total Production Cost'] = inhouse_df.apply(calculate_total_cost, axis=1)
         inhouse_df_sorted = inhouse_df.sort_values(by='Date Produced')
 
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            inhouse_df_sorted.to_excel(writer, sheet_name='Revenue data', index=False)
-        output.seek(0)
+        # Create an in-memory buffer for the Excel file
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            inhouse_df_sorted.to_excel(writer, sheet_name='Inhouse Data', index=False)
+        excel_buffer.seek(0)
+
+        # Create a zip file containing the Excel file
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            zip_file.writestr(f"{company['company_name']}_Inhouse_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
+        
+        zip_buffer.seek(0)
+        zip_data = zip_buffer.getvalue()
 
         # Create the response
-        response = make_response(output.read())
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse Data_{startdate_on_str}_{enddate_on_str}.xlsx"
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = make_response(zip_data)
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse_Data_{startdate_on_str}_{enddate_on_str}.zip"
+        response.headers['Content-Type'] = 'application/zip'
 
         return response
     
@@ -6369,7 +6441,12 @@ def download_inhouse_item_use():
 
         company_name = company['company_name']
 
-        inhouse_info = list(db.inhouse_use.find({'company_name': company_name,'useDate': {'$gte': startdate, '$lte': enddate}},{'company_name':0}))
+        inhouse_info = list(db.inhouse_use.find({
+            'company_name': company_name,
+            'useDate': {'$gte': startdate, '$lte': enddate}
+        }, {
+            'company_name': 0
+        }))
 
         inhouse_itemName = []
         inhouse_useDate = []
@@ -6382,7 +6459,7 @@ def download_inhouse_item_use():
             useDate = record['useDate']
             item_quantity = record['itemQuantity']
             if 'oldUnitPrice' in record:
-                average_unit_price = (record['oldUnitPrice']+record['itemUnitPrices'])/2
+                average_unit_price = (record['oldUnitPrice'] + record['itemUnitPrices']) / 2
             else:
                 average_unit_price = record['itemUnitPrices']
             itemStockDates = record['itemStockDates']
@@ -6396,13 +6473,13 @@ def download_inhouse_item_use():
         # Create the DataFrame
         inhouse_df = pd.DataFrame({
             'Item Used': inhouse_itemName,
-            'Date Used':inhouse_useDate,
+            'Date Used': inhouse_useDate,
             'Item Quantity': inhouse_itemQuantity,
             'Item Average Price': inhouse_itemAverageUnitPrices,
             'Item Stock Date': inhouse_itemStockDates
         })
 
-        # Assuming you have the DataFrame 'inhouse_df_new'
+        # Explode DataFrame to handle lists in columns
         inhouse_df_exploded = inhouse_df.explode('Item Used')
         inhouse_df_exploded['Date Used'] = inhouse_df.explode('Date Used')['Date Used']
         inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
@@ -6410,17 +6487,26 @@ def download_inhouse_item_use():
         inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
         inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
 
-        inhouse_df_exploded['Average Total Cost'] = inhouse_df_exploded['Item Quantity']*inhouse_df_exploded['Item Average Price']
+        inhouse_df_exploded['Average Total Cost'] = inhouse_df_exploded['Item Quantity'] * inhouse_df_exploded['Item Average Price']
 
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        # Create an in-memory buffer for the Excel file
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
             inhouse_df_exploded.to_excel(writer, sheet_name='Inhouse item use data', index=False)
-        output.seek(0)
+        excel_buffer.seek(0)
+
+        # Create a zip file containing the Excel file
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w') as zip_file:
+            zip_file.writestr(f"{company['company_name']}_Inhouse_Item_Use_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
+        
+        zip_buffer.seek(0)
+        zip_data = zip_buffer.getvalue()
 
         # Create the response
-        response = make_response(output.read())
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse Item Use Data_{startdate_on_str}_{enddate_on_str}.xlsx"
-        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response = make_response(zip_data)
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse_Item_Use_Data_{startdate_on_str}_{enddate_on_str}.zip"
+        response.headers['Content-Type'] = 'application/zip'
 
         return response
 

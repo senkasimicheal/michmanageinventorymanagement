@@ -9215,6 +9215,11 @@ pre code {
 }
 
 @media (max-width: 768px){
+  .navbar-brand img{
+    border-radius: 50%;
+    padding: 3px !important;
+  }
+
   .segment{
     overflow-x: auto;
     width: 100%;
@@ -9267,6 +9272,10 @@ pre code {
     width: 20%;  /* adjust as needed */
     height: 20px;  /* adjust as needed */
     margin-right: 10px;
+  }
+
+  .navbar-brand img{
+    display: none;
   }
 
   .dashboard-form-button{
