@@ -6528,4 +6528,4 @@ def download_inhouse_item_use():
 
 if __name__ == '__main__':
     scheduler.start()
-    app.run(debug=True)
+    socketio.run(app, debug=True)
