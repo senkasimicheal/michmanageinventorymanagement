@@ -44,8 +44,8 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
-    client = MongoClient('mongodb://localhost:27017/')
-    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    # client = MongoClient('mongodb://localhost:27017/')
+    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
 
 # Function to get the database and GridFS instance
