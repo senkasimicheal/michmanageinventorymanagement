@@ -1,4 +1,5 @@
 from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, send_file, jsonify
+from flask_socketio import SocketIO, emit, join_room
 from flask_mail import Mail, Message
 from flask_apscheduler import APScheduler
 from docx import Document
@@ -64,6 +65,7 @@ app.config.update(
 )
 
 mail = Mail(app)
+socketio = SocketIO(app)
 
 def send_async_email(app, msg):
     with app.app_context():
@@ -73,9 +75,13 @@ scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
 
-mail = Mail(app)
-
 utc = pytz.UTC
+
+@socketio.on('join')
+def on_join(data):
+    login_username = session.get('login_username')
+    if login_username:
+        join_room(login_username)
 
 def generate_file_password(length=12):
     characters = string.ascii_letters + string.digits
@@ -1377,14 +1383,11 @@ def account_setup_initiated():
         if dp:
             file_content = dp.read()
             np_img = np.frombuffer(file_content, np.uint8)
-            
             # Use OpenCV to read the image
-            img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
-            # Convert the image to RGB
-            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-            # Encode the image as JPEG
-            _, buffer = cv2.imencode('.jpg', rgb_img, [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+            img = cv2.imdecode(np_img, cv2.IMREAD_UNCHANGED)
+            # Encode the image as JPEG with high quality (e.g., 90)
+            _, buffer = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            # Convert the encoded image to a base64 string
             base64_string = base64.b64encode(buffer).decode('utf-8')
             update_fields['dp'] = base64_string
 
@@ -1427,14 +1430,11 @@ def tenant_account_setup_initiated():
         if dp:
             file_content = dp.read()
             np_img = np.frombuffer(file_content, np.uint8)
-            
             # Use OpenCV to read the image
-            img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
-            # Convert the image to RGB
-            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-            # Encode the image as JPEG
-            _, buffer = cv2.imencode('.jpg', rgb_img, [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+            img = cv2.imdecode(np_img, cv2.IMREAD_UNCHANGED)
+            # Encode the image as JPEG with high quality (e.g., 90)
+            _, buffer = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            # Convert the encoded image to a base64 string
             base64_string = base64.b64encode(buffer).decode('utf-8')
             update_fields['dp'] = base64_string
 
@@ -1533,6 +1533,7 @@ def tenant_login():
             else:
                 session.permanent = False
                 session['tenantID'] = str(tenant['_id'])
+                session['login_username'] = str(tenant['_id'])
                 session['tenantEmail'] = tenant['tenantEmail']
                 session['propertyName'] = tenant['propertyName']
 
@@ -1712,17 +1713,13 @@ def add_complaint():
         if 'complaint_image' in request.files:
             file = request.files['complaint_image']
             if file:
-                # Read the file content
                 file_content = file.read()
                 np_img = np.frombuffer(file_content, np.uint8)
-                
                 # Use OpenCV to read the image
-                img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
-                # Convert the image to RGB
-                rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-                # Encode the image as JPEG
-                _, buffer = cv2.imencode('.jpg', rgb_img, [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+                img = cv2.imdecode(np_img, cv2.IMREAD_UNCHANGED)
+                # Encode the image as JPEG with high quality (e.g., 90)
+                _, buffer = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+                # Convert the encoded image to a base64 string
                 base64_string = base64.b64encode(buffer).decode('utf-8')
 
                 compiled_complaint = {'tenantID': ObjectId(tenant_login_data), 'tenant_name': tenant['tenantName'], 'complaint_heading': complaint_heading,
@@ -1747,6 +1744,11 @@ def add_complaint():
             """
             thread = threading.Thread(target=send_async_email, args=[app, msg])
             thread.start()
+        
+        # Emit socket notification to the manager's username room
+        message = f"New complaint from {tenant['tenantName']}"
+        socketio.emit('new_notification', {'message': message}, room=manager['username'])
+
         flash('Complaint submitted, we will get back to you', 'success')
         return redirect('/complaint-form')
     
@@ -1850,6 +1852,10 @@ def tenant_reply_complaint():
             thread = threading.Thread(target=send_async_email, args=[app, msg])
             thread.start()
         
+        # Emit socket notification to the manager's username room
+        message = f"New reply from {tenant_managed['tenantName']}"
+        socketio.emit('new_notification', {'message': message}, room=manager['username'])
+        
         return redirect('/my-complaints')
   
 ############LOAD COMPLAINTS TO MANAGER######################
@@ -1934,6 +1940,7 @@ def update_complaint():
         flash('Login first', 'error')
         return redirect('/')
     else:
+        manager = db.registered_managers.find_one({'username': login_data})
         send_emails = db.send_emails.find_one({'emails': "yes"})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
@@ -1977,6 +1984,10 @@ def update_complaint():
             """
             thread = threading.Thread(target=send_async_email, args=[app, msg])
             thread.start()
+
+        # Emit socket notification to the manager's username room
+        message = f"New reply from {manager['username']}"
+        socketio.emit('new_notification', {'message': message}, room = str(tenant_object_id['_id']))
 
         return redirect('/resolve-complaints')
         
@@ -2034,7 +2045,12 @@ def resolved_complaints(complaint_id):
             """
             thread = threading.Thread(target=send_async_email, args=[app, msg])
             thread.start()
-        flash('Complaint was resolved', 'error')
+
+        # Emit socket notification to the manager's username room
+        message = f"Complaint was resolved by {manager['username']}"
+        socketio.emit('new_notification', {'message': message}, room = str(tenant['_id']))
+
+        flash('Complaint was resolved', 'success')
         return redirect('/resolve-complaints')
        
 #############ADD PROPERTY####################
@@ -6512,4 +6528,4 @@ def download_inhouse_item_use():
 
 if __name__ == '__main__':
     scheduler.start()
-    app.run(debug=True)
+    socketio.run(app)

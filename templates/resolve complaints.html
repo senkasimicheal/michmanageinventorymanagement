@@ -20,6 +20,7 @@
   <!-- endinject -->
   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
@@ -319,6 +320,36 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
+        <div id="notification" class="notification"></div>
+        <audio id="notificationSound" src="{{ url_for('static', filename='audios/notification sound.mp3') }}" preload="auto"></audio>      
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+              var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+  
+              // Retrieve the tenant's username from the session (passed in the template context)
+              var accountUsername = "{{ session['username'] }}";
+  
+              socket.on('connect', function () {
+                  // Join a room with the tenant's username
+                  socket.emit('join', accountUsername);
+              });
+  
+              socket.on('new_notification', function (data) {
+                  var notificationElement = document.getElementById('notification');
+                  notificationElement.textContent = data.message;
+                  notificationElement.style.display = 'block'; // Show the notification
+  
+                  // Play the notification sound
+                  var notificationSound = document.getElementById('notificationSound');
+                  notificationSound.play();
+  
+                  // Hide the notification after 5 seconds
+                  setTimeout(function () {
+                      notificationElement.style.display = 'none';
+                  }, 5000);
+              });
+          });
+        </script>
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
@@ -338,34 +369,34 @@
         
           <div id="pending">
             <div class="complaints">
-                <h2 class="complaint-heading1">Unresolved Issues</h2>
-                {% for complaint in complaints %}
-                <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('update_complaint') }}">
-                    <div class="complaint-card">
-                        <span>From {{ complaint.tenant_name }}</span>
-                        <h2 class="complaint-heading">{{ complaint.complaint_heading }}</h2>
-                        <p class="complaint-details">{{ complaint.details }}</p>
-                        <div class="complaint-footer">
-                          <span class="complaint-date">Filed on {{ complaint.complained_on.strftime('%Y-%m-%d %H:%M') }}</span>
-                        </div>
-                        <textarea placeholder="Your reply goes here" class="complaint_details_reply" name="Reply_{{ complaint._id }}" required maxlength="100"></textarea>
-                        <input type="hidden" id="clientTime" name="client_time">
-                        <input type="hidden" id="timeZoneOffset" name="time_zone_offset">
-                        <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
-                        <div style="display: flex; align-items: center;">
-                          <input type="submit" value="Reply" style="background:none;border:none;color:blue; width: 60px !important;">
-                          <span style="margin-left: 10px;">
+              <h2 class="complaint-heading1">Unresolved Issues</h2>
+              {% for complaint in complaints %}
+              <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('update_complaint') }}">
+                <div class="complaint-card">
+                    <span>From {{ complaint.tenant_name }}</span>
+                    <h2 class="complaint-heading">{{ complaint.complaint_heading }}</h2>
+                    <p class="complaint-details">{{ complaint.details }}</p>
+                    <div class="complaint-footer">
+                        <span class="complaint-date">Filed on {{ complaint.complained_on.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    <textarea placeholder="Your reply goes here" class="complaint_details_reply" name="Reply_{{ complaint._id }}" required maxlength="100"></textarea>
+                    <input type="hidden" class="clientTime" name="client_time">
+                    <input type="hidden" class="timeZoneOffset" name="time_zone_offset">
+                    <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
+                    <div style="display: flex; align-items: center;">
+                        <input type="submit" value="Reply" style="background:none;border:none;color:blue; width: 60px !important;">
+                        <span style="margin-left: 10px;">
                             <a href="{{ url_for('resolved_complaints', complaint_id=complaint._id) }}" id="resolveLink">Resolve</a>
-                          </span>
-                        </div>
-                        {% if complaint['image'] %}
-                        <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'] }}" alt="Complaint Image"><br><br>
-                        {% endif %}
-                        <button type="button" id="toggle-replies-btn-{{ complaint._id }}" onclick="toggleReplies('{{ complaint._id }}')">Show Replies</button>
-                        <div class="replies-section" id="replies-{{ complaint._id }}" style="display: none;">
-                          <h4>Replies</h4>
-                          {% for reply in complaint.replies %}
-                          <div class="reply {% if reply.who == 'Manager' %} manager-reply {% else %} user-reply {% endif %}">
+                        </span>
+                    </div>
+                    {% if complaint['image'] %}
+                    <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'] }}" alt="Complaint Image"><br><br>
+                    {% endif %}
+                    <button type="button" id="toggle-replies-btn-{{ complaint._id }}" onclick="toggleReplies('{{ complaint._id }}')">Show Replies</button>
+                    <div class="replies-section" id="replies-{{ complaint._id }}" style="display: none;">
+                        <h4>Replies</h4>
+                        {% for reply in complaint.replies %}
+                        <div class="reply {% if reply.who == 'Manager' %} manager-reply {% else %} user-reply {% endif %}">
                             <div class="heading-container">
                                 {% if reply.who != 'Manager' %}
                                 <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
@@ -383,12 +414,12 @@
                                 {% endif %}
                             </div>
                             <p class="reply-message">{{ reply.Reply }}</p>
-                          </div>
-                          {% endfor %}
                         </div>
+                        {% endfor %}
                     </div>
-                </form>
-            {% endfor %}
+                </div>
+              </form>              
+              {% endfor %}
             </div>    
           </div>
         
@@ -463,29 +494,44 @@
 
   <script>
     $(document).ready(function() {
-        let now = new Date();
-        let timeZoneOffset = -now.getTimezoneOffset() / 60;  // timezone offset in hours
-
-        $('#clientTime').val(now.toISOString());
-        $('#timeZoneOffset').val(timeZoneOffset);
-
-        $('#timeForm').submit(function(event) {
+        // Function to set time and timezone for a specific form
+        function setFormTime(formId) {
+            let now = new Date();
+            let timeZoneOffset = -now.getTimezoneOffset() / 60;  // timezone offset in hours
+    
+            $(`#${formId} .clientTime`).val(now.toISOString());
+            $(`#${formId} .timeZoneOffset`).val(timeZoneOffset);
+        }
+    
+        // Handle form submission
+        $('form[id^="myForm_"]').submit(function(event) {
+            let formId = $(this).attr('id');
+            setFormTime(formId);  // Set the time and offset for this form
+    
+            // Serialize the form data and send via AJAX
             $.ajax({
-                url: '/your-endpoint',
+                url: $(this).attr('action'),  // Use form's action URL
                 method: 'POST',
-                data: {
-                    'client_time': $('#clientTime').val(),
-                    'time_zone_offset': $('#timeZoneOffset').val()
-                },
+                data: $(this).serialize(),  // Serialize the form data
                 success: function(response) {
                     // Handle the server's response here
+                    location.reload();  // Refresh the page upon success
+                },
+                error: function(xhr, status, error) {
+                    console.error('Form submission failed:', status, error);
+                    // Optionally handle the error here
                 }
             });
-
+    
             event.preventDefault();  // Prevent the form from being submitted normally
         });
+    
+        // Initialize forms on page load
+        $('form[id^="myForm_"]').each(function() {
+            setFormTime($(this).attr('id'));  // Set time and offset for each form
+        });
     });
-  </script>
+  </script>  
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
