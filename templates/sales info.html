@@ -315,36 +315,7 @@
       </script>
 
       <div class="main-panel">
-        <div id="notification" class="notification"></div>
-        <audio id="notificationSound" src="{{ url_for('static', filename='audios/notification sound.mp3') }}" preload="auto"></audio>      
-        <script>
-          document.addEventListener('DOMContentLoaded', function () {
-              var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
-  
-              // Retrieve the tenant's username from the session (passed in the template context)
-              var accountUsername = "{{ session['username'] }}";
-  
-              socket.on('connect', function () {
-                  // Join a room with the tenant's username
-                  socket.emit('join', accountUsername);
-              });
-  
-              socket.on('new_notification', function (data) {
-                  var notificationElement = document.getElementById('notification');
-                  notificationElement.textContent = data.message;
-                  notificationElement.style.display = 'block'; // Show the notification
-  
-                  // Play the notification sound
-                  var notificationSound = document.getElementById('notificationSound');
-                  notificationSound.play();
-  
-                  // Hide the notification after 5 seconds
-                  setTimeout(function () {
-                      notificationElement.style.display = 'none';
-                  }, 5000);
-              });
-          });
-        </script>
+        
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}

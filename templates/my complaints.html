@@ -181,36 +181,7 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
-        <div id="notification" class="notification"></div>
-        <audio id="notificationSound" src="{{ url_for('static', filename='audios/notification sound.mp3') }}" preload="auto"></audio>      
-        <script>
-          document.addEventListener('DOMContentLoaded', function () {
-              var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
-  
-              // Retrieve the tenant's username from the session (passed in the template context)
-              var accountUsername = "{{ session['username'] }}";
-  
-              socket.on('connect', function () {
-                  // Join a room with the tenant's username
-                  socket.emit('join', accountUsername);
-              });
-  
-              socket.on('new_notification', function (data) {
-                  var notificationElement = document.getElementById('notification');
-                  notificationElement.textContent = data.message;
-                  notificationElement.style.display = 'block'; // Show the notification
-  
-                  // Play the notification sound
-                  var notificationSound = document.getElementById('notificationSound');
-                  notificationSound.play();
-  
-                  // Hide the notification after 5 seconds
-                  setTimeout(function () {
-                      notificationElement.style.display = 'none';
-                  }, 5000);
-              });
-          });
-        </script>
+        
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
@@ -316,45 +287,21 @@
 
   <script>
     $(document).ready(function() {
-        // Function to set time and timezone for a specific form
+        // Function to set client time for a specific form
         function setFormTime(formId) {
             let now = new Date();
-            let timeZoneOffset = -now.getTimezoneOffset() / 60;  // timezone offset in hours
-    
+            let timeZoneOffset = -now.getTimezoneOffset() / 60;
             $(`#${formId} .clientTime`).val(now.toISOString());
             $(`#${formId} .timeZoneOffset`).val(timeZoneOffset);
         }
     
-        // Handle form submission
-        $('form[id^="myForm_"]').submit(function(event) {
-            let formId = $(this).attr('id');
-            setFormTime(formId);  // Set time and offset for this form
-    
-            // Serialize the form data and send via AJAX
-            $.ajax({
-                url: $(this).attr('action'),  // Use form's action URL
-                method: 'POST',
-                data: $(this).serialize(),  // Serialize the form data
-                success: function(response) {
-                    // Handle the server's response here
-                    location.reload();  // Refresh the page upon success
-                },
-                error: function(xhr, status, error) {
-                    console.error('Form submission failed:', status, error);
-                    // Optionally handle the error here
-                }
-            });
-    
-            event.preventDefault();  // Prevent the form from being submitted normally
-        });
-    
         // Initialize forms on page load
         $('form[id^="myForm_"]').each(function() {
             let formId = $(this).attr('id');
-            setFormTime(formId);  // Set time and offset for each form
+            setFormTime(formId);  // Set client time for each form
         });
     });
-  </script>  
+  </script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {

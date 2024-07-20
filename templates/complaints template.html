@@ -181,36 +181,7 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
-        <div id="notification" class="notification"></div>
-        <audio id="notificationSound" src="{{ url_for('static', filename='audios/notification sound.mp3') }}" preload="auto"></audio>      
-        <script>
-          document.addEventListener('DOMContentLoaded', function () {
-              var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
-  
-              // Retrieve the tenant's username from the session (passed in the template context)
-              var accountUsername = "{{ session['username'] }}";
-  
-              socket.on('connect', function () {
-                  // Join a room with the tenant's username
-                  socket.emit('join', accountUsername);
-              });
-  
-              socket.on('new_notification', function (data) {
-                  var notificationElement = document.getElementById('notification');
-                  notificationElement.textContent = data.message;
-                  notificationElement.style.display = 'block'; // Show the notification
-  
-                  // Play the notification sound
-                  var notificationSound = document.getElementById('notificationSound');
-                  notificationSound.play();
-  
-                  // Hide the notification after 5 seconds
-                  setTimeout(function () {
-                      notificationElement.style.display = 'none';
-                  }, 5000);
-              });
-          });
-        </script>
+        
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
@@ -228,7 +199,7 @@
             <input type="text" name="complaint_heading" required maxlength="25" placeholder="Enter complaint heading"><br>
             <label class="input_labels" for="">Details</label>
             <textarea class="complaint_details" name="details" required maxlength="200"></textarea><br>
-            <input type="file" id="complaint_image" name="complaint_image" accept="image/jpeg, image/png" style="display: none;" onchange="handleFileSelect(event)">
+            <input type="file" accept=".jpg, .jpeg, .png" id="complaint_image" name="complaint_image" style="display: none;" onchange="handleFileSelect(event)">
             <label for="complaint_image" class="upload_icon">
               <i class="fas fa-paperclip"></i> Attach Image
             </label>
@@ -243,13 +214,42 @@
         
         <script>
           function handleFileSelect(event) {
-            if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
-              alert('Please upload only JPEG or PNG images.');
-              document.getElementById('complaint_image').value = ''; // Clear the file input
-              document.getElementById('fileName').innerText = '';
+            const file = event.target.files[0];
+            const fileNameElement = document.getElementById('fileName');
+            const fileSizeErrorElement = document.getElementById('fileSizeError');
+            fileSizeErrorElement.style.display = 'none';
+            
+            if (file) {
+              if (file.size > 2 * 1024 * 1024) { // 2MB
+                fileSizeErrorElement.style.display = 'block';
+                document.getElementById('complaint_image').value = ''; // Clear the file input
+                fileNameElement.innerText = '';
+                return false;
+              }
+        
+              if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+                document.getElementById('complaint_image').value = ''; // Clear the file input
+                fileNameElement.innerText = '';
+                return false;
+              }
+        
+              fileNameElement.innerText = file.name;
+            }
+          }
+        
+          function validateFile() {
+            const fileInput = document.getElementById('complaint_image');
+            const filePath = fileInput.value;
+            const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
+        
+            if (!allowedExtensions.exec(filePath)) {
+              alert('Please upload file having extensions .jpeg/.jpg/.png only.');
+              fileInput.value = '';
               return false;
             }
           }
+        
+          document.getElementById('complaint_image').addEventListener('change', validateFile);
         </script>
         
         <!-- content-wrapper ends -->
