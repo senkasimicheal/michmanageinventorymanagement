@@ -406,9 +406,9 @@ def privacy_policy():
 def terms_of_service():
     return render_template('terms of service.html')
 
-@app.route('/google534116b25df7d103.html')
+@app.route('/googlee9cdc37dc478e7a2.html')
 def google_verification():
-    return render_template('google534116b25df7d103.html')
+    return render_template('googlee9cdc37dc478e7a2.html')
 
 @app.route('/sitemap.xml')
 def sitemap():
