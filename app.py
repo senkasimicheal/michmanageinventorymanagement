@@ -6216,10 +6216,6 @@ def manager_notifications():
                             notification = f"Reply from {reply['who']} on {formatted_reply_date}"
                             notifications.append(notification)
                             timestamps.append(reply_date)
-                    else:
-                        notifications.append("No new replies")
-                else:
-                    notifications.append("No new complaints")
 
         # Combine notifications with their timestamps and sort
         combined = list(zip(notifications, timestamps))
@@ -6282,10 +6278,6 @@ def tenant_notifications():
                         'type': 'reply'
                     }
                     notifications.append(notification)
-            else:
-                notifications.append({'message': "No new replies", 'timestamp': datetime.now(), 'type': 'info'})
-        else:
-            notifications.append({'message': "No new complaints", 'timestamp': datetime.now(), 'type': 'info'})
 
         # Combine notifications with their timestamps and sort
         notifications.sort(key=lambda x: x['timestamp'], reverse=True)  # Sort by timestamp, latest first
