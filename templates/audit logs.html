@@ -213,7 +213,6 @@
             <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
               <span class="menu-title">Overview</span>
-              <div class="badge badge-danger">new</div>
             </a>
           </li>
           {% if session.get('add_properties') != 'no' %}
@@ -221,7 +220,7 @@
             <a class="nav-link" href="{{ url_for('add_properties') }}" id="add-property">
               <i class="typcn typcn-document-text menu-icon"></i>
               <span class="menu-title">Add property</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           {% endif %}
@@ -230,7 +229,7 @@
             <a class="nav-link" href="{{ url_for('add_tenants') }}" id="add-tenant">
               <i class="typcn typcn-film menu-icon"></i>
               <span class="menu-title">Add Tenants</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           {% endif %}
@@ -238,7 +237,7 @@
             <a class="nav-link" href="{{ url_for('update_tenant_info') }}">
               <i class="typcn typcn-chart-pie-outline menu-icon"></i>
               <span class="menu-title">Tenants</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           {% if session.get('add_properties') != 'no' %}
@@ -246,7 +245,7 @@
             <a class="nav-link" href="{{ url_for('view_property_info') }}">
               <i class="typcn typcn-th-small-outline menu-icon"></i>
               <span class="menu-title">Properties</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           {% endif %}
@@ -254,7 +253,7 @@
             <a class="nav-link" href="{{ url_for('resolve_complaints') }}">
               <i class="typcn typcn-compass menu-icon"></i>
               <span class="menu-title">Complaints</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           {% if session.get('manage_contracts') != 'no' %}
@@ -262,14 +261,14 @@
             <a class="nav-link" href="{{ url_for('manage_contracts') }}">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Contracts</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Add Contracts</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           {% endif %}
@@ -278,7 +277,7 @@
             <a class="nav-link" href="{{ url_for('view_file_passwords') }}">
               <i class="typcn typcn-key menu-icon"></i>
               <span class="menu-title">Passwords</span>
-              <i class="menu-arrow"></i>
+              
             </a>
           </li>
           <li class="nav-item">

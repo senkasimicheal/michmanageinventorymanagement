@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Export Tenant Data</title>
+  <title>Notifications</title>
   {% if session['dark_mode'] == 'yes' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
   {% endif %}
@@ -215,7 +215,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Export Tenant Data</h4>
+            <h4 class="mb-0">Notifications</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -321,7 +321,6 @@
       </nav>
       <!-- partial -->
       <div class="main-panel">
-        
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
@@ -334,13 +333,24 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('download')}}" method="POST" enctype="multipart/form-data">
-            <label class="input_labels" for="">From date</label>
-            <input class="property_inputs" type="date" name="startdate" id="start_date" placeholder="enter start date" required><br>
-            <label class="input_labels" for="">To date</label>
-            <input class="property_inputs" type="date" name="enddate" id="end_date" placeholder="enter end date" required>
-            <input required type="submit" class="btn" value="Export">
-          </form>
+          <div class="notification-container">
+              <div class="account-notifications">
+                  {% if notifications %}
+                      {% for notification in notifications %}
+                          <a href="{{ url_for('resolve_complaints') }}" class="notification-item">
+                              <div class="notification-content">
+                                  <p>{{ notification }}</p>
+                              </div>
+                              <div class="notification-time">
+                                  <span>{{ notification.timestamp }}</span>
+                              </div>
+                          </a>
+                      {% endfor %}
+                  {% else %}
+                      <p>No notifications available.</p>
+                  {% endif %}
+              </div>
+          </div>
         </div>
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
@@ -365,53 +375,6 @@
   <!-- container-scroller -->
 
   <script>
-    window.onload = function(){
-      var date = new Date();
-      var day = date.getDate();
-      var month = date.getMonth() + 1;
-      var year = date.getFullYear();
-
-      if(month < 10) month = "0" + month;
-      if(day < 10) day = "0" + day;
-
-      var today = year + "-" + month + "-" + day;
-
-      var startdateFields = document.getElementsByName("startdate");
-      for(var i = 0; i < startdateFields.length; i++){
-        startdateFields[i].setAttribute("max", today);
-      }
-
-      var enddateFields = document.getElementsByName("enddate");
-      for(var i = 0; i < enddateFields.length; i++){
-        enddateFields[i].setAttribute("max", today);
-      }
-
-    }
-  </script>
-
-<script>
-    document.getElementById('myForm').addEventListener('submit', function(event) {
-        var radios = document.getElementsByTagName('input');
-        var allAnswered = true;
-        for (var i = 0; i < radios.length; i++) {
-            if (radios[i].type === 'radio' && !radios[i].checked) {
-                allAnswered = false;
-                break;
-            }
-        }
-        if (!allAnswered) {
-            if (!confirm('By clicking okay you confirm data export!')) {
-                event.preventDefault();
-            }
-        } else {
-            if (!confirm('By clicking okay you confirm data export!')) {
-                event.preventDefault();
-            }
-        }
-    });
-  </script>
-
-  <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Hide all alerts after 5 seconds
         setTimeout(function() {
@@ -420,41 +383,6 @@
                 alert.style.display = 'none';
             });
         }, 5000);
-    });
-  </script>
-
-  <script>
-    let counter = 0;
-    const spinner = document.getElementById('spinner');
-
-    const intervalId = setInterval(() => {
-      counter++;
-      spinner.textContent = `${counter}%`;
-
-      if (counter === 100) {
-        clearInterval(intervalId);
-      }
-    }, 100); // Adjust this value to control the speed of the counter
-  </script>
-
-  <script>
-    document.getElementById('docUpload').addEventListener('change', function (e) {
-      var file = e.target.files[0];
-      if(file.size > 200 * 1024) {
-        alert("File size must be less than 200KB.");
-        this.value = '';
-      }
-    });
-  </script>
-
-  <script>
-    document.getElementById('end_date').addEventListener('change', function () {
-        var startDate = new Date(document.getElementById('start_date').value);
-        var endDate = new Date(this.value);
-        if (endDate <= startDate) {
-            alert("End date should be after start date.");
-            this.value = '';
-        }
     });
   </script>
 
@@ -472,6 +400,19 @@
   <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
   <!-- endinject -->
   <!-- Custom js for this page-->
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
   <!-- End custom js for this page-->
 </body>

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, send_file, jsonify
 from flask_mail import Mail, Message
 from docx import Document
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient, ASCENDING, DESCENDING
 import secrets
 import bcrypt
 from datetime import datetime, timedelta, timezone
@@ -394,7 +394,8 @@ def before_request():
     if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
-                                                               'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation'):
+                                                               'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
+                                                               'tenant_notifications'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -6165,5 +6166,132 @@ def download_inhouse_item_use():
 
         return response
 
+#Manager notifications
+@app.route('/manager notifications')
+def manager_notifications():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        notifications = []
+        timestamps = []
+
+        tenants = list(db.tenant_user_accounts.find({'account_manager': login_data}, {'_id': 1}))
+        if len(tenants) != 0:
+            for tenant in tenants:
+                # Retrieve new complaints
+                new_complaints = list(db.tenant_complaints.find(
+                    {'tenantID': tenant['_id']}
+                ))
+
+                if new_complaints:
+                    for new_complaint in new_complaints:
+                        complained_on = new_complaint['complained_on']
+                        if isinstance(complained_on, datetime):
+                            formatted_complaint_date = complained_on.strftime('%Y-%m-%d %H:%M')
+                        else:
+                            complained_on = datetime.fromisoformat(complained_on)
+                            formatted_complaint_date = complained_on.strftime('%Y-%m-%d %H:%M')
+
+                        notification = f"Complaint from {new_complaint['tenant_name']} on {formatted_complaint_date}"
+                        notifications.append(notification)
+                        timestamps.append(complained_on)
+
+                    # Retrieve and sort replies, limiting to 20
+                    replies = list(db.tenant_complaints_replies.find(
+                        {'complaintID': {'$in': [complaint['_id'] for complaint in new_complaints]}}
+                    ).sort('reply_date', DESCENDING).limit(20))
+
+                    if replies:
+                        for reply in replies:
+                            reply_date = reply['reply_date']
+                            if isinstance(reply_date, datetime):
+                                formatted_reply_date = reply_date.strftime('%Y-%m-%d %H:%M')
+                            else:
+                                reply_date = datetime.fromisoformat(reply_date)
+                                formatted_reply_date = reply_date.strftime('%Y-%m-%d %H:%M')
+
+                            notification = f"Reply from {reply['who']} on {formatted_reply_date}"
+                            notifications.append(notification)
+                            timestamps.append(reply_date)
+                    else:
+                        notifications.append("No new replies")
+                else:
+                    notifications.append("No new complaints")
+
+        # Combine notifications with their timestamps and sort
+        combined = list(zip(notifications, timestamps))
+        combined.sort(key=lambda x: x[1], reverse=True)  # Sort by timestamp, latest first
+
+        # Separate sorted notifications and timestamps
+        notifications = [notif for notif, _ in combined]
+        
+        return render_template('manager_notifications.html', notifications=notifications)
+    
+#Tenant notifications
+@app.route('/tenant notifications')
+def tenant_notifications():
+    db, fs = get_db_and_fs()
+    login_data = session.get('tenantID')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/tenant-login-page')
+    else:
+        notifications = []
+
+        tenant_user = db.tenant_user_accounts.find_one({'_id': ObjectId(login_data)})
+        tenant_payment = db.tenants.find_one({'username': tenant_user['account_manager'], 'tenantEmail': tenant_user['tenantEmail']})
+        payment_date = tenant_payment['date_last_paid']
+
+        if isinstance(payment_date, datetime):
+            formatted_payment_date = payment_date.strftime('%Y-%m-%d %H:%M')
+        else:
+            payment_date = datetime.fromisoformat(payment_date)
+            formatted_payment_date = payment_date.strftime('%Y-%m-%d %H:%M')
+
+        notification = {
+            'message': f"{tenant_payment['months_paid']} {tenant_payment['year']} payment recorded by {tenant_payment['username']} on {formatted_payment_date}",
+            'timestamp': payment_date,
+            'type': 'payment'
+        }
+        notifications.append(notification)
+
+        # Retrieve new complaints
+        new_complaints = list(db.tenant_complaints.find({'tenantID': ObjectId(login_data)}))
+
+        if new_complaints:
+            # Retrieve and sort replies, limiting to 20
+            replies = list(db.tenant_complaints_replies.find(
+                {'complaintID': {'$in': [complaint['_id'] for complaint in new_complaints]}}
+            ).sort('reply_date', DESCENDING).limit(20))
+
+            if replies:
+                for reply in replies:
+                    reply_date = reply['reply_date']
+                    if isinstance(reply_date, datetime):
+                        formatted_reply_date = reply_date.strftime('%Y-%m-%d %H:%M')
+                    else:
+                        reply_date = datetime.fromisoformat(reply_date)
+                        formatted_reply_date = reply_date.strftime('%Y-%m-%d %H:%M')
+
+                    notification = {
+                        'message': f"Reply from {reply['who']} on {formatted_reply_date}",
+                        'timestamp': reply_date,
+                        'type': 'reply'
+                    }
+                    notifications.append(notification)
+            else:
+                notifications.append({'message': "No new replies", 'timestamp': datetime.now(), 'type': 'info'})
+        else:
+            notifications.append({'message': "No new complaints", 'timestamp': datetime.now(), 'type': 'info'})
+
+        # Combine notifications with their timestamps and sort
+        notifications.sort(key=lambda x: x['timestamp'], reverse=True)  # Sort by timestamp, latest first
+
+        return render_template('tenant_notifications.html', notifications=notifications)
+
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=9000)
+    app.run()
+    # app.run(debug=True)
