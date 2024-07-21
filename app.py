@@ -6224,8 +6224,12 @@ def manager_notifications():
 
         # Separate sorted notifications and timestamps
         notifications = [notif for notif, _ in combined]
+
+        company = db.registered_managers.find_one({'username': login_data})
+        dp = company.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         
-        return render_template('manager_notifications.html', notifications=notifications)
+        return render_template('manager_notifications.html', notifications=notifications, dp=dp_str)
     
 #Tenant notifications
 @app.route('/tenant notifications')
@@ -6284,7 +6288,10 @@ def tenant_notifications():
         # Combine notifications with their timestamps and sort
         notifications.sort(key=lambda x: x['timestamp'], reverse=True)  # Sort by timestamp, latest first
 
-        return render_template('tenant_notifications.html', notifications=notifications)
+        dp = tenant_user.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+
+        return render_template('tenant_notifications.html', notifications=notifications, dp=dp_str)
 
 if __name__ == '__main__':
     app.run()
