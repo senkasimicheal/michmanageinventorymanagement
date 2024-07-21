@@ -395,7 +395,7 @@ def before_request():
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
-                                                               'tenant_notifications'):
+                                                               'tenant_notifications', 'tenant_popup_notifications'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -1382,6 +1382,13 @@ def add_complaint():
                               'details': details, 'image': base64_string, 'complained_on': adjusted_time, 'status': ''}
                 
         db.tenant_complaints.insert_one(compiled_complaint)
+        db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+        db.userNotifications.insert_one({
+            'category': 'reply',
+            'user': manager['username'],
+            'notification': f"New complaint from {tenant['tenantName']}",
+            'timestamp': datetime.utcnow()
+        })
         #Sending verification code
         if send_emails is not None:
             msg = Message('New Complaint On Mich Manage', 
@@ -1484,6 +1491,14 @@ def tenant_reply_complaint():
                                                     'status': ''})
         tenant_managed = db.tenants.find_one({'tenantEmail': tenant_name['tenantEmail'], 'propertyName': tenant_name['propertyName']})
         manager = db.registered_managers.find_one({'username': tenant_managed['username'], 'company_name': tenant_managed['company_name']})
+        manager_username = manager['username']
+        db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+        db.userNotifications.insert_one({
+            'category': 'reply',
+            'user': manager_username,
+            'notification': f"New reply from {tenant_managed['tenantName']}",
+            'timestamp': datetime.utcnow()
+        })
         manager_email = manager['email']
 
         if send_emails is not None:
@@ -1613,6 +1628,13 @@ def update_complaint():
         
         tenant_complaint_id = db.tenant_complaints.find_one({'_id': ObjectId(complaint_id)})
         tenant_object_id = db.tenant_user_accounts.find_one({'_id': tenant_complaint_id['tenantID']})
+        db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+        db.userNotifications.insert_one({
+            'category': 'reply',
+            'user': tenant_complaint_id['tenantID'],
+            'notification': f"New reply from manager {login_data}",
+            'timestamp': datetime.utcnow()
+        })
         tenant_email = tenant_object_id['tenantEmail']
 
         if send_emails is not None:
@@ -1667,6 +1689,14 @@ def resolved_complaints(complaint_id):
         resolved_time = resolved_complaint["resolved_time"].replace(second=0, microsecond=0)
         complained_on = resolved_complaint["complained_on"].replace(second=0, microsecond=0)
         days_taken = ((resolved_time - complained_on).days) + 1
+
+        db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+        db.userNotifications.insert_one({
+            'category': 'reply',
+            'user': resolved_complaint["tenantID"],
+            'notification': f"Complaint resolved by manager {login_data}",
+            'timestamp': datetime.utcnow()
+        })
 
         if send_emails is not None:
             msg = Message('Complaint was resolved', 
@@ -2085,6 +2115,15 @@ def update():
                         if date.year == old_date.year:
                             if field_month > months_paid_selected:
                                 db.old_tenant_data.insert_one(new_data)
+                                tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                                if tenant_user:
+                                    db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                    db.userNotifications.insert_one({
+                                        'category': 'payment',
+                                        'user': tenant_user["_id"],
+                                        'notification': f"New payment recorded by manager {login_data}",
+                                        'timestamp': datetime.utcnow()
+                                    })
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2112,6 +2151,15 @@ def update():
                                 flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                                tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                                if tenant_user:
+                                    db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                    db.userNotifications.insert_one({
+                                        'category': 'payment',
+                                        'user': tenant_user["_id"],
+                                        'notification': f"New payment recorded by manager {login_data}",
+                                        'timestamp': datetime.utcnow()
+                                    })
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2143,6 +2191,15 @@ def update():
                                 flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
+                            tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                            if tenant_user:
+                                db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                db.userNotifications.insert_one({
+                                    'category': 'payment',
+                                    'user': tenant_user["_id"],
+                                    'notification': f"New payment recorded by manager {login_data}",
+                                    'timestamp': datetime.utcnow()
+                                })
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2170,6 +2227,15 @@ def update():
                             flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                            tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                            if tenant_user:
+                                db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                db.userNotifications.insert_one({
+                                    'category': 'payment',
+                                    'user': tenant_user["_id"],
+                                    'notification': f"New payment recorded by manager {login_data}",
+                                    'timestamp': datetime.utcnow()
+                                })
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2208,6 +2274,15 @@ def update():
                         if date.year == old_date.year:
                             if field_month > months_paid_selected:
                                 db.old_tenant_data.insert_one(new_data)
+                                tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                                if tenant_user:
+                                    db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                    db.userNotifications.insert_one({
+                                        'category': 'payment',
+                                        'user': tenant_user["_id"],
+                                        'notification': f"New payment recorded by manager {login_data}",
+                                        'timestamp': datetime.utcnow()
+                                    })
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2235,6 +2310,15 @@ def update():
                                 flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                             else:
                                 db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                                tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                                if tenant_user:
+                                    db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                    db.userNotifications.insert_one({
+                                        'category': 'payment',
+                                        'user': tenant_user["_id"],
+                                        'notification': f"New payment recorded by manager {login_data}",
+                                        'timestamp': datetime.utcnow()
+                                    })
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2265,6 +2349,15 @@ def update():
                                 flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         elif date.year < old_date.year:
                             db.old_tenant_data.insert_one(new_data)
+                            tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                            if tenant_user:
+                                db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                db.userNotifications.insert_one({
+                                    'category': 'payment',
+                                    'user': tenant_user["_id"],
+                                    'notification': f"New payment recorded by manager {login_data}",
+                                    'timestamp': datetime.utcnow()
+                                })
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2292,6 +2385,15 @@ def update():
                             flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                         else:
                             db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                            tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                            if tenant_user:
+                                db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                                db.userNotifications.insert_one({
+                                    'category': 'payment',
+                                    'user': tenant_user["_id"],
+                                    'notification': f"New payment recorded by manager {login_data}",
+                                    'timestamp': datetime.utcnow()
+                                })
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2422,6 +2524,15 @@ def update():
                     new_data['payment_completion'] = payment_completion
                     if date.year == old_date.year:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                        if tenant_user:
+                            db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                            db.userNotifications.insert_one({
+                                'category': 'payment',
+                                'user': tenant_user["_id"],
+                                'notification': f"New payment recorded by manager {login_data}",
+                                'timestamp': datetime.utcnow()
+                            })
                         # Create the email message
                         if send_emails is not None:
                             msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2449,6 +2560,15 @@ def update():
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     elif date.year < old_date.year:
                         db.old_tenant_data.insert_one(new_data)
+                        tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                        if tenant_user:
+                            db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                            db.userNotifications.insert_one({
+                                'category': 'payment',
+                                'user': tenant_user["_id"],
+                                'notification': f"New payment recorded by manager {login_data}",
+                                'timestamp': datetime.utcnow()
+                            })
                         # Create the email message
                         if send_emails is not None:
                             msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2476,6 +2596,15 @@ def update():
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     else:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                        if tenant_user:
+                            db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                            db.userNotifications.insert_one({
+                                'category': 'payment',
+                                'user': tenant_user["_id"],
+                                'notification': f"New payment recorded by manager {login_data}",
+                                'timestamp': datetime.utcnow()
+                            })
                         # Create the email message
                         if send_emails is not None:
                             msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2511,6 +2640,15 @@ def update():
                     new_data['payment_completion'] = payment_completion
                     if date.year == old_date.year:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                        if tenant_user:
+                            db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                            db.userNotifications.insert_one({
+                                'category': 'payment',
+                                'user': tenant_user["_id"],
+                                'notification': f"New payment recorded by manager {login_data}",
+                                'timestamp': datetime.utcnow()
+                            })
                         # Create the email message
                         if send_emails is not None:
                             msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2538,6 +2676,15 @@ def update():
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     elif date.year < old_date.year:
                         db.old_tenant_data.insert_one(new_data)
+                        tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                        if tenant_user:
+                            db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                            db.userNotifications.insert_one({
+                                'category': 'payment',
+                                'user': tenant_user["_id"],
+                                'notification': f"New payment recorded by manager {login_data}",
+                                'timestamp': datetime.utcnow()
+                            })
                         # Create the email message
                         if send_emails is not None:
                             msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -2565,6 +2712,15 @@ def update():
                         flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     else:
                         db.tenants.update_one({'_id': ObjectId(old_data['_id'])}, {'$set': new_data})
+                        tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                        if tenant_user:
+                            db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                            db.userNotifications.insert_one({
+                                'category': 'payment',
+                                'user': tenant_user["_id"],
+                                'notification': f"New payment recorded by manager {login_data}",
+                                'timestamp': datetime.utcnow()
+                            })
                         # Create the email message
                         if send_emails is not None:
                             msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -3044,6 +3200,15 @@ def make_edits():
                                 {'$set': fields_to_update})
 
         flash('Tenant was successfully edited', 'success')
+        tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+        if tenant_user:
+            db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+            db.userNotifications.insert_one({
+                'category': 'payment',
+                'user': tenant_user["_id"],
+                'notification': f"New payment recorded by manager {login_data}",
+                'timestamp': datetime.utcnow()
+            })
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Edit tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
         return redirect('/update-tenant-info')
         
@@ -3283,7 +3448,16 @@ def add_tenant():
                     else:  # If it's the last record
                         # Store in 'tenants', regardless of whether it's fully paid or not
                         db.tenants.insert_one(data)
-
+                
+                tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                if tenant_user:
+                    db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                    db.userNotifications.insert_one({
+                        'category': 'payment',
+                        'user': tenant_user["_id"],
+                        'notification': f"New payment recorded by manager {login_data}",
+                        'timestamp': datetime.utcnow()
+                    })
                 # Create the email message
                 if send_emails is not None:
                     msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -3337,7 +3511,15 @@ def add_tenant():
                                     'payment_receipt': payment_receipt_base64}
                 
                 db.tenants.insert_one(tenant_details)
-
+                tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+                if tenant_user:
+                    db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
+                    db.userNotifications.insert_one({
+                        'category': 'payment',
+                        'user': tenant_user["_id"],
+                        'notification': f"New payment recorded by manager {login_data}",
+                        'timestamp': datetime.utcnow()
+                    })
                 # Create the email message
                 if send_emails is not None:
                     msg = Message('Rent Payment Receipt-Mich Manage', 
@@ -6292,7 +6474,89 @@ def tenant_notifications():
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
 
         return render_template('tenant_notifications.html', notifications=notifications, dp=dp_str)
+    
+@app.route('/notifications')
+def notifications():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+
+    # Get the last seen timestamp from the session
+    last_seen_timestamp = session.get('last_seen_timestamp', datetime.min)
+
+    # Get the list of viewed notification IDs from the session
+    viewed_notifications = session.get('viewed_notifications', [])
+
+    # Fetch notifications with a timestamp greater than the last seen timestamp
+    notifications_cursor = db.userNotifications.find({
+        'user': login_data,
+        'timestamp': {'$gt': last_seen_timestamp},
+        '_id': {'$nin': viewed_notifications}  # Exclude already viewed notifications
+    }, {'_id': 1, 'notification': 1, 'timestamp': 1})
+
+    # Convert cursor to list and convert ObjectId to string
+    notifications_to_send = [
+        {
+            'notification': notification['notification'],
+            'timestamp': notification['timestamp'].isoformat()
+        }
+        for notification in notifications_cursor
+    ]
+    
+    if notifications_to_send:
+        # Update the last seen timestamp to the maximum timestamp of the fetched notifications
+        new_last_seen_timestamp = max(notification['timestamp'] for notification in notifications_to_send)
+        session['last_seen_timestamp'] = new_last_seen_timestamp
+
+        # Update the list of viewed notifications
+        new_viewed_notifications = [str(notification['_id']) for notification in notifications_cursor]
+        session['viewed_notifications'] = viewed_notifications + new_viewed_notifications
+    
+    # Prepare the response with only new notifications
+    notifications_list = [notification['notification'] for notification in notifications_to_send]
+
+    return jsonify(notifications_list)
+
+
+@app.route('/tenant_popup_notifications')
+def tenant_popup_notifications():
+    db, fs = get_db_and_fs()
+    login_data = session.get('tenantID')
+
+    # Get the last seen timestamp from the session
+    last_seen_timestamp = session.get('last_seen_timestamp', datetime.min)
+
+    # Get the list of viewed notification IDs from the session
+    viewed_notifications = session.get('viewed_notifications', [])
+
+    # Fetch notifications with a timestamp greater than the last seen timestamp
+    notifications_cursor = db.userNotifications.find({
+        'user': ObjectId(login_data),
+        'timestamp': {'$gt': last_seen_timestamp},
+        '_id': {'$nin': viewed_notifications}  # Exclude already viewed notifications
+    }, {'_id': 1, 'notification': 1, 'timestamp': 1})
+
+    # Convert cursor to list and convert ObjectId to string
+    notifications_to_send = [
+        {
+            'notification': notification['notification'],
+            'timestamp': notification['timestamp'].isoformat()
+        }
+        for notification in notifications_cursor
+    ]
+    
+    if notifications_to_send:
+        # Update the last seen timestamp to the maximum timestamp of the fetched notifications
+        new_last_seen_timestamp = max(notification['timestamp'] for notification in notifications_to_send)
+        session['last_seen_timestamp'] = new_last_seen_timestamp
+
+        # Update the list of viewed notifications
+        new_viewed_notifications = [str(notification['_id']) for notification in notifications_cursor]
+        session['viewed_notifications'] = viewed_notifications + new_viewed_notifications
+    
+    # Prepare the response with only new notifications
+    notifications_list = [notification['notification'] for notification in notifications_to_send]
+
+    return jsonify(notifications_list)
 
 if __name__ == '__main__':
     app.run()
-    # app.run(debug=True)
