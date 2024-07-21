@@ -6212,10 +6212,11 @@ def manager_notifications():
                             else:
                                 reply_date = datetime.fromisoformat(reply_date)
                                 formatted_reply_date = reply_date.strftime('%Y-%m-%d %H:%M')
-
-                            notification = f"Reply from {reply['who']} on {formatted_reply_date}"
-                            notifications.append(notification)
-                            timestamps.append(reply_date)
+                            
+                            if reply['who'] != 'Manager':
+                                notification = f"Reply from {reply['who']} on {formatted_reply_date}"
+                                notifications.append(notification)
+                                timestamps.append(reply_date)
 
         # Combine notifications with their timestamps and sort
         combined = list(zip(notifications, timestamps))
@@ -6271,13 +6272,14 @@ def tenant_notifications():
                     else:
                         reply_date = datetime.fromisoformat(reply_date)
                         formatted_reply_date = reply_date.strftime('%Y-%m-%d %H:%M')
-
-                    notification = {
-                        'message': f"Reply from {reply['who']} on {formatted_reply_date}",
-                        'timestamp': reply_date,
-                        'type': 'reply'
-                    }
-                    notifications.append(notification)
+                    
+                    if reply['who'] == 'Manager':
+                        notification = {
+                            'message': f"Reply from {reply['who']} on {formatted_reply_date}",
+                            'timestamp': reply_date,
+                            'type': 'reply'
+                        }
+                        notifications.append(notification)
 
         # Combine notifications with their timestamps and sort
         notifications.sort(key=lambda x: x['timestamp'], reverse=True)  # Sort by timestamp, latest first
