@@ -712,18 +712,19 @@ def userlogin():
     session.permanent = False
     
     manager = db.registered_managers.find_one({'username':username})
-    if 'dark_mode' in manager:
-        if manager['dark_mode'] == 'yes':
-            session['dark_mode'] = 'yes'
-        else:
-            session['dark_mode'] = 'no'
-    else:
-        session['dark_mode'] = 'no'
 
     if manager is None:
         flash('Not a manager', 'error')
         return redirect('/manager login page')
     else:
+        if 'dark_mode' in manager:
+            if manager['dark_mode'] == 'yes':
+                session['dark_mode'] = 'yes'
+            else:
+                session['dark_mode'] = 'no'
+        else:
+            session['dark_mode'] = 'no'
+    
         subscription = db.managers.find_one({'name': manager['company_name']})
 
         stored_password = manager['password']
