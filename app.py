@@ -6490,25 +6490,28 @@ def notifications():
     notifications_cursor = db.userNotifications.find({
         'user': login_data,
         'timestamp': {'$gt': last_seen_timestamp},
-        '_id': {'$nin': viewed_notifications}  # Exclude already viewed notifications
+        '_id': {'$nin': [ObjectId(id) for id in viewed_notifications]}  # Exclude already viewed notifications
     }, {'_id': 1, 'notification': 1, 'timestamp': 1})
 
-    # Convert cursor to list and convert ObjectId to string
+    # Convert cursor to list
+    notifications_list = list(notifications_cursor)
+
+    # Prepare the response with only new notifications
     notifications_to_send = [
         {
             'notification': notification['notification'],
             'timestamp': notification['timestamp'].isoformat()
         }
-        for notification in notifications_cursor
+        for notification in notifications_list
     ]
     
     if notifications_to_send:
         # Update the last seen timestamp to the maximum timestamp of the fetched notifications
-        new_last_seen_timestamp = max(notification['timestamp'] for notification in notifications_to_send)
+        new_last_seen_timestamp = max(notification['timestamp'] for notification in notifications_list)
         session['last_seen_timestamp'] = new_last_seen_timestamp
 
         # Update the list of viewed notifications
-        new_viewed_notifications = [str(notification['_id']) for notification in notifications_cursor]
+        new_viewed_notifications = [str(notification['_id']) for notification in notifications_list]
         session['viewed_notifications'] = viewed_notifications + new_viewed_notifications
     
     # Prepare the response with only new notifications
@@ -6532,31 +6535,31 @@ def tenant_popup_notifications():
     notifications_cursor = db.userNotifications.find({
         'user': ObjectId(login_data),
         'timestamp': {'$gt': last_seen_timestamp},
-        '_id': {'$nin': viewed_notifications}  # Exclude already viewed notifications
+        '_id': {'$nin': [ObjectId(id) for id in viewed_notifications]}  # Exclude already viewed notifications
     }, {'_id': 1, 'notification': 1, 'timestamp': 1})
 
-    # Convert cursor to list and convert ObjectId to string
+    # Convert cursor to list
+    notifications_list = list(notifications_cursor)
+
+    # Prepare the response with only new notifications
     notifications_to_send = [
         {
             'notification': notification['notification'],
             'timestamp': notification['timestamp'].isoformat()
         }
-        for notification in notifications_cursor
+        for notification in notifications_list
     ]
     
     if notifications_to_send:
         # Update the last seen timestamp to the maximum timestamp of the fetched notifications
-        new_last_seen_timestamp = max(notification['timestamp'] for notification in notifications_to_send)
+        new_last_seen_timestamp = max(notification['timestamp'] for notification in notifications_list)
         session['last_seen_timestamp'] = new_last_seen_timestamp
 
         # Update the list of viewed notifications
-        new_viewed_notifications = [str(notification['_id']) for notification in notifications_cursor]
+        new_viewed_notifications = [str(notification['_id']) for notification in notifications_list]
         session['viewed_notifications'] = viewed_notifications + new_viewed_notifications
-    
-    # Prepare the response with only new notifications
-    notifications_list = [notification['notification'] for notification in notifications_to_send]
 
-    return jsonify(notifications_list)
+    return jsonify([notification['notification'] for notification in notifications_to_send])
 
 if __name__ == '__main__':
     app.run()
