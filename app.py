@@ -364,7 +364,7 @@ def send_payment_reminders():
                 <p>I hope this message finds you well. I wanted to bring to your attention that the rent payment for <b style="font-size: 20px;">{tenant['tenantName']}</b> on <b style="font-size: 20px;">{tenant['propertyName']}</b> is overdue.</p>
                 <p>Number of Days Overdue: <b style="font-size: 20px;">{-1*remaining_days}</b></p>
                 <p>If you have any questions or concerns, feel free to reach out to us.</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/manager%20login%20page">Login</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -388,7 +388,7 @@ def send_payment_reminders():
                 <p>This is a friendly reminder that your rent payment for <b style="font-size: 20px;">{tenant['months_paid']}</b> is due in <b style="font-size: 20px;">{remaining_days}</b> days.</p>
                 <p>Please ensure that your payment is submitted on time to avoid any late fees or disruptions to your tenancy.</p>
                 <p>If you have any questions or concerns, feel free to reach out to us.</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -439,7 +439,7 @@ def send_contract_expiry_reminders():
                 <p><b style="font-size: 20px;">{tenants_str}</b></p>
                 <p>Please take the necessary actions to renew these contracts if needed.</p>
                 <p>If you have any questions or concerns, feel free to reach out to us.</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/manager%20login%20page">Login</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -482,7 +482,7 @@ def send_message():
         <p>Email: {email}</p>
         <p><b style="font-size: 20px;">Message</b></p>
         <p>{message}</p>
-        <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com">Visit Our Platform</a></b></p>
+        <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com">Visit Our Platform</a></b></p>
         </body>
         </html>
         """
@@ -869,7 +869,7 @@ def register_account():
         <p>Thank you for registering with us. Please verify your email address by entering the following code in the verification field on our website:</p>
         <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
         <p>Please copy the code above and click on verify:</p>
-        <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/load-verification-page">Verify</a></b></p>
+        <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/load-verification-page">Verify</a></b></p>
         <p>Best Regards,</p>
         <p>Mich Manage</p>
         </body>
@@ -1748,7 +1748,7 @@ def add_complaint():
             <body>
             <p>Dear Manager,</p>
             <p>You have a new complaint from {tenant['tenantName']}, please login below to check complaint:</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/manager%20login%20page">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -1859,7 +1859,7 @@ def tenant_reply_complaint():
             <body>
             <p>Dear Manager,</p>
             <p>You have a new reply from {tenant_managed['tenantName']}, please login below to check reply:</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20login%20page">Login</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/manager%20login%20page">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -1995,7 +1995,7 @@ def update_complaint():
             <body>
             <p>Dear tenant,</p>
             <p>You have a new reply from manager of {tenant_object_id['propertyName']}, please login below to check reply:</p>
-            <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+            <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
             <p>Best Regards,</p>
             <p>Mich Manage</p>
             </body>
@@ -2373,7 +2373,7 @@ def update():
                     doc = SimpleDocTemplate(buffer, pagesize=letter)
 
                     # QR Code Generation
-                    url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date.year}'
+                    url = f'https://michmanage.pythonanywhere.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date.year}'
                     qr = qrcode.QRCode(
                         version=1,
                         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -2483,7 +2483,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                    <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2519,7 +2519,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                    <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2559,7 +2559,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2595,7 +2595,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2642,7 +2642,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                    <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2678,7 +2678,7 @@ def update():
                                     <body>
                                     <p>Dear {section_tenant['tenantName']},</p>
                                     <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                    <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                     <p>Best Regards,</p>
                                     <p>Mich Manage</p>
                                     </body>
@@ -2717,7 +2717,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2753,7 +2753,7 @@ def update():
                                 <body>
                                 <p>Dear {section_tenant['tenantName']},</p>
                                 <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                                <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                                 <p>Best Regards,</p>
                                 <p>Mich Manage</p>
                                 </body>
@@ -2784,7 +2784,7 @@ def update():
                 doc = SimpleDocTemplate(buffer, pagesize=letter)
 
                 # QR Code Generation
-                url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date.year}'
+                url = f'https://michmanage.pythonanywhere.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date.year}'
                 qr = qrcode.QRCode(
                     version=1,
                     error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -2892,7 +2892,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                            <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -2928,7 +2928,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                            <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -2964,7 +2964,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                            <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -3008,7 +3008,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                            <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -3044,7 +3044,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                            <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -3080,7 +3080,7 @@ def update():
                             <body>
                             <p>Dear {section_tenant['tenantName']},</p>
                             <p>Please find attached your payment receipt for {months_paid} {date.year}.</p>
-                            <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                            <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                             <p>Best Regards,</p>
                             <p>Mich Manage</p>
                             </body>
@@ -3434,7 +3434,7 @@ def make_edits():
             doc = SimpleDocTemplate(buffer, pagesize=letter)
 
             # QR Code Generation
-            url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={{{tenant["months_paid"]}}}&year={date_last_paid.year}'
+            url = f'https://michmanage.pythonanywhere.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={{{tenant["months_paid"]}}}&year={date_last_paid.year}'
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -3508,7 +3508,7 @@ def make_edits():
                 <body>
                 <p>Dear {tenant['tenantName']},</p>
                 <p>Please find attached your payment receipt for {tenant['months_paid']} {date_last_paid.year}.</p>
-                <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -3644,7 +3644,7 @@ def add_tenant():
         doc = SimpleDocTemplate(buffer, pagesize=letter)
 
         # QR Code Generation
-        url = f'https://michmanager.onrender.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date_last_paid.year}'
+        url = f'https://michmanage.pythonanywhere.com/get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={months_paid}&year={date_last_paid.year}'
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -3817,7 +3817,7 @@ def add_tenant():
                     <body>
                     <p>Dear {tenantName},</p>
                     <p>Please find attached your payment receipt for {receipt_month} {date_last_paid.year}.</p>
-                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                    <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                     <p>Best Regards,</p>
                     <p>Mich Manage</p>
                     </body>
@@ -3879,7 +3879,7 @@ def add_tenant():
                     <body>
                     <p>Dear {tenantName},</p>
                     <p>Please find attached your payment receipt for {months_paid} {date_last_paid.year}.</p>
-                    <p><b><a href="https://michmanager.onrender.com/tenant%20login%20page">Login</a></b></p>
+                    <p><b><a href="https://michmanage.pythonanywhere.com/tenant%20login%20page">Login</a></b></p>
                     <p>Best Regards,</p>
                     <p>Mich Manage</p>
                     </body>
@@ -4015,7 +4015,7 @@ def add_property_manager():
                 <body>
                 <p>Dear Manager,</p>
                 <p>You have been granted permission to create an account with Mich Manage. Please click the link below to register:</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanager.onrender.com/manager%20register">Register Now</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanage.pythonanywhere.com/manager%20register">Register Now</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
