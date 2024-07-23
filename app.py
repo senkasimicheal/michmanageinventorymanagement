@@ -451,12 +451,19 @@ def send_contract_expiry_reminders():
                     thread.start()
 
 # Check the current time and run the function if it's 9 AM EAT
-current_hour = int(time.strftime("%H"))
-current_minute = int(time.strftime("%M"))
-if current_hour == 9 and current_minute == 1:
-    send_reports()
-    send_payment_reminders()
-    send_contract_expiry_reminders()
+def background_task():
+    while True:
+        current_hour = int(time.strftime("%H"))
+        current_minute = int(time.strftime("%M"))
+        if (current_hour == 9 and current_minute == 1) or (current_hour == 11 and current_minute == 59):
+            send_reports()
+            send_payment_reminders()
+            send_contract_expiry_reminders()
+        time.sleep(60)
+
+# Start the background thread
+bg_thread = threading.Thread(target=background_task, daemon=True)
+bg_thread.start()
     
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
@@ -1124,40 +1131,6 @@ def userlogin():
             if is_manager:
                 session['is_manager'] = 'is_manager'
 
-            last_logged_in_data = db.logged_in_data.find_one({'username': username}, sort=[('timestamp', -1)])
-
-            if last_logged_in_data is None:
-                # This is a new user, so we don't have a last login time.
-                session['time_since_last_login_secs'] = None
-                session['time_since_last_login_mins'] = None
-                session['time_since_last_login_hrs'] = None
-            else:
-                last_login = last_logged_in_data['timestamp']
-                now = datetime.now()
-                total_seconds  = (now - last_login).total_seconds()
-
-                if total_seconds < 60:  # less than a minute
-                    time_since_last_login_secs = int(total_seconds)
-                    session['time_since_last_login_secs'] = time_since_last_login_secs
-                elif total_seconds < 3600:  # less than an hour
-                    time_since_last_login_mins = int(total_seconds / 60)
-                    session['time_since_last_login_mins'] = time_since_last_login_mins
-                elif total_seconds < 86400:  # less than a day
-                    time_since_last_login_hrs = int(total_seconds / 3600)
-                    session['time_since_last_login_hrs'] = time_since_last_login_hrs
-                elif total_seconds < 604800:  # less than a week
-                    time_since_last_login_days = int(total_seconds / 86400)
-                    session['time_since_last_login_days'] = time_since_last_login_days
-                elif total_seconds < 2629800:  # less than a month
-                    time_since_last_login_weeks = int(total_seconds / 604800)
-                    session['time_since_last_login_weeks'] = time_since_last_login_weeks
-                elif total_seconds < 31557600:  # less than a year
-                    time_since_last_login_months = int(total_seconds / 2629800)
-                    session['time_since_last_login_months'] = time_since_last_login_months
-                else:  # more than a year
-                    time_since_last_login_years = int(total_seconds / 31557600)
-                    session['time_since_last_login_years'] = time_since_last_login_years
-
             logged_in_data = {
                 'username': username,
                 'timestamp': datetime.now()
@@ -1256,40 +1229,6 @@ def authentication():
 
         # Calculate remaining days
         remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
-
-        last_logged_in_data = db.logged_in_data.find_one({'username': manager['username']}, sort=[('timestamp', -1)])
-
-        if last_logged_in_data is None:
-            # This is a new user, so we don't have a last login time.
-            session['time_since_last_login_secs'] = None
-            session['time_since_last_login_mins'] = None
-            session['time_since_last_login_hrs'] = None
-        else:
-            last_login = last_logged_in_data['timestamp']
-            now = datetime.now()
-            total_seconds  = (now - last_login).total_seconds()
-
-            if total_seconds < 60:  # less than a minute
-                time_since_last_login_secs = int(total_seconds)
-                session['time_since_last_login_secs'] = time_since_last_login_secs
-            elif total_seconds < 3600:  # less than an hour
-                time_since_last_login_mins = int(total_seconds / 60)
-                session['time_since_last_login_mins'] = time_since_last_login_mins
-            elif total_seconds < 86400:  # less than a day
-                time_since_last_login_hrs = int(total_seconds / 3600)
-                session['time_since_last_login_hrs'] = time_since_last_login_hrs
-            elif total_seconds < 604800:  # less than a week
-                time_since_last_login_days = int(total_seconds / 86400)
-                session['time_since_last_login_days'] = time_since_last_login_days
-            elif total_seconds < 2629800:  # less than a month
-                time_since_last_login_weeks = int(total_seconds / 604800)
-                session['time_since_last_login_weeks'] = time_since_last_login_weeks
-            elif total_seconds < 31557600:  # less than a year
-                time_since_last_login_months = int(total_seconds / 2629800)
-                session['time_since_last_login_months'] = time_since_last_login_months
-            else:  # more than a year
-                time_since_last_login_years = int(total_seconds / 31557600)
-                session['time_since_last_login_years'] = time_since_last_login_years
 
         # Insert logged in data
         logged_in_data = {

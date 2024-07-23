@@ -108,24 +108,7 @@
             </div>
           </li>
           <li class="nav-item nav-user-status dropdown">
-            <p class="mb-0">
-                Last login was 
-                {% if 'time_since_last_login_secs' in session %}
-                    {{session['time_since_last_login_secs']}} seconds ago.
-                {% elif 'time_since_last_login_mins' in session %}
-                    {{session['time_since_last_login_mins']}} minutes ago.
-                {% elif 'time_since_last_login_hrs' in session %}
-                    {{session['time_since_last_login_hrs']}} hours ago.
-                {% elif 'time_since_last_login_days' in session %}
-                    {{session['time_since_last_login_days']}} days ago.
-                {% elif 'time_since_last_login_weeks' in session %}
-                    {{session['time_since_last_login_weeks']}} weeks ago.
-                {% elif 'time_since_last_login_months' in session %}
-                    {{session['time_since_last_login_months']}} months ago.
-                {% else %}
-                    {{session['time_since_last_login_years']}} years ago.
-                {% endif %}
-            </p>
+            
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
