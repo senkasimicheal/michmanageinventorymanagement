@@ -1202,7 +1202,7 @@ class TableDefinition(Serialisable):
 
 
     def to_tree(self):
-        tree = super(TableDefinition, self).to_tree()
+        tree = super().to_tree()
         tree.set("xmlns", SHEET_MAIN_NS)
         return tree
 

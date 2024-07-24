@@ -94,7 +94,7 @@ def parse_richtext_string(element):
     return value
 
 
-class WorkSheetParser(object):
+class WorkSheetParser:
 
     def __init__(self, src, shared_strings, data_only=False,
                  epoch=WINDOWS_EPOCH, date_formats=set(),
@@ -351,7 +351,7 @@ class WorkSheetParser(object):
         self.col_breaks = ColBreak()
 
 
-class WorksheetReader(object):
+class WorksheetReader:
     """
     Create a parser and apply it to a workbook
     """

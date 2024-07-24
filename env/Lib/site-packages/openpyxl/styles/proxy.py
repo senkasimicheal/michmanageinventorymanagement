@@ -5,7 +5,7 @@ from copy import copy
 from openpyxl.compat import deprecated
 
 
-class StyleProxy(object):
+class StyleProxy:
     """
     Proxy formatting objects so that they cannot be altered
     """
@@ -28,7 +28,7 @@ class StyleProxy(object):
         if attr != "_StyleProxy__target":
             raise AttributeError("Style objects are immutable and cannot be changed."
                                  "Reassign the style with a copy")
-        super(StyleProxy, self).__setattr__(attr, value)
+        super().__setattr__(attr, value)
 
 
     def __copy__(self):

@@ -49,7 +49,7 @@ class _AreaChartBase(ChartBase):
         self.ser = ser
         self.dLbls = dLbls
         self.dropLines = dropLines
-        super(_AreaChartBase, self).__init__()
+        super().__init__()
 
 
 class AreaChart(_AreaChartBase):
@@ -77,7 +77,7 @@ class AreaChart(_AreaChartBase):
                 ):
         self.x_axis = TextAxis()
         self.y_axis = NumericAxis()
-        super(AreaChart, self).__init__(**kw)
+        super().__init__(**kw)
 
 
 class AreaChart3D(AreaChart):

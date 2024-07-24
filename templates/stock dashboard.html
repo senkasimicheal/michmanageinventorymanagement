@@ -361,25 +361,25 @@
             {% endif %}
             <div class="row">
               <div class="col-md-6 segment" style="display: {% if session.get('profits_chart') == 'profits_chart' %}block{% else %}none{% endif %}">
-                <div id="profits_chart"></div>
+                <canvas id="profitChart"></canvas>
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('loss_chart') == 'loss_chart' %}block{% else %}none{% endif %}">
-                  <div id="Losses_chart"></div>
+                <canvas id="lossChart"></canvas>
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('revenue_and_qty_chart') == 'revenue_and_qty_chart' %}block{% else %}none{% endif %}">
-                <div id="revenue"></div>
+                <canvas id="revenueChart"></canvas>
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('revenue_and_qty_chart') == 'revenue_and_qty_chart' %}block{% else %}none{% endif %}">
-                <div id="quantity_sold_stocked"></div>
+                <canvas id="quantityChart"></canvas>
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('monthly_profits_chart') == 'monthly_profits_chart' %}block{% else %}none{% endif %}">
-                <div id="trended_profit"></div>
+                <canvas id="trended_profitChart"></canvas>
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('inhouse_costs_chart') == 'inhouse_costs_chart' %}block{% else %}none{% endif %}">
-                <div id="inhouse_cost_chart"></div>
+                <canvas id="inhouse_costChart"></canvas>
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('inhouse_revenue_chart') == 'inhouse_revenue_chart' %}block{% else %}none{% endif %}">
-                <div id="inhouse_revenue_chart"></div>
+                <canvas id="inhouse_revenueChart"></canvas>
               </div>
             </div>
           </div>
@@ -406,58 +406,437 @@
   <!-- container-scroller -->
 
   <!-- CHARTS JAVASCRIPTS -->
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script type="text/javascript">
-    // Your existing code...
-    var config = {
-        responsive: true, 
-        displayModeBar: true, 
-        staticPlot: false,
-        modeBarButtonsToRemove: ['zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'toImage', 'drag2d']
-    };
+  <script>
+    var ctx = document.getElementById('profitChart').getContext('2d');
+    var chartData = {{ profits_chart | tojson }};
 
-    // Modify the layout for each chart
-    var updateLayout = {
-        xaxis: {
-            showgrid: false,  // Remove grid lines
-            tickmode: "linear",
-            dtick: 1
+    // Combine labels and values into an array of objects
+    var dataArray = chartData.labels.map((label, index) => ({
+        label: label,
+        value: chartData.values[index]
+    }));
+
+    // Sort the array by value in descending order
+    dataArray.sort((a, b) => b.value - a.value);
+
+    // Extract the sorted labels and values
+    var sortedLabels = dataArray.map(item => item.label);
+    var sortedValues = dataArray.map(item => item.value);
+
+    var profitChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedLabels,
+            datasets: [{
+                label: 'Profits',
+                data: sortedValues,
+                backgroundColor: '#00c8bf'
+            }]
         },
-        yaxis: {
-            showgrid: false  // Remove grid lines
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Profits On The Items',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
+  </script>
+
+  <script>
+    var ctx = document.getElementById('lossChart').getContext('2d');
+    var chartData = {{ Losses_chart | tojson }};
+
+    // Combine labels and values into an array of objects
+    var dataArray = chartData.labels.map((label, index) => ({
+        label: label,
+        value: chartData.values[index]
+    }));
+
+    // Sort the array by value in descending order
+    dataArray.sort((a, b) => b.value - a.value);
+
+    // Extract the sorted labels and values
+    var sortedLabels = dataArray.map(item => item.label);
+    var sortedValues = dataArray.map(item => item.value);
+
+    var lossChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedLabels,
+            datasets: [{
+                label: 'Loss',
+                data: sortedValues,
+                backgroundColor: '#00c8bf'
+            }]
         },
-        plot_bgcolor: 'white',  // Set background color to white for a classic look
-        paper_bgcolor: 'white'  // Set paper color to white for a classic look
-    };
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Losses On The Items',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
+  </script>
 
-    // Merge the new layout with the existing layout
-    var profits_chart = {{ profits_chart | safe }};
-    profits_chart.layout = {...profits_chart.layout, ...updateLayout};
-    Plotly.newPlot('profits_chart', profits_chart.data, profits_chart.layout, config);
+  <script>
+    var ctx = document.getElementById('revenueChart').getContext('2d');
+    var chartData = {{ revenue | tojson }};
 
-    var Losses_chart = {{ Losses_chart | safe }};
-    Losses_chart.layout = {...Losses_chart.layout, ...updateLayout};
-    Plotly.newPlot('Losses_chart', Losses_chart.data, Losses_chart.layout, config);
+    // Combine labels and values into an array of objects
+    var dataArray = chartData.labels.map((label, index) => ({
+        label: label,
+        value: chartData.values[index]
+    }));
 
-    var revenue = {{ revenue | safe }};
-    revenue.layout = {...revenue.layout, ...updateLayout};
-    Plotly.newPlot('revenue', revenue.data, revenue.layout, config);
+    // Sort the array by value in descending order
+    dataArray.sort((a, b) => b.value - a.value);
 
-    var quantity_sold_stocked = {{ quantity_sold_stocked | safe }};
-    quantity_sold_stocked.layout = {...quantity_sold_stocked.layout, ...updateLayout};
-    Plotly.newPlot('quantity_sold_stocked', quantity_sold_stocked.data, quantity_sold_stocked.layout, config);
+    // Extract the sorted labels and values
+    var sortedLabels = dataArray.map(item => item.label);
+    var sortedValues = dataArray.map(item => item.value);
 
-    var trended_profit = {{ trended_profit | safe }};
-    trended_profit.layout = {...trended_profit.layout, ...updateLayout};
-    Plotly.newPlot('trended_profit', trended_profit.data, trended_profit.layout, config);
+    var revenueChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedLabels,
+            datasets: [{
+                label: 'Revenue',
+                data: sortedValues,
+                backgroundColor: '#00c8bf'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Revenue On Items Sold',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
+  </script>
 
-    var inhouse_cost_chart = {{ inhouse_cost_chart | safe }};
-    inhouse_cost_chart.layout = {...inhouse_cost_chart.layout, ...updateLayout};
-    Plotly.newPlot('inhouse_cost_chart', inhouse_cost_chart.data, inhouse_cost_chart.layout, config);
+  <script>
+    var ctx = document.getElementById('quantityChart').getContext('2d');
+    var chartData = {{ quantity_sold_stocked | tojson }};
 
-    var inhouse_revenue_chart = {{ inhouse_revenue_chart | safe }};
-    inhouse_revenue_chart.layout = {...inhouse_revenue_chart.layout, ...updateLayout};
-    Plotly.newPlot('inhouse_revenue_chart', inhouse_revenue_chart.data, inhouse_revenue_chart.layout, config);
+    // Combine labels and values into an array of objects
+    var dataArray = chartData.labels.map((label, index) => ({
+        label: label,
+        value: chartData.values[index]
+    }));
+
+    // Sort the array by value in descending order
+    dataArray.sort((a, b) => b.value - a.value);
+
+    // Extract the sorted labels and values
+    var sortedLabels = dataArray.map(item => item.label);
+    var sortedValues = dataArray.map(item => item.value);
+
+    var quantityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedLabels,
+            datasets: [{
+                label: 'Quantity',
+                data: sortedValues,
+                backgroundColor: '#00c8bf'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Quantity Sold On Each Item',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
+  </script>
+
+    <script>
+      var ctx = document.getElementById('trended_profitChart').getContext('2d');
+      var chartData = {{ trended_profit | tojson }};
+      
+      var trended_profitChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: chartData.labels,
+              datasets: [{
+                  label: 'Profits',
+                  data: chartData.values,
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',  // Classic background color with transparency
+                  borderColor: '#a43cda',  // Line color
+                  borderWidth: 2,
+                  fill: false,  // Fill area under the line
+                  tension: 0.3  // Smooth line
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false, // Ensures the chart resizes responsively
+              scales: {
+                  y: {
+                      beginAtZero: true,
+                      title: {
+                          display: true,
+                          text: 'Profit/Loss'
+                      }
+                  }
+              },
+              plugins: {
+                  legend: {
+                      display: true,
+                      position: 'bottom'
+                  },
+                  tooltip: {
+                      enabled: true
+                  },
+                  title: {
+                      display: true,
+                      text: 'Sum of Profits by Month',
+                      font: {
+                          size: 12
+                      },
+                      padding: {
+                          bottom: 20
+                      }
+                  }
+              },
+              layout: {
+                  padding: {
+                      left: 10,
+                      right: 10,
+                      top: 10,
+                      bottom: 10
+                  }
+              }
+          }
+      });
+    </script>
+
+  <script>
+    var ctx = document.getElementById('inhouse_costChart').getContext('2d');
+    var chartData = {{ inhouse_cost_chart | tojson }};
+
+    // Combine labels and values into an array of objects
+    var dataArray = chartData.labels.map((label, index) => ({
+        label: label,
+        value: chartData.values[index]
+    }));
+
+    // Sort the array by value in descending order
+    dataArray.sort((a, b) => b.value - a.value);
+
+    // Extract the sorted labels and values
+    var sortedLabels = dataArray.map(item => item.label);
+    var sortedValues = dataArray.map(item => item.value);
+
+    var inhouse_costChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedLabels,
+            datasets: [{
+                label: 'Cost',
+                data: sortedValues,
+                backgroundColor: '#00c8bf'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Inhouse Costs',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
+  </script>
+
+  <script>
+    var ctx = document.getElementById('inhouse_revenueChart').getContext('2d');
+    var chartData = {{ inhouse_revenue_chart | tojson }};
+
+    // Combine labels and values into an array of objects
+    var dataArray = chartData.labels.map((label, index) => ({
+        label: label,
+        value: chartData.values[index]
+    }));
+
+    // Sort the array by value in descending order
+    dataArray.sort((a, b) => b.value - a.value);
+
+    // Extract the sorted labels and values
+    var sortedLabels = dataArray.map(item => item.label);
+    var sortedValues = dataArray.map(item => item.value);
+
+    var inhouse_revenueChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedLabels,
+            datasets: [{
+                label: 'Revenue',
+                data: sortedValues,
+                backgroundColor: '#00c8bf'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Inhouse Revenue',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
   </script>
 
   <script>

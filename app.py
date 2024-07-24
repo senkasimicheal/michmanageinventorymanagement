@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, send_file, jsonify
+from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, jsonify
 from flask_mail import Mail, Message
 from docx import Document
 from pymongo import MongoClient, ASCENDING, DESCENDING
@@ -9,20 +9,14 @@ import calendar
 import pytz
 import pandas as pd 
 from io import BytesIO
-import plotly
-import plotly.graph_objs as go
-import plotly.express as px
-import plotly.utils
 import json
 from bson.objectid import ObjectId
 import cv2
 import numpy as np
 import io
 import base64
-import calendar
 import random
 import os
-from docx import Document
 from werkzeug.utils import secure_filename
 from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
@@ -450,21 +444,6 @@ def send_contract_expiry_reminders():
                     thread = threading.Thread(target=send_async_email, args=[app, msg])
                     thread.start()
 
-# Check the current time and run the function if it's 9 AM EAT
-def background_task():
-    while True:
-        current_hour = int(time.strftime("%H"))
-        current_minute = int(time.strftime("%M"))
-        if (current_hour == 9 and current_minute == 1) or (current_hour == 11 and current_minute == 59):
-            send_reports()
-            send_payment_reminders()
-            send_contract_expiry_reminders()
-        time.sleep(60)
-
-# Start the background thread
-bg_thread = threading.Thread(target=background_task, daemon=True)
-bg_thread.start()
-    
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
 def send_message():
@@ -4313,7 +4292,7 @@ def load_dashboard_page():
             overdue_tenants = []
         overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
 
-        property_data = list(db.property_managed.find(user_query))
+        property_data = list(db.property_managed.find(user_query, {'propertyName': 1, 'type': 1, 'sections': 1, 'property_value': 1}))
         if len(property_data) == 0:
             flash('No property data found', 'error')
             return render_template('dashboard.html',dp=dp_str)
@@ -4355,31 +4334,50 @@ def load_dashboard_page():
 
                 # Create a new DataFrame with 'propertyName' and 'amount' from df_combined_tenants
                 property_performance = df2[['propertyName', 'available_amount', 'months_paid', 'date_last_paid']].copy()
-                property_performance_line = df2_line[['propertyName', 'available_amount', 'months_paid', 'date_last_paid']].copy()
-                # Create a dictionary mapping propertyName to property_value from df3
                 property_value_dict = df3.set_index('propertyName')['property_value'].to_dict()
-                # Create a new column in df_new based on the propertyName column
                 property_performance['property_value'] = property_performance['propertyName'].map(property_value_dict)
-                # Calculate the number of months paid for each property
                 property_performance['months_paid_count'] = property_performance.groupby('propertyName')['months_paid'].transform('nunique')
-                # Calculate the total property value
                 property_performance['total_property_value'] = property_performance['months_paid_count'] * property_performance['property_value']
+                property_performance['demanded_amount'] = property_performance['total_property_value'] - property_performance['available_amount']
+                property_performance = property_performance.groupby(['propertyName'])[['available_amount', 'demanded_amount']].sum().reset_index()
+
+                property_performance_line = df2_line[['propertyName', 'available_amount', 'months_paid', 'year']].copy()
+                property_performance_line_grouped = property_performance_line.groupby(['year', 'months_paid'])['available_amount'].sum().reset_index()
+                month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                property_performance_line_grouped['months_paid'] = pd.Categorical(property_performance_line_grouped['months_paid'], categories=month_order, ordered=True)
+                property_performance_line_grouped = property_performance_line_grouped.sort_values(by=['year', 'months_paid']).reset_index(drop=True)
 
                 ###total number of property managed
                 count_property = len(df3.index)
                 available_amount = df2['available_amount'].sum()
 
                 ###CHARTS
-                ###bar charts from property type
-                property_type_bar_chart = create_bar_chart(df3, 'type', 'Property Type', 'Property type', 'Count')
-                ######bar chart for property value and amount from tenants
-                property_performance_bar_chart = create_stacked_bar_chart(property_performance, 'propertyName', f'Property Performance', 'Property Name', 'Value')
-                line_chart = create_line_chart(property_performance_line, f'Rent Payments {enddate.year}', 'Month', 'Amount Paid')
 
-                return render_template('dashboard.html',count_property=count_property,available_amount=available_amount,
-                                    count_current_tenants=count_current_tenants, property_occupancy=property_occupancy,
-                                    property_type_bar_chart=property_type_bar_chart,property_performance_bar_chart=property_performance_bar_chart,
-                                    line_chart=line_chart, month_name=month_name,overdue_tenants=overdue_tenants, dp=dp_str)
+                chart_property_performance_trended_data = {
+                    'labels': property_performance_line_grouped['months_paid'].tolist(),
+                    'values': property_performance_line_grouped['available_amount'].tolist()
+                }
+
+                chart_property_performance_data = {
+                    'labels': property_performance['propertyName'].tolist(),
+                    'available_amount': property_performance['available_amount'].tolist(),
+                    'demanded_amount': property_performance['demanded_amount'].tolist()
+                }
+    
+                # Prepare data for Chart.js
+                grouped_property_data = df3['type'].value_counts().reset_index()
+                grouped_property_data.columns = ['type', 'count']
+                chart_property_type_data = {
+                    'labels': grouped_property_data['type'].tolist(),
+                    'values': grouped_property_data['count'].tolist()
+                }
+
+                return render_template('dashboard.html', chart_property_performance_trended_data=chart_property_performance_trended_data,
+                                       chart_property_performance_data=chart_property_performance_data,
+                                       chart_property_type_data=chart_property_type_data, count_property=count_property,
+                                       available_amount=available_amount, overdue_tenants=overdue_tenants,
+                                       property_occupancy=property_occupancy, count_current_tenants=count_current_tenants,
+                                       month_name=month_name)
             else:
                 flash('No tenant data found', 'error')
                 return render_template('dashboard.html', property_occupancy=property_occupancy, dp=dp_str)
@@ -5914,10 +5912,11 @@ def stock_overview():
         positive_profits_df = df[df['Profit'] > 0]
         if not positive_profits_df.empty:
             session['profits_chart'] = 'profits_chart'
-        fig_profits = px.bar(positive_profits_df, x='Item Name', y='Profit', title='Profits on Each Item')
-        fig_profits.update_traces(texttemplate='%{y}', textposition='inside')
-        fig_profits.update_layout(showlegend=False)
-        profits_chart = json.dumps(fig_profits, cls=plotly.utils.PlotlyJSONEncoder)
+        
+        profits_chart = {
+            'labels': positive_profits_df['Item Name'].tolist(),
+            'values': positive_profits_df['Profit'].tolist()
+        }
 
         # Filter negative profits
         negative_profits_df = df[df['Profit'] < 0]
@@ -5925,27 +5924,26 @@ def stock_overview():
             session['loss_chart'] = 'loss_chart'
         negative_profits_df['Profit'] = -1*negative_profits_df['Profit']
 
-        # Create the bar chart for losses
-        fig_negative_profits = px.bar(negative_profits_df, x='Item Name', y='Profit', title='Losses on Each Item')
-        fig_negative_profits.update_traces(texttemplate='%{y}', textposition='inside')
-        fig_negative_profits.update_layout(showlegend=False)
-        Losses_chart = json.dumps(fig_negative_profits, cls=plotly.utils.PlotlyJSONEncoder)
+        Losses_chart = {
+            'labels': negative_profits_df['Item Name'].tolist(),
+            'values': negative_profits_df['Profit'].tolist()
+        }
 
         ##total revenue
         if not df.empty:
             session['revenue_and_qty_chart'] = 'revenue_and_qty_chart'
-        fig_total_revenue = px.bar(df, x='Item Name', y='Total Revenue', title='Revenue on Each Item')
-        fig_total_revenue.update_traces(texttemplate='%{y}', textposition='inside')
-        fig_total_revenue.update_layout(showlegend=False)
-        revenue = json.dumps(fig_total_revenue, cls=plotly.utils.PlotlyJSONEncoder)
+
+        revenue = {
+            'labels': df['Item Name'].tolist(),
+            'values': df['Total Revenue'].tolist()
+        }
 
         ##Quantity sold
-        fig_quantity_sold = px.bar(df, x='Item Name', y=['Quantity Sold', 'Quantity Stocked'],
-                           title='Qty Sold vs. Qty Stocked',
-                           labels={'value': 'Quantity'})
-        fig_quantity_sold.update_traces(texttemplate='%{y}', textposition='inside')
-        fig_quantity_sold.update_layout(legend=dict(orientation="h", yanchor="top", y=1.1))
-        quantity_sold_stocked = json.dumps(fig_quantity_sold, cls=plotly.utils.PlotlyJSONEncoder)
+
+        quantity_sold_stocked = {
+            'labels': df['Item Name'].tolist(),
+            'values': df['Quantity Sold'].tolist()
+        }
 
         ###PROFIT TRENDS
         twelve_months_ago = datetime.now() - timedelta(days=365)
@@ -6032,12 +6030,11 @@ def stock_overview():
         # Create the line chart
         if not monthly_profits_df.empty:
             session['monthly_profits_chart'] = 'monthly_profits_chart'
-        trended_profit_fig = px.line(monthly_profits_df, x='Month', y='Monthly Profit',
-              title='Sum of Profits by Month')
 
-        # Customize the appearance if needed (e.g., colors, layout)
-        trended_profit_fig.update_traces(mode='lines+markers')
-        trended_profit = json.dumps(trended_profit_fig, cls=plotly.utils.PlotlyJSONEncoder)
+        trended_profit = {
+            'labels': monthly_profits_df['Month'].tolist(),
+            'values': monthly_profits_df['Monthly Profit'].tolist()
+        }
 
         ###INHOUSE UPDATES
         inhouse_info = list(db.inhouse.find({'company_name': company['company_name'], 'useDate': {
@@ -6079,10 +6076,11 @@ def stock_overview():
         ##total inhouse cost
         if not inhouse_cost_df.empty:
             session['inhouse_costs_chart'] = 'inhouse_costs_chart'
-        inhouse_cost_fig = px.bar(inhouse_cost_df, x='Item Name', y='cost', title='Inhouse Costs')
-        inhouse_cost_fig.update_traces(texttemplate='%{y}', textposition='inside')
-        inhouse_cost_fig.update_layout(showlegend=False)
-        inhouse_cost_chart = json.dumps(inhouse_cost_fig, cls=plotly.utils.PlotlyJSONEncoder)
+        
+        inhouse_cost_chart = {
+            'labels': inhouse_cost_df['Item Name'].tolist(),
+            'values': inhouse_cost_df['cost'].tolist()
+        }
 
         ##inhouse revenues
         inhouse_productName = []
@@ -6114,10 +6112,11 @@ def stock_overview():
         ##total inhouse revenue
         if not product_revenue_summary.empty:
             session['inhouse_revenue_chart'] = 'inhouse_revenue_chart'
-        inhouse_revenue_fig = px.bar(product_revenue_summary, x='Product Name', y='Revenue', title='Inhouse Revenue')
-        inhouse_revenue_fig.update_traces(texttemplate='%{y}', textposition='inside')
-        inhouse_revenue_fig.update_layout(showlegend=False)
-        inhouse_revenue_chart = json.dumps(inhouse_revenue_fig, cls=plotly.utils.PlotlyJSONEncoder)
+        
+        inhouse_revenue_chart = {
+            'labels': product_revenue_summary['Product Name'].tolist(),
+            'values': product_revenue_summary['Revenue'].tolist()
+        }
 
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None

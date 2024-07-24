@@ -33,7 +33,7 @@ class ValueDescriptor(Float):
             self.expected_type = str
         else:
             self.expected_type = float
-        super(ValueDescriptor, self).__set__(instance, value)
+        super().__set__(instance, value)
 
 
 class FormatObject(Serialisable):

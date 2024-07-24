@@ -13,7 +13,7 @@ officens = "urn:schemas-microsoft-com:office:office"
 excelns = "urn:schemas-microsoft-com:office:excel"
 
 
-class ShapeWriter(object):
+class ShapeWriter:
     """
     Create VML for comments
     """

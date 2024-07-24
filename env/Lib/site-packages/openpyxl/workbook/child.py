@@ -34,7 +34,7 @@ def avoid_duplicate_name(names, value):
     return value
 
 
-class _WorkbookChild(object):
+class _WorkbookChild:
 
     __title = ""
     _id = None

@@ -24,7 +24,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
-
+  <link href="https://cdn.bokeh.org/bokeh/release/bokeh-2.4.3.min.css" rel="stylesheet" type="text/css">
+  <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.4.3.min.js"></script>
   <script>
     function fetchNotifications() {
         fetch('/notifications')
@@ -416,11 +417,13 @@
           <div class="chart-container">
             <div class="row">
               <div class="col-md-6 segment">
-                <div id="linechart"></div>
+                <canvas id="propertyPerformanceLineChart"></canvas>
               </div>
+
               <div class="col-md-6 segment">
-                  <div id="property_performance_bar_chart"></div>
+                <canvas id="propertyPerformanceChart"></canvas>
               </div>
+
               {% if overdue_tenants %}
               <div class="col-md-6 segment">
                 <p style="text-align: center;">Top 10 due tenants</p>
@@ -470,7 +473,7 @@
               </div>
               {% endif %}
               <div class="col-md-6 segment">
-                <div id="property_type_bar_chart"></div>
+                <canvas id="propertyChart"></canvas>
               </div>
             </div>
           </div>
@@ -510,43 +513,164 @@
   </div>
   <!-- container-scroller -->
 
-  <!-- CHARTS JAVASCRIPTS -->
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script type="text/javascript">
-    // Your existing code...
-    var config = {
-        responsive: true, 
-        displayModeBar: true, 
-        staticPlot: false,
-        modeBarButtonsToRemove: ['zoom2d', 'pan2d', 'select2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines', 'toImage', 'drag2d']
-    };
-
-    // Modify the layout for each chart
-    var updateLayout = {
-        xaxis: {
-            showgrid: false,  // Remove grid lines
-            tickmode: "linear",
-            dtick: 1
+  <script>
+    var ctx = document.getElementById('propertyPerformanceLineChart').getContext('2d');
+    var chartData = {{ chart_property_performance_trended_data | tojson }};
+    
+    var propertyPerformanceLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Rent Collected',
+                data: chartData.values,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',  // Classic background color with transparency
+                borderColor: '#a43cda',  // Line color
+                borderWidth: 2,
+                fill: false,  // Fill area under the line
+                tension: 0.3  // Smooth line
+            }]
         },
-        yaxis: {
-            showgrid: false  // Remove grid lines
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Ensures the chart resizes responsively
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Rent Collected'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Rent Payment Trends',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            },
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10
+                }
+            }
+        }
+    });
+  </script>
+
+  <script>
+    var ctx = document.getElementById('propertyPerformanceChart').getContext('2d');
+    var chartData = {{ chart_property_performance_data | tojson }};
+    var propertyPerformanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [
+                {
+                    label: 'Available Amount',
+                    data: chartData.available_amount,
+                    backgroundColor: '#21bf06'
+                },
+                {
+                    label: 'Demanded Amount',
+                    data: chartData.demanded_amount,
+                    backgroundColor: '#dc3545'
+                }
+            ]
         },
-        plot_bgcolor: 'white',  // Set background color to white for a classic look
-        paper_bgcolor: 'white'  // Set paper color to white for a classic look
-    };
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Property Performance Overview',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
+  </script>
 
-    // Merge the new layout with the existing layout
-    var property_type_bar_chart = {{ property_type_bar_chart | safe }};
-    property_type_bar_chart.layout = {...property_type_bar_chart.layout, ...updateLayout};
-    Plotly.newPlot('property_type_bar_chart', property_type_bar_chart.data, property_type_bar_chart.layout, config);
-
-    var property_performance_bar_chart = {{ property_performance_bar_chart | safe }};
-    property_performance_bar_chart.layout = {...property_performance_bar_chart.layout, ...updateLayout};
-    Plotly.newPlot('property_performance_bar_chart', property_performance_bar_chart.data, property_performance_bar_chart.layout, config);
-
-    var line_chartData = {{ line_chart | safe }};
-    line_chartData.layout = {...line_chartData.layout, ...updateLayout};
-    Plotly.newPlot('linechart', line_chartData.data, line_chartData.layout, config);
+  <script>
+    var ctx = document.getElementById('propertyChart').getContext('2d');
+    var chartData = {{ chart_property_type_data | tojson }};
+    var propertyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Number of Properties',
+                data: chartData.values,
+                backgroundColor: '#00c8bf'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true
+                },
+                title: {
+                    display: true,
+                    text: 'Property Types',
+                    font: {
+                        size: 12
+                    },
+                    padding: {
+                        bottom: 20
+                    }
+                }
+            }
+        }
+    });
   </script>
 
   <script>

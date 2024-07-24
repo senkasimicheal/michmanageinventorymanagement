@@ -25639,15 +25639,6 @@ div.tagsinput span.tag a {
   z-index: 9999;
 }
 
-/* .spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid #ccc;
-  border-top-color: blue;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-} */
-
 .spinner {
   position: relative;
   font-size: 20px;
@@ -26180,4 +26171,9 @@ table td {
   background: #f1f1f1;
   cursor: pointer;
   text-decoration: none;
+}
+
+canvas {
+  height: 60vh;
+  width: 100%;
 }

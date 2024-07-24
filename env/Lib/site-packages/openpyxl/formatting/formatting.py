@@ -52,7 +52,7 @@ class ConditionalFormatting(Serialisable):
         return coord in self.sqref
 
 
-class ConditionalFormattingList(object):
+class ConditionalFormattingList:
     """Conditional formatting rules."""
 
 

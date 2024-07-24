@@ -432,4 +432,4 @@ class ColorChoiceDescriptor(Typed):
         else:
             if hasattr(self, "namespace") and value is not None:
                 value.namespace = self.namespace
-        super(ColorChoiceDescriptor, self).__set__(instance, value)
+        super().__set__(instance, value)

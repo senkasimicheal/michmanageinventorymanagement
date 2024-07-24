@@ -18,7 +18,7 @@ from .alignment import Alignment
 from .protection import Protection
 
 
-class ArrayDescriptor(object):
+class ArrayDescriptor:
 
     def __init__(self, key):
         self.key = key

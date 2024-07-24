@@ -48,7 +48,7 @@ from openpyxl.xml.constants import (
 
 INTEGER_TYPES = (int,)
 
-class Workbook(object):
+class Workbook:
     """Workbook is the container for all other parts of the document."""
 
     _read_only = False
