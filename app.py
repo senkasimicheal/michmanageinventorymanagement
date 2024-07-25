@@ -32,13 +32,14 @@ import threading
 import time
 from docx2pdf import convert
 import PyPDF2
+import gc
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
-    client = MongoClient('mongodb://localhost:27017/')
-    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    # client = MongoClient('mongodb://localhost:27017/')
+    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
 
 # Function to get the database and GridFS instance
@@ -324,6 +325,8 @@ def send_reports():
             os.remove(report_filename)
             os.remove(pdf_filename)
             os.remove(protected_pdf_filename)
+            del df
+            gc.collect()
 
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_reminders():
@@ -513,7 +516,9 @@ def manager_register_page():
         property_data = df['propertyName'].tolist()
     else:
         property_data = []
-
+    
+    del df
+    gc.collect()
     resp = make_response(render_template("manager register.html", property_data=property_data, company_names=company_names))
     return resp
 
@@ -530,6 +535,8 @@ def tenant_register_page():
     else:
         property_data = []
 
+    del df
+    gc.collect()
     resp = make_response(render_template("tenant register.html", property_data=property_data, company_names=company_names))
     return resp
 
@@ -3965,6 +3972,8 @@ def new_subscription():
         else:
             df = pd.DataFrame(cursor)
             company_names = df['name']
+            del df
+            gc.collect()
         return render_template("new_subscription.html", company_names=company_names)
     
 #######STORING NEW SUBSCRIPTION###############
@@ -4064,9 +4073,10 @@ def load_dashboard_page():
             '2024': 12, '2025': 12, '2026': 12
         }
 
-        company = db.registered_managers.find_one({'username': login_data})        
-        
-        subscription = db.managers.find_one({'name': company['company_name']})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
         account_type = subscription['account_type']
         # Remove any empty strings from the list
         account_type = [atype for atype in account_type if atype]
@@ -4075,15 +4085,15 @@ def load_dashboard_page():
             dp_str = company['dp']
         else:
             dp_str = None
-        is_manager = db.managers.find_one({'manager_email': company['email']})        
 
-        if is_manager is None:
-            user_query  = {'username': login_data, 'company_name': company['company_name']}
-            special_user_query = {'username': login_data, 'company_name': company['company_name'],'status': {'$ne': 'deleted'}}
-        else:
+        if subscription['manager_email'] == company['email']:
             user_query  = {'company_name': company['company_name']}
-            special_user_query = {'company_name': company['company_name'],'status': {'$ne': 'deleted'}}
-        projection = {'payment_receipt': 0, 'username': 0, 'company_name': 0, 'tenantEmail': 0, 'tenantPhone': 0, 'payment_mode': 0}
+        else:
+            user_query  = {'username': login_data, 'company_name': company['company_name']}
+            
+        projection = {'payment_receipt': 0, 'username': 0, 'company_name': 0, 'tenantEmail': 0, 'tenantPhone': 0, 'payment_mode': 0,
+                      'gender': 0, 'household_size': 0, 'payment_type': 0, 'payment_completion': 0, 'currency': 0, 'payment_status': 0,
+                      '_id': 0}
         if startdate_on_str and enddate_on_str:
             startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
             enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
@@ -4098,36 +4108,10 @@ def load_dashboard_page():
 
             month_name = f"{startdate_on_str} to {enddate_on_str}"
         else:
-            latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)])
+            latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
             if latest_document is None:
-                latest_document = db.old_tenant_data.find_one(sort=[('date_last_paid', -1)])
-
-            if latest_document is None:
-                property_data = list(db.property_managed.find(user_query))
-                if len(property_data) == 0:
-                    flash('No property data found', 'error')
-                    return render_template('dashboard.html',dp=dp_str)
-                else:
-                    property_data_list = list(db.property_managed.find(user_query))
-                    tenant_data_cursor = db.tenants.find(user_query)
-                    
-                    property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
-                    property_occupancy = {doc['propertyName']: {'total': len(doc['sections']), 'occupied': 0} for doc in property_data_list}
-                    for tenant_exists in tenant_data_cursor:
-                        tenant_property_name = tenant_exists.get('propertyName', '').strip()
-                        selected_section = tenant_exists.get('selected_section', '').strip()
-                        # Check if the property exists in updated_property_data and the section is in the property's sections
-                        if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
-                            # Remove the section
-                            property_data_dict[tenant_property_name].remove(selected_section)
-                            # Increase the count of occupied sections
-                            property_occupancy[tenant_property_name]['occupied'] += 1
-                            # If there are no more sections for this property, remove the property
-                            if not property_data_dict[tenant_property_name]:
-                                del property_data_dict[tenant_property_name]
-
-                    flash('No tenant data found', 'error')
-                    return render_template('dashboard.html',property_occupancy=property_occupancy, dp=dp_str)
+                latest_document = db.old_tenant_data.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
+                
             latest_year = latest_document['date_last_paid'].year
 
             startdate = datetime(latest_year, 1, 1)
@@ -4143,12 +4127,13 @@ def load_dashboard_page():
             month_name = f"{startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}"
         
         overdue_tenants = []
-        count_current_tenants = db.tenants.count_documents(special_user_query)
-        overdue_current_tenant_data = list(db.tenants.find(special_user_query))
-        if overdue_current_tenant_data:
-            for tenant in overdue_current_tenant_data:
-                last_payment_month = month_mapping.get(tenant['months_paid'], 0)
-                last_payment_date = datetime(year=tenant['year'], month=last_payment_month, day=1)
+        count_current_tenants = 0
+        for count_tenant in current_tenant_data:
+            if count_tenant['status'] != 'deleted':
+                count_current_tenants += 1
+
+                last_payment_month = month_mapping.get(count_tenant['months_paid'], 0)
+                last_payment_date = datetime(year=count_tenant['year'], month=last_payment_month, day=1)
                 next_payment_date = last_payment_date + timedelta(days=30)
                 remaining_days = (next_payment_date - datetime.now()).days
                 if remaining_days < 0:
@@ -4167,18 +4152,18 @@ def load_dashboard_page():
                         time_unit = 'year(s)'
 
                     overdue_status = 'overdue' if overdue else 'due in'
-                    overdue_tenants.append((tenant['tenantName'], tenant['propertyName'],tenant['selected_section'], remaining_days, time_unit, overdue_status))
-        else:
-            overdue_tenants = []
+                    overdue_tenants.append((count_tenant['tenantName'], count_tenant['propertyName'],count_tenant['selected_section'], remaining_days, time_unit, overdue_status))
+
         overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
 
-        property_data = list(db.property_managed.find(user_query, {'propertyName': 1, 'type': 1, 'sections': 1, 'property_value': 1}))
-        if len(property_data) == 0:
+        property_data_list = list(db.property_managed.find(user_query))
+        if len(property_data_list) == 0:
             flash('No property data found', 'error')
             return render_template('dashboard.html',dp=dp_str)
         else:
-            property_data_list = list(db.property_managed.find(user_query))
-            tenant_data_cursor = db.tenants.find(user_query)
+            doc_query = {'status': {'$ne': 'deleted'}}
+            doc_query.update(user_query)
+            tenant_data_cursor = db.tenants.find(doc_query, projection)
             
             property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
             property_occupancy = {doc['propertyName']: {'total': len(doc['sections']), 'occupied': 0} for doc in property_data_list}
@@ -4210,7 +4195,7 @@ def load_dashboard_page():
 
                 df2_line = pd.concat([current_line, old_line], ignore_index=True)
                 df2 = pd.concat([current_data, old_data], ignore_index=True)
-                df3 = pd.DataFrame(property_data)
+                df3 = pd.DataFrame(property_data_list)
 
                 # Create a new DataFrame with 'propertyName' and 'amount' from df_combined_tenants
                 property_performance = df2[['propertyName', 'available_amount', 'months_paid', 'date_last_paid']].copy()
@@ -4252,6 +4237,11 @@ def load_dashboard_page():
                     'labels': grouped_property_data['type'].tolist(),
                     'values': grouped_property_data['count'].tolist()
                 }
+
+                # Delete the DataFrames
+                del current_data, old_data, current_line, old_line, df2_line, df2, df3, property_performance, property_performance_line, property_performance_line_grouped, property_performance_line_grouped_pivot_df
+                # Call garbage collector
+                gc.collect()
 
                 return render_template('dashboard.html', chart_property_performance_trended_data=chart_property_performance_trended_data,
                                        chart_property_performance_data=chart_property_performance_data,
@@ -4367,6 +4357,8 @@ def download():
             zip_buffer.seek(0)
             zip_data = zip_buffer.getvalue()
 
+            del df1, df2, df_combined_tenants
+            gc.collect()
             response = make_response(zip_data)
             response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.zip"
             response.headers['Content-Type'] = 'application/zip'
@@ -4982,7 +4974,8 @@ def download_audit_logs():
         
         zip_buffer.seek(0)
         zip_data = zip_buffer.getvalue()
-
+        del df
+        gc.collect()
         # Create the response
         response = make_response(zip_data)
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit_logs_{startdate_on_str}_{enddate_on_str}.zip"
@@ -5032,7 +5025,8 @@ def download_login_data():
         
         zip_buffer.seek(0)
         zip_data = zip_buffer.getvalue()
-
+        del df
+        gc.collect()
         # Create the response
         response = make_response(zip_data)
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_login_data_{startdate_on_str}_{enddate_on_str}.zip"
@@ -5072,7 +5066,9 @@ def add_new_stock():
         flash('Login first', 'error')
         return jsonify({'redirect': url_for('/')})
     
-    company = db.registered_managers.find_one({'username': login_data})
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
     all_items = request.json['items']  # Access the JSON data sent from the client
     skipped_items = []  # List to hold names of items that were not added
     added_items = []  # List to hold names of items that were successfully added
@@ -5128,7 +5124,9 @@ def update_new_stock():
         flash('Login first', 'error')
         return jsonify({'redirect': url_for('/')})
     
-    company = db.registered_managers.find_one({'username': login_data})
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
     all_items = request.json['items']  # Access the JSON data sent from the client
 
     for item in all_items:
@@ -5184,7 +5182,9 @@ def update_sale():
         flash('Login first', 'error')
         return jsonify({'redirect': url_for('/')})
     
-    company = db.registered_managers.find_one({'username': login_data})
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
     all_items = request.json['items']  # Access the JSON data sent from the client
     out_of_stock_items = []
     over_quantified = []
@@ -5244,7 +5244,9 @@ def inhouse():
         flash('Login first', 'error')
         return jsonify({'redirect': url_for('/')})
     
-    company = db.registered_managers.find_one({'username': login_data})
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
     all_items = request.json['items']  # Access the JSON data sent from the client
 
     # Initialize empty arrays for itemNames and itemQuantities
@@ -5350,7 +5352,9 @@ def inhouse_used_items():
         flash('Please login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
         all_items = request.json['items']  # Access the JSON data sent from the client
 
         # Initialize empty arrays for itemNames, itemQuantities, etc.
@@ -5449,9 +5453,10 @@ def revenue_details():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
         
-        subscription = db.managers.find_one({'name': company['company_name']})
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
         account_type = subscription['account_type']
         # Remove any empty strings from the list
         account_type = [atype for atype in account_type if atype]
@@ -5536,9 +5541,10 @@ def sales_details():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
         
-        subscription = db.managers.find_one({'name': company['company_name']})
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
         account_type = subscription['account_type']
         # Remove any empty strings from the list
         account_type = [atype for atype in account_type if atype]
@@ -5575,9 +5581,10 @@ def stock_details():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
         
-        subscription = db.managers.find_one({'name': company['company_name']})
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
         account_type = subscription['account_type']
         # Remove any empty strings from the list
         account_type = [atype for atype in account_type if atype]
@@ -5614,9 +5621,10 @@ def inhouse_items_use_details():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
         
-        subscription = db.managers.find_one({'name': company['company_name']})
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
         account_type = subscription['account_type']
         # Remove any empty strings from the list
         account_type = [atype for atype in account_type if atype]
@@ -5659,7 +5667,8 @@ def stock_overview():
         session.pop("inhouse_costs_chart", None)
         session.pop("inhouse_revenue_chart", None)
 
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
 
         company_name = company['company_name']
 
@@ -5999,6 +6008,8 @@ def stock_overview():
             'values': product_revenue_summary['Revenue'].tolist()
         }
 
+        del df_ungrouped, df, positive_profits_df, negative_profits_df, profit_info_df, monthly_profits, monthly_profits_df, inhouse_df, inhouse_df_exploded, inhouse_cost_df, inhouse_revenue_df, product_revenue_summary
+        gc.collect()
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         return render_template('stock dashboard.html',profits_chart=profits_chart,Losses_chart=Losses_chart,revenue=revenue,
@@ -6014,7 +6025,9 @@ def all_accounts_overview():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         return render_template('all count type overview.html', dp=dp_str)
@@ -6032,7 +6045,9 @@ def download_stock_data():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
 
         current_stock = db.inventories.find(
             {'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},
@@ -6070,7 +6085,8 @@ def download_stock_data():
         
         zip_buffer.seek(0)
         zip_data = zip_buffer.getvalue()
-
+        del df
+        gc.collect()
         # Create the response
         response = make_response(zip_data)
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Stock_Data_{startdate_on_str}_{enddate_on_str}.zip"
@@ -6091,7 +6107,9 @@ def download_revenue_data():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
 
         company_name = company['company_name']
 
@@ -6199,7 +6217,8 @@ def download_revenue_data():
         
         zip_buffer.seek(0)
         zip_data = zip_buffer.getvalue()
-
+        del df, revenue_info
+        gc.collect()
         # Create the response
         response = make_response(zip_data)
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Revenue_Data_{startdate_on_str}_{enddate_on_str}.zip"
@@ -6220,7 +6239,9 @@ def download_sales_data():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
 
         company_name = company['company_name']
 
@@ -6258,7 +6279,8 @@ def download_sales_data():
         
         zip_buffer.seek(0)
         zip_data = zip_buffer.getvalue()
-
+        del df
+        gc.collect()
         # Create the response
         response = make_response(zip_data)
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Sales_Data_{startdate_on_str}_{enddate_on_str}.zip"
@@ -6282,7 +6304,8 @@ def view_production_info():
         return redirect('/')
     else:
         twelve_months_ago = datetime.now() - timedelta(days=365)
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
 
         company_name = company['company_name']
 
@@ -6335,7 +6358,6 @@ def view_production_info():
         # Apply the function to each row to calculate 'Total Production Cost'
         inhouse_df['Total Production Cost'] = inhouse_df.apply(calculate_total_cost, axis=1)
         inhouse_df_sorted = inhouse_df.sort_values(by='Date Produced')
-
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         return render_template('production info.html', inhouse_df = inhouse_df_sorted, dp=dp_str)
@@ -6353,7 +6375,8 @@ def download_inhouse():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
 
         company_name = company['company_name']
 
@@ -6425,7 +6448,8 @@ def download_inhouse():
         
         zip_buffer.seek(0)
         zip_data = zip_buffer.getvalue()
-
+        del inhouse_df, inhouse_df_sorted
+        gc.collect()
         # Create the response
         response = make_response(zip_data)
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse_Data_{startdate_on_str}_{enddate_on_str}.zip"
@@ -6445,7 +6469,8 @@ def download_inhouse_item_use():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
 
         company_name = company['company_name']
 
@@ -6510,7 +6535,8 @@ def download_inhouse_item_use():
         
         zip_buffer.seek(0)
         zip_data = zip_buffer.getvalue()
-
+        del inhouse_df, inhouse_df_exploded
+        gc.collect()
         # Create the response
         response = make_response(zip_data)
         response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Inhouse_Item_Use_Data_{startdate_on_str}_{enddate_on_str}.zip"
