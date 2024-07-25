@@ -37,8 +37,8 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
-    # client = MongoClient('mongodb://localhost:27017/')
-    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    client = MongoClient('mongodb://localhost:27017/')
+    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
 
 # Function to get the database and GridFS instance
@@ -4024,126 +4024,6 @@ def new_subscription_initiated():
 
         db.managers.update_one({'name': company_name},{'$set': fields_to_update})
         return render_template("managers accounts.html")
-                
-
-#########FUNCTION TO CREATE A BAR CHART################
-def create_bar_chart(df, variable_name, title, xaxis_title, yaxis_title):
-    unique_values = df[variable_name].unique()
-    value_counts = df[variable_name].value_counts()
-
-    fig = go.Figure(data=[go.Bar(x=unique_values, 
-                                  y=value_counts, 
-                                  text=value_counts, 
-                                  textposition='auto')],
-                    layout=go.Layout(title=title,
-                                     xaxis=dict(title=xaxis_title),
-                                     yaxis=dict(title=yaxis_title)))
-    
-    bar_chart = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    return bar_chart
-
-#########FUNCTION TO CREATE A STACKED BAR CHART################
-def create_stacked_bar_chart(df, variable_name, title, xaxis_title, yaxis_title):
-    # Pre-calculate grouped data and unique values
-    df_grouped = df.groupby(variable_name)['available_amount'].sum().reset_index()
-    df_unique = df.drop_duplicates(variable_name)[[variable_name, 'total_property_value']]
-
-    # Calculate demanded amount
-    df_unique['demanded_amount'] = df_unique['total_property_value'] - df_grouped['available_amount']
-
-    # Create traces
-    trace1 = go.Bar(x=df_grouped[variable_name], 
-                    y=df_grouped['available_amount'], 
-                    name='Collected',
-                    text=df_grouped['available_amount'], 
-                    textposition='auto',
-                    marker_color='purple')
-
-    # Only include cases where demanded amount is greater than 0
-    df_demanded = df_unique[df_unique['demanded_amount'] > 0]
-    trace2 = go.Bar(x=df_demanded[variable_name], 
-                    y=df_demanded['demanded_amount'], 
-                    name='Demanded',
-                    text=df_demanded['demanded_amount'], 
-                    textposition='auto',
-                    marker_color='red')
-
-    # Create a figure with layout
-    fig = go.Figure(data=[trace1, trace2],
-                    layout=go.Layout(
-                        title={
-                            'text': title,
-                            'y':0.9,
-                            'x':0.5,
-                            'xanchor': 'center',
-                            'yanchor': 'top',
-                            'font': dict(size=12)
-                        },
-                        xaxis_title=xaxis_title,
-                        yaxis_title=yaxis_title,
-                        legend=dict(
-                            yanchor="bottom",
-                            y=0.99,
-                            xanchor="left",
-                            x=0.01
-                        ),
-                        barmode='stack'
-                    ))
-
-    # Convert the figure to JSON
-    stacked_bar_chart = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-
-    return stacked_bar_chart
-
-##LINE CHART
-def create_line_chart(df, title, xaxis_title, yaxis_title):
-    # Filter rows to only include dates in the current year
-    most_recent_year = df['date_last_paid'].dt.year.max()
-    df = df[df['date_last_paid'].dt.year == most_recent_year]
-
-    # Ensure 'months_paid' is of type 'category' and ordered
-    df['months_paid'] = pd.Categorical(df['months_paid'], categories=calendar.month_name[1:], ordered=True)
-
-    # Group by property name and month, and calculate the sum of amount paid
-    df_grouped = df.groupby(['propertyName', 'months_paid'])['available_amount'].sum().reset_index()
-
-    # Create the line chart
-    fig = px.line(df_grouped, x='months_paid', y='available_amount', color='propertyName', title=title)
-    # Customize hover data
-    fig.update_traces(
-        hovertemplate='Property: %{data.name}<br>Month: %{x}<br>Amount: %{y}',
-        hoverinfo='skip'
-    )
-
-    # Set the axis titles
-    fig.update_xaxes(title_text=xaxis_title)
-    fig.update_yaxes(title_text=yaxis_title)
-
-    # Set the title with reduced font size
-    fig.update_layout(
-        title={
-            'text': title,
-            'y':0.9,
-            'x':0.5,
-            'xanchor': 'center',
-            'yanchor': 'top',
-            'font': dict(
-                size=15
-            )
-        },
-        legend=dict(
-            yanchor="top",
-            y=-0.2,  # Adjusts the y position
-            xanchor="center",
-            x=0.5,  # Adjusts the x position
-            orientation="v"  # Makes the legend horizontal
-        )
-    )
-
-    # Convert the figure to JSON
-    line_chart = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-
-    return line_chart
 
 #############DASHBOARD PAGE#######################
 @app.route('/load-dashboard-page', methods=["GET", "POST"])
@@ -4342,10 +4222,11 @@ def load_dashboard_page():
                 property_performance = property_performance.groupby(['propertyName'])[['available_amount', 'demanded_amount']].sum().reset_index()
 
                 property_performance_line = df2_line[['propertyName', 'available_amount', 'months_paid', 'year']].copy()
-                property_performance_line_grouped = property_performance_line.groupby(['year', 'months_paid'])['available_amount'].sum().reset_index()
+                property_performance_line_grouped = property_performance_line.groupby(['year', 'months_paid', 'propertyName'])['available_amount'].sum().reset_index()
                 month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
                 property_performance_line_grouped['months_paid'] = pd.Categorical(property_performance_line_grouped['months_paid'], categories=month_order, ordered=True)
                 property_performance_line_grouped = property_performance_line_grouped.sort_values(by=['year', 'months_paid']).reset_index(drop=True)
+                property_performance_line_grouped_pivot_df = property_performance_line_grouped.pivot_table(index='months_paid', columns='propertyName', values='available_amount')
 
                 ###total number of property managed
                 count_property = len(df3.index)
@@ -4354,8 +4235,8 @@ def load_dashboard_page():
                 ###CHARTS
 
                 chart_property_performance_trended_data = {
-                    'labels': property_performance_line_grouped['months_paid'].tolist(),
-                    'values': property_performance_line_grouped['available_amount'].tolist()
+                    'labels': property_performance_line_grouped_pivot_df.index.tolist(),
+                    'datasets': [{'label': col, 'data': property_performance_line_grouped_pivot_df[col].tolist()} for col in property_performance_line_grouped_pivot_df.columns]
                 }
 
                 chart_property_performance_data = {
@@ -4377,7 +4258,7 @@ def load_dashboard_page():
                                        chart_property_type_data=chart_property_type_data, count_property=count_property,
                                        available_amount=available_amount, overdue_tenants=overdue_tenants,
                                        property_occupancy=property_occupancy, count_current_tenants=count_current_tenants,
-                                       month_name=month_name)
+                                       month_name=month_name, dp=dp_str)
             else:
                 flash('No tenant data found', 'error')
                 return render_template('dashboard.html', property_occupancy=property_occupancy, dp=dp_str)

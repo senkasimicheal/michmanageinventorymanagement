@@ -516,30 +516,36 @@
   <script>
     var ctx = document.getElementById('propertyPerformanceLineChart').getContext('2d');
     var chartData = {{ chart_property_performance_trended_data | tojson }};
-    
+
     var propertyPerformanceLineChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: chartData.labels,
-            datasets: [{
-                label: 'Rent Collected',
-                data: chartData.values,
+            datasets: chartData.datasets.map(dataset => ({
+                label: dataset.label,
+                data: dataset.data,
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',  // Classic background color with transparency
-                borderColor: '#a43cda',  // Line color
+                borderColor: getRandomColor(),  // Dynamic color for each line
                 borderWidth: 2,
-                fill: false,  // Fill area under the line
+                fill: false,  // No fill under the line
                 tension: 0.3  // Smooth line
-            }]
+            }))
         },
         options: {
             responsive: true,
             maintainAspectRatio: false, // Ensures the chart resizes responsively
             scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Months'
+                    }
+                },
                 y: {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Rent Collected'
+                        text: 'Amount'
                     }
                 }
             },
@@ -572,6 +578,16 @@
             }
         }
     });
+
+    // Function to generate random color
+    function getRandomColor() {
+        var letters = '0123456789ABCDEF';
+        var color = '#';
+        for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
   </script>
 
   <script>

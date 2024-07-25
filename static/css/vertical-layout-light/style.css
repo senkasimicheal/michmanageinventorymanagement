@@ -9215,6 +9215,11 @@ pre code {
 }
 
 @media (max-width: 768px){
+  canvas {
+    height: 40vh;
+    width: 100%;
+  }
+
   .navbar-brand img{
     border-radius: 50%;
     padding: 3px !important;
@@ -9269,6 +9274,11 @@ pre code {
 }
 
 @media (min-width: 768px) {
+  canvas {
+    height: 60vh;
+    width: 100%;
+  }
+
   .dashboard-form{
     width: 20%;  /* adjust as needed */
     height: 20px;  /* adjust as needed */
@@ -26171,9 +26181,4 @@ table td {
   background: #f1f1f1;
   cursor: pointer;
   text-decoration: none;
-}
-
-canvas {
-  height: 60vh;
-  width: 100%;
 }
