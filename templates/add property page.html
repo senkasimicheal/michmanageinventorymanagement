@@ -376,7 +376,7 @@
                 <option value="Motel">Motel</option>
             </select><br>
             <label class="input_labels" for="">Property Sections</label>
-            <input class="property_inputs" type="text" id="values" name="sections" pattern="[^ ]*" title="No spaces allowed, use commas instead of spaces" multiple><br>
+            <input class="property_inputs" type="text" id="values" name="sections" pattern="[^ ]*" multiple oninput="processInput()"><br>
             <label class="input_labels" for="">Overall Property Value</label>
             <input class="property_inputs" type="number" min="100000" name="property_value" required><br>
             <label class="input_labels" for="">Late payment day</label>
@@ -421,6 +421,31 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    function processInput() {
+        const input = document.getElementById('values');
+        let sections = input.value.split(',');
+
+        // Create a Set for unique, lower-cased sections for comparison
+        let uniqueSections = new Set();
+        let finalSections = [];
+
+        sections.forEach(section => {
+            let trimmedSection = section.trim();
+            let lowerCasedSection = trimmedSection.toLowerCase();
+            
+            // Only add the original section if its lower-cased version is not in the Set
+            if (!uniqueSections.has(lowerCasedSection)) {
+                uniqueSections.add(lowerCasedSection);
+                finalSections.push(trimmedSection);
+            }
+        });
+
+        // Join the sections without spaces after commas
+        input.value = finalSections.join(',');
+    }
+  </script>
 
   <script>
     document.getElementById('myForm').addEventListener('submit', function(event) {
@@ -468,27 +493,6 @@
         clearInterval(intervalId);
       }
     }, 100); // Adjust this value to control the speed of the counter
-  </script>
-
-  <script>
-    document.getElementById('docUpload').addEventListener('change', function (e) {
-      var file = e.target.files[0];
-      if(file.size > 200 * 1024) {
-        alert("File size must be less than 200KB.");
-        this.value = '';
-      }
-    });
-  </script>
-
-  <script>
-    document.getElementById('end_date').addEventListener('change', function () {
-        var startDate = new Date(document.getElementById('start_date').value);
-        var endDate = new Date(this.value);
-        if (endDate <= startDate) {
-            alert("End date should be after start date.");
-            this.value = '';
-        }
-    });
   </script>
 
   <!-- base:js -->

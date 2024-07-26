@@ -4094,73 +4094,78 @@ def load_dashboard_page():
         projection = {'payment_receipt': 0, 'username': 0, 'company_name': 0, 'tenantEmail': 0, 'tenantPhone': 0, 'payment_mode': 0,
                       'gender': 0, 'household_size': 0, 'payment_type': 0, 'payment_completion': 0, 'currency': 0, 'payment_status': 0,
                       '_id': 0}
-        if startdate_on_str and enddate_on_str:
-            startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
-            enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-            latest_year = enddate.year
-
-            date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
-            date_query.update(user_query)
-
-            current_tenant_data = list(db.tenants.find(date_query, projection))
-
-            old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
-
-            month_name = f"{startdate_on_str} to {enddate_on_str}"
-        else:
-            latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
-            if latest_document is None:
-                latest_document = db.old_tenant_data.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
-                
-            latest_year = latest_document['date_last_paid'].year
-
-            startdate = datetime(latest_year, 1, 1)
-            enddate = datetime(latest_year, 12, 31, 23, 59, 59)
-
-            date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
-            date_query.update(user_query)
-
-            current_tenant_data = list(db.tenants.find(date_query, projection))
-
-            old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
-
-            month_name = f"{startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}"
-        
-        overdue_tenants = []
-        count_current_tenants = 0
-        for count_tenant in current_tenant_data:
-            if count_tenant['status'] != 'deleted':
-                count_current_tenants += 1
-
-                last_payment_month = month_mapping.get(count_tenant['months_paid'], 0)
-                last_payment_date = datetime(year=count_tenant['year'], month=last_payment_month, day=1)
-                next_payment_date = last_payment_date + timedelta(days=30)
-                remaining_days = (next_payment_date - datetime.now()).days
-                if remaining_days < 0:
-                    overdue = True
-                    remaining_days = abs(remaining_days)
-                    if remaining_days < 7:
-                        time_unit = 'day(s)'
-                    elif remaining_days < 30:
-                        remaining_days = round(remaining_days / 7)
-                        time_unit = 'week(s)'
-                    elif remaining_days < 365:
-                        remaining_days = round(remaining_days / 30)
-                        time_unit = 'month(s)'
-                    else:
-                        remaining_days = round(remaining_days / 365)
-                        time_unit = 'year(s)'
-
-                    overdue_status = 'overdue' if overdue else 'due in'
-                    overdue_tenants.append((count_tenant['tenantName'], count_tenant['propertyName'],count_tenant['selected_section'], remaining_days, time_unit, overdue_status))
-
-        overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
-
         property_data_list = list(db.property_managed.find(user_query))
         if len(property_data_list) == 0:
             flash('No property data found', 'error')
-            return render_template('dashboard.html',dp=dp_str)
+            return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
         else:
+            if startdate_on_str and enddate_on_str:
+                startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+                enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+                latest_year = enddate.year
+
+                date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
+                date_query.update(user_query)
+
+                current_tenant_data = list(db.tenants.find(date_query, projection))
+
+                old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
+
+                month_name = f"{startdate_on_str} to {enddate_on_str}"
+            else:
+                latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
+                if latest_document is None:
+                    latest_document_old = db.old_tenant_data.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
+                    if latest_document_old is None:
+                        flash('No tenant data found', 'error')
+                        return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
+                    else:
+                        latest_year = latest_document_old['date_last_paid'].year
+                else:    
+                    latest_year = latest_document['date_last_paid'].year
+
+                startdate = datetime(latest_year, 1, 1)
+                enddate = datetime(latest_year, 12, 31, 23, 59, 59)
+
+                date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
+                date_query.update(user_query)
+
+                current_tenant_data = list(db.tenants.find(date_query, projection))
+
+                old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
+
+                month_name = f"{startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}"
+            
+            overdue_tenants = []
+            count_current_tenants = 0
+            for count_tenant in current_tenant_data:
+                if count_tenant['status'] != 'deleted':
+                    count_current_tenants += 1
+
+                    last_payment_month = month_mapping.get(count_tenant['months_paid'], 0)
+                    last_payment_date = datetime(year=count_tenant['year'], month=last_payment_month, day=1)
+                    next_payment_date = last_payment_date + timedelta(days=30)
+                    remaining_days = (next_payment_date - datetime.now()).days
+                    if remaining_days < 0:
+                        overdue = True
+                        remaining_days = abs(remaining_days)
+                        if remaining_days < 7:
+                            time_unit = 'day(s)'
+                        elif remaining_days < 30:
+                            remaining_days = round(remaining_days / 7)
+                            time_unit = 'week(s)'
+                        elif remaining_days < 365:
+                            remaining_days = round(remaining_days / 30)
+                            time_unit = 'month(s)'
+                        else:
+                            remaining_days = round(remaining_days / 365)
+                            time_unit = 'year(s)'
+
+                        overdue_status = 'overdue' if overdue else 'due in'
+                        overdue_tenants.append((count_tenant['tenantName'], count_tenant['propertyName'],count_tenant['selected_section'], remaining_days, time_unit, overdue_status))
+
+            overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
+
             doc_query = {'status': {'$ne': 'deleted'}}
             doc_query.update(user_query)
             tenant_data_cursor = db.tenants.find(doc_query, projection)
@@ -4244,14 +4249,14 @@ def load_dashboard_page():
                 gc.collect()
 
                 return render_template('dashboard.html', chart_property_performance_trended_data=chart_property_performance_trended_data,
-                                       chart_property_performance_data=chart_property_performance_data,
-                                       chart_property_type_data=chart_property_type_data, count_property=count_property,
-                                       available_amount=available_amount, overdue_tenants=overdue_tenants,
-                                       property_occupancy=property_occupancy, count_current_tenants=count_current_tenants,
-                                       month_name=month_name, dp=dp_str)
+                                    chart_property_performance_data=chart_property_performance_data,
+                                    chart_property_type_data=chart_property_type_data, count_property=count_property,
+                                    available_amount=available_amount, overdue_tenants=overdue_tenants,
+                                    property_occupancy=property_occupancy, count_current_tenants=count_current_tenants,
+                                    month_name=month_name, dp=dp_str)
             else:
                 flash('No tenant data found', 'error')
-                return render_template('dashboard.html', property_occupancy=property_occupancy, dp=dp_str)
+                return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])
