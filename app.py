@@ -1,6 +1,5 @@
 from flask import Flask, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, jsonify
 from flask_mail import Mail, Message
-from flask_caching import Cache
 from docx import Document
 from pymongo import MongoClient, ASCENDING, DESCENDING
 import secrets
@@ -37,7 +36,6 @@ import gc
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 def get_mongo_client():
     # client = MongoClient('mongodb://localhost:27017/')
@@ -544,7 +542,7 @@ def tenant_register_page():
     return resp
 
 @app.route('/add properties')
-@cache.cached(timeout=3600)
+
 def add_properties():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -560,7 +558,7 @@ def add_properties():
     return render_template('add property page.html', dp=dp_str)
 
 @app.route('/add tenants')
-@cache.cached(timeout=3600)
+
 def add_tenants():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -597,7 +595,7 @@ def add_tenants():
         return render_template('add tenants page.html', dp=dp_str, property_data=property_data_dict)
 
 @app.route('/export tenant data')
-@cache.cached(timeout=3600)
+
 def export_tenant_data():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -613,7 +611,7 @@ def export_tenant_data():
     return render_template('export tenant data.html', dp=dp_str)
 
 @app.route('/add new stock page')
-@cache.cached(timeout=3600)
+
 def add_new_stock_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -629,7 +627,7 @@ def add_new_stock_page():
     return render_template('add new stock.html', dp=dp_str)
 
 @app.route('/update existing stock')
-@cache.cached(timeout=3600)
+
 def update_existing_stock():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -656,7 +654,7 @@ def update_existing_stock():
     return render_template('update existing stock.html', dp=dp_str, items_to_update=items_to_update)
 
 @app.route('/update sales page')
-@cache.cached(timeout=3600)
+
 def update_sales_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -683,7 +681,7 @@ def update_sales_page():
     return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
 
 @app.route('/update production activity')
-@cache.cached(timeout=3600)
+
 def update_production_activity():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -710,7 +708,7 @@ def update_production_activity():
     return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
 
 @app.route('/update inhouse use page')
-@cache.cached(timeout=3600)
+
 def update_inhouse_use_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -1340,7 +1338,7 @@ def account_setup_initiated():
     
 ##ACCOUNT SETTING FOR TENANT
 @app.route('/tenant-account-setup-page')
-@cache.cached(timeout=3600)
+
 def tenant_account_setup_page():
     db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
@@ -1517,7 +1515,7 @@ def tenant_authentication():
         return redirect('/tenant-data')
 
 @app.route('/tenant-data')
-@cache.cached(timeout=3600)
+
 def tenant_data():
     db, fs = get_db_and_fs()
     tenantEmail = session.get('tenantEmail')
@@ -1607,7 +1605,7 @@ def tenant_data():
 
 #############LOADING COMPLAINTS PAGE##########
 @app.route('/complaint-form')
-@cache.cached(timeout=3600)
+
 def complaint_form():
     db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
@@ -1702,7 +1700,7 @@ def add_complaint():
     
 ############SHOW MY COMPLAINTS######################
 @app.route('/my-complaints')
-@cache.cached(timeout=3600)
+
 def my_complaints():
     db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
@@ -1813,7 +1811,7 @@ def tenant_reply_complaint():
   
 ############LOAD COMPLAINTS TO MANAGER######################
 @app.route('/resolve-complaints')
-@cache.cached(timeout=3600)
+
 def resolve_complaints():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -2079,7 +2077,7 @@ def add_property():
 
 ########LOAD TENANT INFO################
 @app.route('/update-tenant-info')
-@cache.cached(timeout=3600)
+
 def update_tenant_info():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -2233,7 +2231,7 @@ def get_receipt():
 
 ###########UPDATE TENANT INFO################
 @app.route('/update', methods=['POST'])
-@cache.cached(timeout=3600)
+
 def update():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3115,7 +3113,7 @@ def get_property_data(properties):
     return property_data
 
 @app.route('/view-property-info')
-@cache.cached(timeout=3600)
+
 def view_property_info():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
@@ -3149,7 +3147,7 @@ def view_property_info():
 
 #####UPDATE PROPERTY INFO#############
 @app.route('/update-property/<propertyName>')
-@cache.cached(timeout=3600)
+
 def selected_property(propertyName):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3207,7 +3205,7 @@ def get_managers_data(registered_managers):
     return managers
 
 @app.route('/view-user-accounts')
-@cache.cached(timeout=3600)
+
 def view_user_accounts():
     db, fs = get_db_and_fs()
     # Get session data
@@ -3256,7 +3254,7 @@ def delete_manager(company_name,email):
     
 ########ADD NEW MANAGER EMAIL################
 @app.route('/add-new-manager-email')
-@cache.cached(timeout=3600)
+
 def add_new_manager_email():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3299,7 +3297,7 @@ def update_new_manager_email():
 
 #######CLICK TO UPDATE TENANT#############
 @app.route('/selected-tenant/<tenantName>/<tenantEmail>/<propertyName>/<selected_section>/<payment_type>/<amount>/<months_paid>/<date_last_paid>')
-@cache.cached(timeout=3600)
+
 def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, payment_type, amount, months_paid,date_last_paid):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3317,7 +3315,7 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
         
 ##########EDIT TENANT INFO###################
 @app.route('/edit/<tenantName>/<email>/<property_name>/<selected_section>/<payment_type>')
-@cache.cached(timeout=3600)
+
 def edit(tenantName, email, property_name, selected_section, payment_type):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3901,7 +3899,7 @@ def adminlogin():
             return redirect('/admin')
         
 @app.route('/add-property-manager-page')
-@cache.cached(timeout=3600)
+
 def add_property_manager_page():
     login_data = session.get('admin_email')
     if login_data is None:
@@ -3912,7 +3910,7 @@ def add_property_manager_page():
 
 ##########ADD PROPERTY MANAGER COMPANY#############
 @app.route('/add-property-manager', methods=["POST"])
-@cache.cached(timeout=3600)
+
 def add_property_manager():
     db, fs = get_db_and_fs()
     login_data = session.get('admin_email')
@@ -3984,7 +3982,7 @@ def add_property_manager():
 
 #######NEW SUBSCRIPTION PAGE###############
 @app.route("/new-subscription")
-@cache.cached(timeout=3600)
+
 def new_subscription():
     login_data = session.get('admin_email')
     if login_data is None:
@@ -4006,7 +4004,7 @@ def new_subscription():
     
 #######STORING NEW SUBSCRIPTION###############
 @app.route("/new-subscription-initiated", methods=["POST"])
-@cache.cached(timeout=3600)
+
 def new_subscription_initiated():
     db, fs = get_db_and_fs()
     login_data = session.get('admin_email')
@@ -4065,7 +4063,7 @@ def new_subscription_initiated():
 
 #############DASHBOARD PAGE#######################
 @app.route('/load-dashboard-page', methods=["GET", "POST"])
-@cache.cached(timeout=3600)
+
 def load_dashboard_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4219,16 +4217,6 @@ def load_dashboard_page():
                 current_data = pd.DataFrame(current_tenant_data)
                 old_data = pd.DataFrame(old_tenant_data)
 
-                startdate = datetime(enddate.year, 1, 1)
-                enddate = datetime(enddate.year, 12, 31, 23, 59, 59)
-
-                date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
-                date_query.update(user_query)
-
-                current_line = pd.DataFrame(list(db.tenants.find(date_query, projection)))
-                old_line = pd.DataFrame(list(db.old_tenant_data.find(date_query, projection)))
-
-                df2_line = pd.concat([current_line, old_line], ignore_index=True)
                 df2 = pd.concat([current_data, old_data], ignore_index=True)
                 df3 = pd.DataFrame(property_data_list)
 
@@ -4241,7 +4229,7 @@ def load_dashboard_page():
                 property_performance['demanded_amount'] = property_performance['total_property_value'] - property_performance['available_amount']
                 property_performance = property_performance.groupby(['propertyName'])[['available_amount', 'demanded_amount']].sum().reset_index()
 
-                property_performance_line = df2_line[['propertyName', 'available_amount', 'months_paid', 'year']].copy()
+                property_performance_line = df2[['propertyName', 'available_amount', 'months_paid', 'year']].copy()
                 property_performance_line_grouped = property_performance_line.groupby(['year', 'months_paid', 'propertyName'])['available_amount'].sum().reset_index()
                 month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
                 property_performance_line_grouped['months_paid'] = pd.Categorical(property_performance_line_grouped['months_paid'], categories=month_order, ordered=True)
@@ -4274,7 +4262,7 @@ def load_dashboard_page():
                 }
 
                 # Delete the DataFrames
-                del current_data, old_data, current_line, old_line, df2_line, df2, df3, property_performance, property_performance_line, property_performance_line_grouped, property_performance_line_grouped_pivot_df
+                del current_data, old_data, df2, df3, property_performance, property_performance_line, property_performance_line_grouped, property_performance_line_grouped_pivot_df
                 # Call garbage collector
                 gc.collect()
 
@@ -4405,7 +4393,7 @@ def download():
         
 #####FILE PASSWORDS
 @app.route('/view-file-passwords')
-@cache.cached(timeout=3600)
+
 def view_file_passwords():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
@@ -4428,7 +4416,7 @@ def view_file_passwords():
 
 ####MANAGE CONTRACTS
 @app.route('/manage-contracts')
-@cache.cached(timeout=3600)
+
 def manage_contracts():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4481,7 +4469,7 @@ def manage_contracts():
             return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp=dp_str)
         
 @app.route('/upload-contract-page')
-@cache.cached(timeout=3600)
+
 def upload_contract_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4571,7 +4559,7 @@ def delete_contract(contractID):
 
 ##UPDATE CONTRACTS
 @app.route('/update-contract/<contractID>/<company_name>/<receiver>')
-@cache.cached(timeout=3600)
+
 def selected_contract(contractID, company_name, receiver):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4644,7 +4632,7 @@ def download_contract(fileID):
 
 ####MANAGE USER RIGHTS
 @app.route('/manage-user-rights')
-@cache.cached(timeout=3600)
+
 def manage_user_rights():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4669,7 +4657,7 @@ def manage_user_rights():
         return render_template('user rights.html',managers=managers,dp=dp_str)
     
 @app.route('/manage-user-rights-page/<email>/<company_name>')
-@cache.cached(timeout=3600)
+
 def manage_user_rights_page(email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4761,7 +4749,7 @@ def user_rights_initiated():
     
 ####ASSIGN PROPERTIES TO MANAGERS
 @app.route('/assign-properties')
-@cache.cached(timeout=3600)
+
 def assign_properties():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4787,7 +4775,7 @@ def assign_properties():
         return render_template('assign properties.html',managers=managers,dp=dp_str)
     
 @app.route('/assign-properties-page/<name>/<email>/<company_name>')
-@cache.cached(timeout=3600)
+
 def assign_properties_page(name,email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4829,7 +4817,7 @@ def assign_properties_initiated():
 
 ####UNASSIGN PROPERTIES FROM MANAGERS
 @app.route('/unassign-properties')
-@cache.cached(timeout=3600)
+
 def unassign_properties():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4855,7 +4843,7 @@ def unassign_properties():
         return render_template('unassign properties.html',managers=managers,dp=dp_str)
     
 @app.route('/unassign-properties-page/<name>/<email>/<company_name>')
-@cache.cached(timeout=3600)
+
 def unassign_properties_page(name,email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4921,7 +4909,7 @@ def convert_to_eat(timestamp):
 
 ##AUDIT LOGS
 @app.route('/view-audit-logs')
-@cache.cached(timeout=3600)
+
 def view_audit_logs():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
@@ -4953,7 +4941,7 @@ def format_time(doc):
 
 ##LOGIN HISTORY
 @app.route('/view-login-history')
-@cache.cached(timeout=3600)
+
 def view_login_history():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
@@ -5083,7 +5071,7 @@ def download_login_data():
 
 #####ACTIVATE SENDING EMAILS
 @app.route('/activate sending emails/<send_emails>')
-@cache.cached(timeout=3600)
+
 def activate_send_emails(send_emails):
     db, fs = get_db_and_fs()
     send_emails_state = db.send_emails.find_one()
@@ -5494,7 +5482,7 @@ def inhouse_used_items():
     return jsonify({'redirect': url_for('update_inhouse_use_page')})
     
 @app.route('/revenue-details')
-@cache.cached(timeout=3600)
+
 def revenue_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5583,7 +5571,7 @@ def revenue_details():
             return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
 
 @app.route('/sales-details')
-@cache.cached(timeout=3600)
+
 def sales_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5624,7 +5612,7 @@ def sales_details():
             return render_template('sales info.html', sales_info = sales_info, dp=dp_str)
 
 @app.route('/stock-details')
-@cache.cached(timeout=3600)
+
 def stock_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5665,7 +5653,7 @@ def stock_details():
             return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
 
 @app.route('/inhouse-item-use-details')
-@cache.cached(timeout=3600)
+
 def inhouse_items_use_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5704,7 +5692,7 @@ def inhouse_items_use_details():
             return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, dp=dp_str)
 
 @app.route('/stock-overview', methods=["GET", "POST"])
-@cache.cached(timeout=3600)
+
 def stock_overview():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6071,7 +6059,7 @@ def stock_overview():
                                first_day_of_current_month=first_day_of_current_month, dp=dp_str)
     
 @app.route('/all-accounts-overview')
-@cache.cached(timeout=3600)
+
 def all_accounts_overview():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6350,7 +6338,7 @@ def calculate_total_cost(row):
     return total_cost
 
 @app.route('/view-production-info')
-@cache.cached(timeout=3600)
+
 def view_production_info():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6601,7 +6589,7 @@ def download_inhouse_item_use():
 
 #Manager notifications
 @app.route('/manager notifications')
-@cache.cached(timeout=3600)
+
 def manager_notifications():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6667,7 +6655,7 @@ def manager_notifications():
     
 #Tenant notifications
 @app.route('/tenant notifications')
-@cache.cached(timeout=3600)
+
 def tenant_notifications():
     db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
