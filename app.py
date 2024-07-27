@@ -113,7 +113,7 @@ def send_reports():
         return  # Only run on the first day of the month
 
     db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     current_year = datetime.now().year
     current_month = datetime.now().month
@@ -331,7 +331,7 @@ def send_reports():
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_reminders():
     db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     current_year = datetime.now().year
     month_mapping = {
@@ -399,7 +399,7 @@ def send_payment_reminders():
 ##########SEND CONTRACT EXPIRY REMINDERS###########
 def send_contract_expiry_reminders():
     db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     managers = list(db.managers.find())
     for manager in managers:
@@ -451,7 +451,7 @@ def send_contract_expiry_reminders():
 @app.route('/send-message', methods=["POST"])
 def send_message():
     db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         
     name = request.form.get('name')
     email = request.form.get('email')
@@ -511,7 +511,7 @@ def manager_register_page():
     companies = db.managers.find({}, {"name": 1})
     company_names = [company['name'] for company in companies]
     
-    cursor = list(db.property_managed.find())
+    cursor = list(db.property_managed.find({},{'propertyName':1, '_id':0}))
     df = pd.DataFrame(cursor)
     if 'propertyName' in df.columns:
         property_data = df['propertyName'].tolist()
@@ -529,8 +529,9 @@ def tenant_register_page():
     companies = db.managers.find({}, {"name": 1})
     company_names = [company['name'] for company in companies]
     
-    cursor = list(db.property_managed.find())
+    cursor = list(db.property_managed.find({},{'propertyName':1, '_id':0}))
     df = pd.DataFrame(cursor)
+    print(df)
     if 'propertyName' in df.columns:
         property_data = df['propertyName'].tolist()
     else:
@@ -550,7 +551,7 @@ def add_properties():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -566,7 +567,7 @@ def add_tenants():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -578,8 +579,8 @@ def add_tenants():
         else:
             user_query  = {'company_name': company['company_name']}
 
-        property_data_list = list(db.property_managed.find(user_query))
-        tenant_data_cursor = db.tenants.find(user_query)
+        property_data_list = list(db.property_managed.find(user_query,{'propertyName':1,'sections':1,'_id':0}))
+        tenant_data_cursor = db.tenants.find(user_query,{'propertyName':1,'selected_section':1,'_id':0})
                 
         property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
         for tenant_exists in tenant_data_cursor:
@@ -603,7 +604,7 @@ def export_tenant_data():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -619,7 +620,7 @@ def add_new_stock_page():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -635,7 +636,7 @@ def update_existing_stock():
         flash('Login first', 'error')
         return redirect('/')
     
-    company = db.registered_managers.find_one({'username': login_data})
+    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
     if not company:
         flash('Company not found', 'error')
         return redirect('/')
@@ -662,7 +663,7 @@ def update_sales_page():
         flash('Login first', 'error')
         return redirect('/')
     
-    company = db.registered_managers.find_one({'username': login_data})
+    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
     if not company:
         flash('Company not found', 'error')
         return redirect('/')
@@ -689,7 +690,7 @@ def update_production_activity():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -716,7 +717,7 @@ def update_inhouse_use_page():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -781,7 +782,7 @@ def generate_code(length=6):
 @app.route('/register-account', methods=["POST"])
 def register_account():
     db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         
     # Get form data
     form_data = request.form
@@ -931,7 +932,7 @@ def verify_username():
 
 def send_verification_email(manager_email, manager_name, code):
     db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     if send_emails is not None:
         msg = Message('Password Reset Verification Code - Mich Manage', 
@@ -990,7 +991,7 @@ def send_verification_code():
 def password_reset_verifying_user():
     db, fs = get_db_and_fs()
 
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     # Get form data
     email = request.form.get('email')
@@ -1047,22 +1048,14 @@ def password_reset_verifying_user():
 def userlogin():
     db, fs = get_db_and_fs()
     session.clear()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
-    if send_emails is not None:
-        app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
-        app.config['MAIL_PORT'] = 587
-        app.config['MAIL_USERNAME'] = 'apikey'
-        app.config['MAIL_PASSWORD'] = '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'
-        app.config['MAIL_USE_TLS'] = True
-        app.config['MAIL_USE_SSL'] = False
-        mail.init_app(app)
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     username = request.form.get('username')
     password = request.form.get('password')
 
     session.permanent = False
     
-    manager = db.registered_managers.find_one({'username':username})
+    manager = db.registered_managers.find_one({'username':username},{'_id':0,'createdAt':0,'code':0,'address':0})
 
     if manager is None:
         flash('Not a manager', 'error')
@@ -1076,7 +1069,7 @@ def userlogin():
         else:
             session['dark_mode'] = 'no'
     
-        subscription = db.managers.find_one({'name': manager['company_name']})
+        subscription = db.managers.find_one({'name': manager['company_name']},{'last_subscribed_on':1,'subscribed_days':1,'account_type':1})
 
         stored_password = manager['password']
         if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
@@ -1135,7 +1128,6 @@ def userlogin():
 
             session.permanent = False
             session['logged_in'] = True
-            session['user_id'] = str(manager["_id"])
             session['user_message1'] = user_message1
             session['user_message2'] = remaining_days
             session['login_username'] = login_username
@@ -1168,14 +1160,14 @@ def userlogin():
 @app.route("/resend auth code/<username>")
 def resend_auth_code(username):
     db, fs = get_db_and_fs()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     code = generate_code()
     user_auth = {"username": username, "code": code}
     db.login_auth.delete_one({"username": username})
 
     no_send_emails_code = 0
-    manager = db.registered_managers.find_one({'username':username})
+    manager = db.registered_managers.find_one({'username':username},{'_id':0,'createdAt':0,'code':0,'address':0})
     #Sending verification code
     if send_emails is not None:
         msg = Message('Verify Your Identity - Mich Manage', 
@@ -1221,7 +1213,7 @@ def authentication():
         flash('Not a manager', 'error')
         return redirect('/')
     else:
-        subscription = db.managers.find_one({'name': manager['company_name']})
+        subscription = db.managers.find_one({'name': manager['company_name']},{'last_subscribed_on':1,'subscribed_days':1,'account_type':1})
 
         # Calculate remaining days
         remaining_days = (subscription['last_subscribed_on'] + timedelta(days=subscription['subscribed_days']) - datetime.now()).days
@@ -1240,7 +1232,6 @@ def authentication():
         # Set session data
         session.permanent = False
         session['logged_in'] = True
-        session['user_id'] = str(manager["_id"])
         session['user_message1'] = manager['name']
         session['user_message2'] = remaining_days
         session['login_username'] = manager['username']
@@ -1276,7 +1267,7 @@ def account_setup_page():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0})
 
         if 'dark_mode' in company:
             if company['dark_mode'] == 'yes':
@@ -1425,7 +1416,7 @@ def tenant_register_account():
 def tenant_login():
     db, fs = get_db_and_fs()
     session.clear()
-    send_emails = db.send_emails.find_one({'emails': "yes"})
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
     username = request.form.get('username')
     password = request.form.get('password')
@@ -1446,7 +1437,7 @@ def tenant_login():
                 no_send_emails_code = 0
 
                 #Sending verification code
-                send_emails = db.send_emails.find_one({'emails': "yes"})
+                send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
                 if send_emails is not None:
                     msg = Message('Verify Your Identity - Mich Manage', 
@@ -1629,7 +1620,7 @@ def add_complaint():
         flash('Login first', 'error')
         return redirect('/tenant-login-page')
     else:
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
             app.config['MAIL_PORT'] = 587
@@ -1754,7 +1745,7 @@ def tenant_reply_complaint():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
             app.config['MAIL_PORT'] = 587
@@ -1819,7 +1810,7 @@ def resolve_complaints():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -1893,7 +1884,7 @@ def update_complaint():
         return redirect('/')
     else:
         manager = db.registered_managers.find_one({'username': login_data})
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
             app.config['MAIL_PORT'] = 587
@@ -1955,7 +1946,7 @@ def resolved_complaints(complaint_id):
         flash('Login first', 'error')
         return redirect('/')
     else:
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
             app.config['MAIL_PORT'] = 587
@@ -2086,7 +2077,7 @@ def update_tenant_info():
         flash('Login first', 'error')
         return redirect('/')
     
-    company = db.registered_managers.find_one({'username': login_data})
+    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
     dp_str = None
 
     is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
@@ -2241,15 +2232,7 @@ def update():
         return redirect('/')
     else:
         
-        send_emails = db.send_emails.find_one({'emails': "yes"})
-        if send_emails is not None:
-            app.config['MAIL_SERVER']='smtp.sendgrid.net'
-            app.config['MAIL_PORT'] = 587
-            app.config['MAIL_USERNAME'] = 'apikey'
-            app.config['MAIL_PASSWORD'] = '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'
-            app.config['MAIL_USE_TLS'] = True
-            app.config['MAIL_USE_SSL'] = False
-            mail.init_app(app)
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
         new_amount_from_form = request.form.get('amount_paid')
         payment_mode = request.form.get('payment_mode')
@@ -2267,7 +2250,7 @@ def update():
         section_value = section_tenant['section_value']
         payment_status = ""
 
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -3155,7 +3138,7 @@ def selected_property(propertyName):
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -3262,7 +3245,7 @@ def add_new_manager_email():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -3305,7 +3288,7 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
         flash('Login first', 'error') 
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -3324,7 +3307,7 @@ def edit(tenantName, email, property_name, selected_section, payment_type):
         return redirect('/')
     else:
         # Retrieve the tenant's info using the email
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -3345,20 +3328,12 @@ def make_edits():
         return redirect('/')
     else:
         
-        send_emails = db.send_emails.find_one({'emails': "yes"})
-        if send_emails is not None:
-            app.config['MAIL_SERVER']='smtp.sendgrid.net'
-            app.config['MAIL_PORT'] = 587
-            app.config['MAIL_USERNAME'] = 'apikey'
-            app.config['MAIL_PASSWORD'] = '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'
-            app.config['MAIL_USE_TLS'] = True
-            app.config['MAIL_USE_SSL'] = False
-            mail.init_app(app)
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
         tenantEmail = request.form.get('tenantEmail')
         propertyName = request.form.get('propertyName')
         selected_section = request.form.get('selected_section')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         # Create a dictionary for the fields to update
         fields_to_update = {}
         fields_to_update['status'] = 'edited'
@@ -3547,7 +3522,7 @@ def add_tenant():
         return redirect('/')
     else:
         
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
             app.config['MAIL_PORT'] = 587
@@ -3578,7 +3553,7 @@ def add_tenant():
 
         balance = section_value - amount
 
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
 
         # Calculate the number of full months the payment covers
         num_full_months = amount // section_value
@@ -3856,7 +3831,7 @@ def delete_tenant(tenantEmail, propertyName, selected_section):
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         tenants = db.tenants.find_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section})
         # Remove the _id field
         if '_id' in tenants:
@@ -3888,7 +3863,7 @@ def adminlogin():
             session.permanent = False
             session['admin_email'] = user['email']
             session['logged_in'] = True
-            send_emails = db.send_emails.find_one({'emails': "yes"})
+            send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
             if send_emails is not None:
                 session['send_emails'] = "yes"
             else:
@@ -3918,7 +3893,7 @@ def add_property_manager():
         flash('Login first', 'error')
         return redirect('/admin')
     else:   
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
             app.config['MAIL_PORT'] = 587
@@ -4078,7 +4053,7 @@ def load_dashboard_page():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        send_emails = db.send_emails.find_one({'emails': "yes"})
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         if send_emails is not None:
             app.config['MAIL_SERVER']='smtp.sendgrid.net'
             app.config['MAIL_PORT'] = 587
@@ -4139,6 +4114,8 @@ def load_dashboard_page():
 
                 old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
 
+                tenant_data_stats = list(db.tenants.find({}, projection))
+
                 month_name = f"{startdate_on_str} to {enddate_on_str}"
             else:
                 latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
@@ -4162,37 +4139,40 @@ def load_dashboard_page():
 
                 old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
 
+                tenant_data_stats = list(db.tenants.find({}, projection))
+
                 month_name = f"{startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}"
             
             overdue_tenants = []
             count_current_tenants = 0
-            for count_tenant in current_tenant_data:
-                if count_tenant['status'] != 'deleted':
-                    count_current_tenants += 1
+            if len(tenant_data_stats) != 0:
+                for count_tenant in tenant_data_stats:
+                    if count_tenant['status'] != 'deleted':
+                        count_current_tenants += 1
 
-                    last_payment_month = month_mapping.get(count_tenant['months_paid'], 0)
-                    last_payment_date = datetime(year=count_tenant['year'], month=last_payment_month, day=1)
-                    next_payment_date = last_payment_date + timedelta(days=30)
-                    remaining_days = (next_payment_date - datetime.now()).days
-                    if remaining_days < 0:
-                        overdue = True
-                        remaining_days = abs(remaining_days)
-                        if remaining_days < 7:
-                            time_unit = 'day(s)'
-                        elif remaining_days < 30:
-                            remaining_days = round(remaining_days / 7)
-                            time_unit = 'week(s)'
-                        elif remaining_days < 365:
-                            remaining_days = round(remaining_days / 30)
-                            time_unit = 'month(s)'
-                        else:
-                            remaining_days = round(remaining_days / 365)
-                            time_unit = 'year(s)'
+                        last_payment_month = month_mapping.get(count_tenant['months_paid'], 0)
+                        last_payment_date = datetime(year=count_tenant['year'], month=last_payment_month, day=1)
+                        next_payment_date = last_payment_date + timedelta(days=30)
+                        remaining_days = (next_payment_date - datetime.now()).days
+                        if remaining_days < 0:
+                            overdue = True
+                            remaining_days = abs(remaining_days)
+                            if remaining_days < 7:
+                                time_unit = 'day(s)'
+                            elif remaining_days < 30:
+                                remaining_days = round(remaining_days / 7)
+                                time_unit = 'week(s)'
+                            elif remaining_days < 365:
+                                remaining_days = round(remaining_days / 30)
+                                time_unit = 'month(s)'
+                            else:
+                                remaining_days = round(remaining_days / 365)
+                                time_unit = 'year(s)'
 
-                        overdue_status = 'overdue' if overdue else 'due in'
-                        overdue_tenants.append((count_tenant['tenantName'], count_tenant['propertyName'],count_tenant['selected_section'], remaining_days, time_unit, overdue_status))
+                            overdue_status = 'overdue' if overdue else 'due in'
+                            overdue_tenants.append((count_tenant['tenantName'], count_tenant['propertyName'],count_tenant['selected_section'], remaining_days, time_unit, overdue_status))
 
-            overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
+                overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
 
             doc_query = {'status': {'$ne': 'deleted'}}
             doc_query.update(user_query)
@@ -4289,7 +4269,7 @@ def download():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         is_manager = db.managers.find_one({'manager_email': company['email']})
         if is_manager is None:
             user_query = {'username': login_data, 'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
@@ -4424,7 +4404,7 @@ def manage_contracts():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4477,7 +4457,7 @@ def upload_contract_page():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4519,7 +4499,7 @@ def upload_contract():
             filename = secure_filename(file.filename)
             content_type = file.content_type
             file_id = fs.put(file.read(), filename=filename, content_type=content_type)
-            company = db.registered_managers.find_one({'username': login_data})
+            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
             receiver = request.form.get('receiver')
             start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
             end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
@@ -4567,7 +4547,7 @@ def selected_contract(contractID, company_name, receiver):
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4640,7 +4620,7 @@ def manage_user_rights():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4665,7 +4645,7 @@ def manage_user_rights_page(email,company_name):
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4757,7 +4737,7 @@ def assign_properties():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4783,7 +4763,7 @@ def assign_properties_page(name,email,company_name):
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4825,7 +4805,7 @@ def unassign_properties():
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4851,7 +4831,7 @@ def unassign_properties_page(name,email,company_name):
         flash('Login first', 'error')
         return redirect('/')
     else:
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         if 'dp' in company:
             dp_str = company['dp']
         else:
@@ -4977,7 +4957,7 @@ def download_audit_logs():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
 
         usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
         renamed_logs = []
@@ -5031,7 +5011,7 @@ def download_login_data():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
 
         usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
         logindata = []
@@ -6647,7 +6627,7 @@ def manager_notifications():
         # Separate sorted notifications and timestamps
         notifications = [notif for notif, _ in combined]
 
-        company = db.registered_managers.find_one({'username': login_data})
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         
