@@ -489,7 +489,6 @@ def after_request(response):
 
 @app.route('/logout')
 def logout():
-    cache.clear()
     session.clear()
     return redirect('/', code=303)
 
@@ -737,7 +736,6 @@ def update_inhouse_use_page():
 
 @app.route('/logout-admin')
 def logout_admin():
-    cache.clear()
     session.clear()
     return redirect('/admin', code=303)
 
