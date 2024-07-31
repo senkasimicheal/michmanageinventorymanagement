@@ -33,13 +33,16 @@ import time
 from docx2pdf import convert
 import PyPDF2
 import gc
+from collections import defaultdict
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
 def get_mongo_client():
-    # client = MongoClient('mongodb://localhost:27017/')
-    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    client = MongoClient('mongodb://localhost:27017/')
+    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
 
 # Function to get the database and GridFS instance
@@ -105,7 +108,6 @@ def index():
 @app.route('/download-apk')
 def download_apk():
     return send_from_directory(directory='.', path='michmanage.apk', as_attachment=True)
-
 
 ##########SEND MONTHLY REPORTS###########
 def send_reports():
@@ -447,6 +449,36 @@ def send_contract_expiry_reminders():
                     thread = threading.Thread(target=send_async_email, args=[app, msg])
                     thread.start()
 
+scheduler = BackgroundScheduler()
+# Schedule monthly report
+scheduler.add_job(
+    func=send_reports,
+    trigger=CronTrigger(day=1, hour=9, minute=0),
+    id='send_reports_job',
+    name='Send reports on the 1st of every month',
+    replace_existing=True
+)
+
+# Schedule payment reminders
+scheduler.add_job(
+    func=send_payment_reminders,
+    trigger=CronTrigger(day_of_week='wed', hour=9, minute=0),
+    id='send_payment_reminders_job',
+    name='Send payment reminders every Wednesday at 9 AM',
+    replace_existing=True
+)
+
+# Schedule contract expiry reminders
+scheduler.add_job(
+    func=send_contract_expiry_reminders,
+    trigger=CronTrigger(day_of_week='wed', hour=9, minute=0),
+    id='send_contract_expiry_reminders_job',
+    name='Send contract expiry reminders every Wednesday at 9 AM',
+    replace_existing=True
+)
+
+scheduler.start()
+
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
 def send_message():
@@ -504,40 +536,27 @@ def documentation():
 def tenant_login_page():
     return render_template('tenant login.html')
 
-@app.route('/manager register')
+@app.route('/manager_register')
 def manager_register_page():
     db, fs = get_db_and_fs()
     companies = db.managers.find({}, {"name": 1})
     company_names = [company['name'] for company in companies]
     
-    cursor = list(db.property_managed.find({},{'propertyName':1, '_id':0}))
-    df = pd.DataFrame(cursor)
-    if 'propertyName' in df.columns:
-        property_data = df['propertyName'].tolist()
-    else:
-        property_data = []
+    cursor = db.property_managed.find({}, {'propertyName': 1, '_id': 0})
+    property_data = [item['propertyName'] for item in cursor if 'propertyName' in item]
     
-    del df
-    gc.collect()
     resp = make_response(render_template("manager register.html", property_data=property_data, company_names=company_names))
     return resp
 
-@app.route('/tenant register')
+@app.route('/tenant_register')
 def tenant_register_page():
     db, fs = get_db_and_fs()
     companies = db.managers.find({}, {"name": 1})
     company_names = [company['name'] for company in companies]
     
-    cursor = list(db.property_managed.find({},{'propertyName':1, '_id':0}))
-    df = pd.DataFrame(cursor)
-    print(df)
-    if 'propertyName' in df.columns:
-        property_data = df['propertyName'].tolist()
-    else:
-        property_data = []
-
-    del df
-    gc.collect()
+    cursor = db.property_managed.find({}, {'propertyName': 1, '_id': 0})
+    property_data = [item['propertyName'] for item in cursor if 'propertyName' in item]
+    
     resp = make_response(render_template("tenant register.html", property_data=property_data, company_names=company_names))
     return resp
 
@@ -3955,7 +3974,6 @@ def add_property_manager():
 
 #######NEW SUBSCRIPTION PAGE###############
 @app.route("/new-subscription")
-
 def new_subscription():
     login_data = session.get('admin_email')
     if login_data is None:
@@ -3963,17 +3981,14 @@ def new_subscription():
         return redirect('/admin')
     else:
         db, fs = get_db_and_fs()
-        companies = db.managers.find()
-        cursor = list(companies)
-        if len(cursor) == 0:
+        companies = db.managers.find({}, {"name": 1, "_id": 0})
+        company_names = [company['name'] for company in companies]
+        
+        if not company_names:
             flash('We found no companies', 'error')
             return render_template("managers accounts.html")
         else:
-            df = pd.DataFrame(cursor)
-            company_names = df['name']
-            del df
-            gc.collect()
-        return render_template("new_subscription.html", company_names=company_names)
+            return render_template("new_subscription.html", company_names=company_names)
     
 #######STORING NEW SUBSCRIPTION###############
 @app.route("/new-subscription-initiated", methods=["POST"])
@@ -4036,7 +4051,6 @@ def new_subscription_initiated():
 
 #############DASHBOARD PAGE#######################
 @app.route('/load-dashboard-page', methods=["GET", "POST"])
-
 def load_dashboard_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4052,14 +4066,6 @@ def load_dashboard_page():
         return redirect('/')
     else:
         send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
-        if send_emails is not None:
-            app.config['MAIL_SERVER']='smtp.sendgrid.net'
-            app.config['MAIL_PORT'] = 587
-            app.config['MAIL_USERNAME'] = 'apikey'
-            app.config['MAIL_PASSWORD'] = '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'
-            app.config['MAIL_USE_TLS'] = True
-            app.config['MAIL_USE_SSL'] = False
-            mail.init_app(app)
 
         if send_emails is None:
             session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
@@ -4192,63 +4198,81 @@ def load_dashboard_page():
                         del property_data_dict[tenant_property_name]
 
             if current_tenant_data or old_tenant_data:  # Check if data is available
-                current_data = pd.DataFrame(current_tenant_data)
-                old_data = pd.DataFrame(old_tenant_data)
+                combined_data = current_tenant_data + old_tenant_data
 
-                df2 = pd.concat([current_data, old_data], ignore_index=True)
-                df3 = pd.DataFrame(property_data_list)
+                # Create a mapping of property values
+                property_value_dict = {item['propertyName']: item['property_value'] for item in property_data_list}
 
-                # Create a new DataFrame with 'propertyName' and 'amount' from df_combined_tenants
-                property_performance = df2[['propertyName', 'available_amount', 'months_paid', 'date_last_paid']].copy()
-                property_value_dict = df3.set_index('propertyName')['property_value'].to_dict()
-                property_performance['property_value'] = property_performance['propertyName'].map(property_value_dict)
-                property_performance['months_paid_count'] = property_performance.groupby('propertyName')['months_paid'].transform('nunique')
-                property_performance['total_property_value'] = property_performance['months_paid_count'] * property_performance['property_value']
-                property_performance['demanded_amount'] = property_performance['total_property_value'] - property_performance['available_amount']
-                property_performance = property_performance.groupby(['propertyName'])[['available_amount', 'demanded_amount']].sum().reset_index()
-
-                property_performance_line = df2[['propertyName', 'available_amount', 'months_paid', 'year']].copy()
-                property_performance_line_grouped = property_performance_line.groupby(['year', 'months_paid', 'propertyName'])['available_amount'].sum().reset_index()
+                # Initialize dictionaries to hold data
+                property_performance = defaultdict(lambda: {
+                    'available_amount': 0,
+                    'months_paid': set(),
+                    'property_value': 0,
+                    'demanded_amount': 0
+                })
+                
+                # Process combined_data
+                for item in combined_data:
+                    prop_name = item['propertyName']
+                    if prop_name in property_value_dict:
+                        property_value = property_value_dict[prop_name]
+                        property_performance[prop_name]['available_amount'] += item.get('available_amount', 0)
+                        property_performance[prop_name]['months_paid'].add(item.get('months_paid', ''))
+                        property_performance[prop_name]['property_value'] = property_value
+                
+                # Compute months_paid_count and total_property_value
+                for prop_name, data in property_performance.items():
+                    data['months_paid_count'] = len(data['months_paid'])
+                    data['total_property_value'] = data['months_paid_count'] * data['property_value']
+                    data['demanded_amount'] = data['total_property_value'] - data['available_amount']
+                
+                # Initialize for property_performance_line
+                property_performance_line = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+                for item in combined_data:
+                    year = item.get('year')
+                    month = item.get('months_paid')
+                    prop_name = item['propertyName']
+                    property_performance_line[year][month][prop_name] += item.get('available_amount', 0)
+                
+                # Prepare data for property_performance_line for the chart
                 month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-                property_performance_line_grouped['months_paid'] = pd.Categorical(property_performance_line_grouped['months_paid'], categories=month_order, ordered=True)
-                property_performance_line_grouped = property_performance_line_grouped.sort_values(by=['year', 'months_paid']).reset_index(drop=True)
-                property_performance_line_grouped_pivot_df = property_performance_line_grouped.pivot_table(index='months_paid', columns='propertyName', values='available_amount')
-
-                ###total number of property managed
-                count_property = len(df3.index)
-                available_amount = df2['available_amount'].sum()
-
-                ###CHARTS
+                labels = month_order
+                datasets = {prop_name: [property_performance_line[year].get(month, {}).get(prop_name, 0) for month in month_order] for prop_name in property_performance.keys()}
 
                 chart_property_performance_trended_data = {
-                    'labels': property_performance_line_grouped_pivot_df.index.tolist(),
-                    'datasets': [{'label': col, 'data': property_performance_line_grouped_pivot_df[col].tolist()} for col in property_performance_line_grouped_pivot_df.columns]
+                    'labels': labels,
+                    'datasets': [{'label': prop_name, 'data': datasets[prop_name]} for prop_name in property_performance.keys()]
                 }
 
                 chart_property_performance_data = {
-                    'labels': property_performance['propertyName'].tolist(),
-                    'available_amount': property_performance['available_amount'].tolist(),
-                    'demanded_amount': property_performance['demanded_amount'].tolist()
+                    'labels': list(property_performance.keys()),
+                    'available_amount': [data['available_amount'] for data in property_performance.values()],
+                    'demanded_amount': [data['demanded_amount'] for data in property_performance.values()]
                 }
-    
-                # Prepare data for Chart.js
-                grouped_property_data = df3['type'].value_counts().reset_index()
-                grouped_property_data.columns = ['type', 'count']
+
+                # Count properties and available amount
+                count_property = len(property_data_list)
+                available_amount = sum(item.get('available_amount', 0) for item in combined_data)
+
+                # Group property data
+                property_type_counts = defaultdict(int)
+                for item in property_data_list:
+                    property_type_counts[item['type']] += 1
+                
                 chart_property_type_data = {
-                    'labels': grouped_property_data['type'].tolist(),
-                    'values': grouped_property_data['count'].tolist()
+                    'labels': list(property_type_counts.keys()),
+                    'values': list(property_type_counts.values())
                 }
 
-                # Delete the DataFrames
-                del current_data, old_data, df2, df3, property_performance, property_performance_line, property_performance_line_grouped, property_performance_line_grouped_pivot_df
-                # Call garbage collector
-                gc.collect()
-
-                return render_template('dashboard.html', chart_property_performance_trended_data=chart_property_performance_trended_data,
+                return render_template('dashboard.html', 
+                                    chart_property_performance_trended_data=chart_property_performance_trended_data,
                                     chart_property_performance_data=chart_property_performance_data,
-                                    chart_property_type_data=chart_property_type_data, count_property=count_property,
-                                    available_amount=available_amount, overdue_tenants=overdue_tenants,
-                                    property_occupancy=property_occupancy, count_current_tenants=count_current_tenants,
+                                    chart_property_type_data=chart_property_type_data, 
+                                    count_property=count_property,
+                                    available_amount=available_amount,
+                                    overdue_tenants=overdue_tenants,
+                                    property_occupancy=property_occupancy,
+                                    count_current_tenants=count_current_tenants,
                                     month_name=month_name, dp=dp_str)
             else:
                 flash('No tenant data found', 'error')
@@ -4262,116 +4286,111 @@ def download():
     if login_data is None:
         flash('Login first', 'error')
         return redirect('/')
+    
+    startdate_on_str = request.form.get("startdate")
+    enddate_on_str = request.form.get("enddate")
+    startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+    enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+
+    # Fetch company information
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+    if not company:
+        flash('Company not found', 'error')
+        return redirect('/')
+    
+    is_manager = db.managers.find_one({'manager_email': company['email']})
+    if is_manager is None:
+        user_query = {'username': login_data, 'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
     else:
-        startdate_on_str = request.form.get("startdate")
-        enddate_on_str = request.form.get("enddate")
-        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
-        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-        is_manager = db.managers.find_one({'manager_email': company['email']})
-        if is_manager is None:
-            user_query = {'username': login_data, 'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
-        else:
-            user_query = {'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
-        projection = {'payment_receipt': 0, '_id': 0, 'marital_status': 0, 'age': 0, 'available_amount': 0, 'payment_completion': 0,
-                      'currency': 0, 'payment_status': 0, 'status': 0, 'household_size': 0}
+        user_query = {'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
     
-        current_tenant_data = list(db.tenants.find(user_query, projection))
-        old_tenant_data = list(db.old_tenant_data.find(user_query, projection))
+    projection = {'payment_receipt': 0, '_id': 0, 'marital_status': 0, 'age': 0, 'available_amount': 0, 'payment_completion': 0,
+                  'currency': 0, 'payment_status': 0, 'status': 0, 'household_size': 0}
+
+    # Fetch tenant data
+    current_tenant_data = list(db.tenants.find(user_query, projection))
+    old_tenant_data = list(db.old_tenant_data.find(user_query, projection))
+
+    if not (current_tenant_data or old_tenant_data):
+        flash('No tenant data found', 'error')
+        return redirect('/load-dashboard-page')
     
-        if len(current_tenant_data) > 0 or len(old_tenant_data) > 0:
-            df1 = pd.DataFrame(old_tenant_data)
-            df2 = pd.DataFrame(current_tenant_data)
-            df_combined_tenants = pd.concat([df1, df2], ignore_index=True)
+    # Combine data
+    combined_data = current_tenant_data + old_tenant_data
 
-            new_column_names = {
-                'username': 'Property manager',
-                'company_name': 'Company',
-                'tenantName': 'Tenant name',
-                'gender': 'Gender',
-                'tenantEmail': 'Tenant email',
-                'tenantPhone': 'Tenant phone',
-                'propertyName': 'Property name',
-                'selected_section': 'Section',
-                'section_value': 'Section value',
-                'payment_type': 'Payment type',
-                'amount': 'Amount paid',
-                'payment_mode': 'Payment mode',
-                'months_paid': 'Month paid',
-                'year': 'Year',
-                'date_last_paid': 'Date paid',
-                'available_amount': 'Available amount',
-                'payment_completion': 'Payment completion',
-                'currency': 'Currency',
-                'payment_status': 'Payment status',
-                'status': 'Status',
-                'household_size': 'Household size'
-            }
+    # Define column names and month order
+    new_column_names = {
+        'username': 'Property manager',
+        'company_name': 'Company',
+        'tenantName': 'Tenant name',
+        'gender': 'Gender',
+        'tenantEmail': 'Tenant email',
+        'tenantPhone': 'Tenant phone',
+        'propertyName': 'Property name',
+        'selected_section': 'Section',
+        'section_value': 'Section value',
+        'payment_type': 'Payment type',
+        'amount': 'Amount paid',
+        'payment_mode': 'Payment mode',
+        'months_paid': 'Month paid',
+        'year': 'Year',
+        'date_last_paid': 'Date paid',
+    }
+    
+    month_order = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
+    
+    # Create an Excel workbook
+    output = BytesIO()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Tenants"
 
-            df_combined_tenants.rename(columns=new_column_names, inplace=True)
+    # Write column headers
+    headers = list(new_column_names.values())
+    for col_idx, col_name in enumerate(headers, start=1):
+        ws.cell(row=1, column=col_idx, value=col_name)
 
-            month_order = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
-            df_combined_tenants['Month paid'] = pd.Categorical(df_combined_tenants['Month paid'], categories=month_order.keys(), ordered=True)
-            df_combined_tenants.sort_values(by=['Year', 'Month paid'], inplace=True)
+    # Write data rows
+    for r_idx, item in enumerate(combined_data, start=2):
+        for c_idx, key in enumerate(new_column_names.keys(), start=1):
+            value = item.get(key, '')
+            if key == 'months_paid' and value in month_order:
+                value = month_order[value]
+            ws.cell(row=r_idx, column=c_idx, value=value)
 
-            # Create a BytesIO buffer to write the Excel file
-            output = BytesIO()
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "Tenants"
+    # Protect the Excel file with a password
+    file_password = generate_file_password()
+    ws.protection.set_password(file_password)
 
-            for col_idx, col_name in enumerate(df_combined_tenants.columns, start=2):
-                ws.cell(row=1, column=col_idx, value=col_name)
+    existing_password = db.file_passwords.find_one({'username': login_data, 'detail': 'Tenant data file'})
+    if existing_password:
+        db.file_passwords.delete_one({'username': login_data, 'detail': 'Tenant data file'})
+    db.file_passwords.insert_one({'username': login_data, 'password': file_password, 'detail': 'Tenant data file'})
 
-            for r_idx, row in enumerate(dataframe_to_rows(df_combined_tenants, index=False), start=2):
-                for c_idx, value in enumerate(row, start=1):
-                    ws.cell(row=r_idx, column=c_idx, value=value)
+    # Save the workbook to a BytesIO buffer
+    output.seek(0)
+    wb.save(output)
+    wb.close()
 
-            file_password = generate_file_password()
-            ws.protection.set_password(file_password)
+    # Set the buffer position to the beginning
+    output.seek(0)
+    protected_data = output.read()
 
-            existing_password = db.file_passwords.find_one({'username': login_data, 'detail': 'Tenant data file'})
-            if existing_password:
-                db.file_passwords.delete_one({'username': login_data, 'detail': 'Tenant data file'})
-            db.file_passwords.insert_one({'username': login_data, 'password': file_password, 'detail': 'Tenant data file'})
+    # Create a response with the protected Excel file
+    response = make_response(protected_data)
+    response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx"
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
-            protected_file_path = tempfile.NamedTemporaryFile(delete=False, suffix="_protected.xlsx").name
-            wb.save(filename=protected_file_path)
-            wb.close()
+    # Optionally, save the password to the database (if needed)
+    existing_password = db.file_passwords.find_one({'username': login_data, 'detail': 'Tenant data file'})
+    if existing_password:
+        db.file_passwords.delete_one({'username': login_data, 'detail': 'Tenant data file'})
+    db.file_passwords.insert_one({'username': login_data, 'password': file_password, 'detail': 'Tenant data file'})
 
-            wb = load_workbook(protected_file_path)
-            ws = wb.active
-            ws.delete_rows(1)
-            wb.save(protected_file_path)
-            wb.close()
-
-            with open(protected_file_path, 'rb') as f:
-                protected_data = f.read()
-
-            os.remove(protected_file_path)
-
-            # Create a zip file containing the password-protected Excel file
-            zip_buffer = BytesIO()
-            with ZipFile(zip_buffer, 'w') as zip_file:
-                zip_file.writestr(f"{company['company_name']}_{startdate_on_str}_{enddate_on_str}.xlsx", protected_data)
-
-            zip_buffer.seek(0)
-            zip_data = zip_buffer.getvalue()
-
-            del df1, df2, df_combined_tenants
-            gc.collect()
-            response = make_response(zip_data)
-            response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_{startdate_on_str}_{enddate_on_str}.zip"
-            response.headers['Content-Type'] = 'application/zip'
-
-            return response
-        else:
-            flash('No tenant data found', 'error')
-            return redirect('/load-dashboard-page')
+    return response
         
 #####FILE PASSWORDS
 @app.route('/view-file-passwords')
-
 def view_file_passwords():
     db, fs = get_db_and_fs()
     username = session.get('login_username')
@@ -4950,51 +4969,74 @@ def download_audit_logs():
     if login_data is None:
         flash('Login first', 'error')
         return redirect('/')
-    else:
-        startdate_on_str = request.form.get("startdate")
-        enddate_on_str = request.form.get("enddate")
-        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
-        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+    
+    startdate_on_str = request.form.get("startdate")
+    enddate_on_str = request.form.get("enddate")
+    startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+    enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+    
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+    if not company:
+        flash('Company not found', 'error')
+        return redirect('/')
+    
+    usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
+    renamed_logs = []
 
-        usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
-        renamed_logs = []
-        for user in usernames:
-            audit_logs = list(db.audit_logs.find({
-                'user': user['username'],
-                'timestamp': {'$gte': startdate, '$lte': enddate}
-            }))
-            if len(audit_logs)!=0:
-                for log in audit_logs:
-                    renamed_log = rename_fourth_field(log)
-                    timestamp = log.get('timestamp')
-                    log['timestamp'] = convert_to_eat(timestamp)
-                    renamed_logs.append(renamed_log)
-        
-        sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
-        df = pd.DataFrame(sorted_logs)
+    for user in usernames:
+        audit_logs = list(db.audit_logs.find({
+            'user': user['username'],
+            'timestamp': {'$gte': startdate, '$lte': enddate}
+        }))
+        if audit_logs:
+            for log in audit_logs:
+                renamed_log = rename_fourth_field(log)
+                timestamp = log.get('timestamp')
+                renamed_log['timestamp'] = convert_to_eat(timestamp)
 
-        # Create an in-memory buffer for the Excel file
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Audit logs', index=False)
-        excel_buffer.seek(0)
-        
-        # Create a zip file containing the Excel file
-        zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, 'w') as zip_file:
-            zip_file.writestr(f"{company['company_name']}_audit_logs_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
-        
-        zip_buffer.seek(0)
-        zip_data = zip_buffer.getvalue()
-        del df
-        gc.collect()
-        # Create the response
-        response = make_response(zip_data)
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit_logs_{startdate_on_str}_{enddate_on_str}.zip"
-        response.headers['Content-Type'] = 'application/zip'
+                # Convert non-serializable types to strings
+                for key, value in log.items():
+                    if isinstance(value, ObjectId):
+                        log[key] = str(value)
+                    elif isinstance(value, (bytes, bytearray)):
+                        log[key] = value.decode('utf-8')
 
-        return response
+                renamed_logs.append(renamed_log)
+    
+    # Sort logs by timestamp
+    sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
+
+    # Create an Excel workbook
+    output = BytesIO()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Audit Logs"
+
+    # Define headers based on sorted_logs keys
+    headers = sorted_logs[0].keys() if sorted_logs else []
+    for col_idx, header in enumerate(headers, start=1):
+        ws.cell(row=1, column=col_idx, value=header)
+
+    # Write data rows
+    for r_idx, log in enumerate(sorted_logs, start=2):
+        for c_idx, header in enumerate(headers, start=1):
+            ws.cell(row=r_idx, column=c_idx, value=log.get(header, ''))
+
+    # Save the workbook to a BytesIO buffer
+    output.seek(0)
+    wb.save(output)
+    wb.close()
+
+    # Set the buffer position to the beginning
+    output.seek(0)
+    excel_data = output.read()
+
+    # Create the response with the Excel file
+    response = make_response(excel_data)
+    response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_audit_logs_{startdate_on_str}_{enddate_on_str}.xlsx"
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+    return response
 
 ###DOANLOAD LOGIN DATA   
 @app.route('/download-login-data', methods=["POST"])
@@ -5004,48 +5046,65 @@ def download_login_data():
     if login_data is None:
         flash('Login first', 'error')
         return redirect('/')
-    else:
-        startdate_on_str = request.form.get("startdate")
-        enddate_on_str = request.form.get("enddate")
-        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
-        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+    
+    startdate_on_str = request.form.get("startdate")
+    enddate_on_str = request.form.get("enddate")
+    startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+    enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+    usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
+    logindata = []
+    for user in usernames:
+        login_info = list(db.logged_in_data.find({'username': user['username'], 'timestamp': {'$gte': startdate, '$lte': enddate}}))
+        if login_info:
+            for login in login_info:
+                formated_time = format_time(login)
+                timestamp = login.get('timestamp')
+                login['timestamp'] = convert_to_eat(timestamp)
 
-        usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
-        logindata = []
-        for user in usernames:
-            login_info = list(db.logged_in_data.find({'username': user['username'], 'timestamp': {'$gte': startdate, '$lte': enddate}}))
-            if len(login_info)!=0:
-                for login in login_info:
-                    formated_time = format_time(login)
-                    timestamp = login.get('timestamp')
-                    login['timestamp'] = convert_to_eat(timestamp)
-                    logindata.append(formated_time)
-        
-        sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
-        df = pd.DataFrame(sorted_logins)
+                # Convert non-serializable types to strings
+                for key, value in login.items():
+                    if isinstance(value, ObjectId):
+                        login[key] = str(value)
+                    elif isinstance(value, (bytes, bytearray)):
+                        login[key] = value.decode('utf-8')
+                        
+                logindata.append(formated_time)
+    
+    # Sort logins
+    sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
 
-        # Create an in-memory buffer for the Excel file
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Login Data', index=False)
-        excel_buffer.seek(0)
-        
-        # Create a zip file containing the Excel file
-        zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, 'w') as zip_file:
-            zip_file.writestr(f"{company['company_name']}_login_data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
-        
-        zip_buffer.seek(0)
-        zip_data = zip_buffer.getvalue()
-        del df
-        gc.collect()
-        # Create the response
-        response = make_response(zip_data)
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_login_data_{startdate_on_str}_{enddate_on_str}.zip"
-        response.headers['Content-Type'] = 'application/zip'
+    # Create an Excel workbook
+    output = BytesIO()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Login Data"
+    
+    # Define headers based on sorted_logs keys
+    headers = sorted_logins[0].keys() if sorted_logins else []
+    for col_idx, header in enumerate(headers, start=1):
+        ws.cell(row=1, column=col_idx, value=header)
+    
+    # Write data rows
+    for r_idx, log in enumerate(sorted_logins, start=2):
+        for c_idx, header in enumerate(headers, start=1):
+            ws.cell(row=r_idx, column=c_idx, value=log.get(header, ''))
+    
+    # Save the workbook to a BytesIO buffer
+    output.seek(0)
+    wb.save(output)
+    wb.close()
 
-        return response
+    # Set the buffer position to the beginning
+    output.seek(0)
+    excel_data = output.read()
+
+    # Create the response
+    response = make_response(excel_data)
+    response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_login_data_{startdate_on_str}_{enddate_on_str}.xlsx"
+    response.headers['Content-Type'] = 'application/zip'
+
+    return response
 
 #####ACTIVATE SENDING EMAILS
 @app.route('/activate sending emails/<send_emails>')
@@ -5670,7 +5729,6 @@ def inhouse_items_use_details():
             return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, dp=dp_str)
 
 @app.route('/stock-overview', methods=["GET", "POST"])
-
 def stock_overview():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6037,7 +6095,6 @@ def stock_overview():
                                first_day_of_current_month=first_day_of_current_month, dp=dp_str)
     
 @app.route('/all-accounts-overview')
-
 def all_accounts_overview():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6065,9 +6122,9 @@ def download_stock_data():
         enddate_on_str = request.form.get("enddate")
         startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+
         company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
-        
 
         current_stock = db.inventories.find(
             {'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},
@@ -6079,38 +6136,43 @@ def download_stock_data():
         )
         combined_stock = list(current_stock) + list(old_stock)
 
+        # Sort data by stockDate in descending order
         sorted_combined_stock = sorted(combined_stock, key=lambda x: x["stockDate"], reverse=True)
-        df = pd.DataFrame(sorted_combined_stock)
 
-        new_column_names = {
-            'itemName': 'Item Name',
-            'quantity': 'Stocked Quantity',
-            'unitOfMeasurement': 'Unit Of Measurement',
-            'unitPrice': 'Unit Buying Price',
-            'stockDate': 'Stock Date',
-            'totalPrice': 'Total Buying Price'
-        }
-        df.rename(columns=new_column_names, inplace=True)
-
-        # Create an in-memory buffer for the Excel file
+        # Create Excel file
         excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Stock Data', index=False)
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Stock Data"
+
+        # Write header row
+        headers = ['Item Name', 'Stocked Quantity', 'Unit Of Measurement', 'Unit Buying Price', 'Stock Date', 'Total Buying Price']
+        ws.append(headers)
+
+        # Write data rows
+        for record in sorted_combined_stock:
+            row = [
+                record.get('itemName', ''),
+                record.get('quantity', 0),
+                record.get('unitOfMeasurement', ''),
+                record.get('unitPrice', 0),
+                record.get('stockDate', '').strftime('%Y-%m-%d') if isinstance(record.get('stockDate'), datetime) else '',
+                record.get('totalPrice', 0)
+            ]
+            ws.append(row)
+
+        wb.save(excel_buffer)
         excel_buffer.seek(0)
 
-        # Create a zip file containing the Excel file
-        zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, 'w') as zip_file:
-            zip_file.writestr(f"{company['company_name']}_Stock_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
-        
-        zip_buffer.seek(0)
-        zip_data = zip_buffer.getvalue()
-        del df
-        gc.collect()
         # Create the response
-        response = make_response(zip_data)
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Stock_Data_{startdate_on_str}_{enddate_on_str}.zip"
-        response.headers['Content-Type'] = 'application/zip'
+        response = make_response(excel_buffer.getvalue())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Stock_Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        # Clean up
+        del wb
+        del excel_buffer
+        gc.collect()
 
         return response
     
@@ -6230,19 +6292,12 @@ def download_revenue_data():
             df.to_excel(writer, sheet_name='Revenue Data', index=False)
         excel_buffer.seek(0)
 
-        # Create a zip file containing the Excel file
-        zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, 'w') as zip_file:
-            zip_file.writestr(f"{company['company_name']}_Revenue_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
-        
-        zip_buffer.seek(0)
-        zip_data = zip_buffer.getvalue()
         del df, revenue_info
         gc.collect()
         # Create the response
-        response = make_response(zip_data)
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Revenue_Data_{startdate_on_str}_{enddate_on_str}.zip"
-        response.headers['Content-Type'] = 'application/zip'
+        response = make_response(excel_buffer.getvalue())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Revenue_Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
     
@@ -6261,7 +6316,6 @@ def download_sales_data():
         enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
         company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
-        
 
         company_name = company['company_name']
 
@@ -6274,37 +6328,42 @@ def download_sales_data():
             'stockDate': 0
         }))
 
+        # Sort sales info by saleDate in descending order
         sorted_sales_info = sorted(sales_info, key=lambda x: x["saleDate"], reverse=True)
-        df = pd.DataFrame(sorted_sales_info)
-        new_column_names = {
-            'itemName': 'Item Name',
-            'quantity': 'Sold Quantity',
-            'unitPrice': 'Unit Selling Price',
-            'revenue': 'Revenue',
-            'saleDate': 'Sale Date',
-        }
 
-        df.rename(columns=new_column_names, inplace=True)
-
-        # Create an in-memory buffer for the Excel file
+        # Create Excel file
         excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Sales Data', index=False)
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sales Data"
+
+        # Write header row
+        headers = ['Item Name', 'Sold Quantity', 'Unit Selling Price', 'Revenue', 'Sale Date']
+        ws.append(headers)
+
+        # Write data rows
+        for sale in sorted_sales_info:
+            row = [
+                sale.get('itemName', ''),
+                sale.get('quantity', 0),
+                sale.get('unitPrice', 0),
+                sale.get('revenue', 0),
+                sale.get('saleDate', '').strftime('%Y-%m-%d') if isinstance(sale.get('saleDate'), datetime) else ''
+            ]
+            ws.append(row)
+
+        wb.save(excel_buffer)
         excel_buffer.seek(0)
 
-        # Create a zip file containing the Excel file
-        zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, 'w') as zip_file:
-            zip_file.writestr(f"{company['company_name']}_Sales_Data_{startdate_on_str}_{enddate_on_str}.xlsx", excel_buffer.read())
-        
-        zip_buffer.seek(0)
-        zip_data = zip_buffer.getvalue()
-        del df
-        gc.collect()
         # Create the response
-        response = make_response(zip_data)
-        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Sales_Data_{startdate_on_str}_{enddate_on_str}.zip"
-        response.headers['Content-Type'] = 'application/zip'
+        response = make_response(excel_buffer.getvalue())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Sales_Data_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        # Clean up
+        del wb
+        del excel_buffer
+        gc.collect()
 
         return response
 
@@ -6316,7 +6375,6 @@ def calculate_total_cost(row):
     return total_cost
 
 @app.route('/view-production-info')
-
 def view_production_info():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
