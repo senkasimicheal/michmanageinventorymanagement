@@ -764,7 +764,7 @@ def before_request():
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
-                                                               'tenant_notifications', 'tenant_popup_notifications'):
+                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -3889,9 +3889,32 @@ def adminlogin():
         else:
             flash('Wrong Password', 'error')
             return redirect('/admin')
-        
-@app.route('/add-property-manager-page')
 
+@app.route('/registered clients')
+def registered_clients():
+    db, fs = get_db_and_fs()
+    login_data = session.get('admin_email')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/admin')
+    else: 
+        managers = []
+        clients = list(db.managers.find({},{'name': 1, 'last_subscribed_on': 1, 'subscribed_days': 1, 'amount_per_month': 1, 'account_type': 1, '_id': 0}))
+        if len(clients) != 0:
+            for client in clients:
+                remaining_days = (client['last_subscribed_on'] + timedelta(days=client['subscribed_days']) - datetime.now()).days
+                client['remaining_days'] = remaining_days
+                account_type = client['account_type']
+                if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+                    client['account_type'] = 'ERP'
+                elif 'Property Management' in account_type and len(account_type) == 1:
+                    client['account_type'] = 'Property Mgt'
+                elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+                    client['account_type'] = 'All types'
+                managers.append(client)
+        return render_template('registered clients.html',managers=managers)
+
+@app.route('/add-property-manager-page')
 def add_property_manager_page():
     login_data = session.get('admin_email')
     if login_data is None:
@@ -3902,7 +3925,6 @@ def add_property_manager_page():
 
 ##########ADD PROPERTY MANAGER COMPANY#############
 @app.route('/add-property-manager', methods=["POST"])
-
 def add_property_manager():
     db, fs = get_db_and_fs()
     login_data = session.get('admin_email')

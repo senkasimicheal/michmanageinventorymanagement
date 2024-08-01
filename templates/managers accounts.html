@@ -14,7 +14,6 @@
 
   <title>Add a company</title>
 
-
    <!-- bootstrap core css -->
    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
 
@@ -73,6 +72,7 @@
               <div class="overlay-content">
                 <a href="{{ url_for('new_subscription') }}">Update Subscriptions</a>
                 <a href="{{ url_for('add_property_manager_page') }}">Add New Company</a>
+                <a href="{{ url_for('registered_clients') }}">Clients</a>
                 {% if session.get('send_emails') == 'yes' %}
                   <a href="{{ url_for('activate_send_emails', send_emails='no') }}">Turn off emails</a>
                 {% else %}

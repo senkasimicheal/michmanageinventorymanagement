@@ -73,6 +73,12 @@
               <div class="overlay-content">
                 <a href="{{ url_for('new_subscription') }}">Update Subscriptions</a>
                 <a href="{{ url_for('add_property_manager_page') }}">Add New Company</a>
+                <a href="{{ url_for('registered_clients') }}">Clients</a>
+                {% if session.get('send_emails') == 'yes' %}
+                <a href="{{ url_for('activate_send_emails', send_emails='no') }}">Turn off emails</a>
+                {% else %}
+                <a href="{{ url_for('activate_send_emails', send_emails='yes') }}">Turn on emails</a>
+                {% endif %}
                 <a href="{{ url_for('logout_admin')}}">Logout</a>
               </div>
             </div>

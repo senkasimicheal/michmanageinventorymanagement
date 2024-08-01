@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Basic -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- Mobile Metas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Site Metas -->
+    <meta name="keywords" content="" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <title>Registered Clients</title>
+
+    <!-- bootstrap core css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+    <!-- fonts style -->
+    <link href="https://fonts.googleapis.com/css?family=Poppins:400,700|Raleway:400,700&display=swap" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- responsive style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+    <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+</head>
+
+<body class="sub_page">
+    <!-- preloader -->
+    <div class="preloader">
+        <div class="spinner" id="spinner">0%</div>
+    </div>
+
+    <script>
+        // hide preloader when document is ready
+        jQuery(document).ready(function () {
+            // add a delay of 1 second
+            setTimeout(function () {
+                // fade out the preloader
+                jQuery(".preloader").fadeOut("slow");
+                // show the hero area
+                jQuery(".hero_area1").addClass('visible');
+            }, 1000);
+        });
+    </script>
+
+    <div class="hero_area1">
+        <!-- header section strats -->
+        <header class="header_section">
+            <div class="container-fluid">
+                <nav class="navbar navbar-expand-lg custom_nav-container">
+                    <a class="navbar-brand" href="#">
+                        <img src="/static/images/logo.png" alt="" />
+                    </a>
+                    <div class="navbar-collapse" id="">
+                        <div class="custom_menu-btn">
+                            <button onclick="openNav()">
+                                <span class="s-1">
+
+                                </span>
+                                <span class="s-2">
+
+                                </span>
+                                <span class="s-3">
+
+                                </span>
+                            </button>
+                        </div>
+                        <div id="myNav" class="overlay">
+                            <div class="overlay-content">
+                                <a href="{{ url_for('new_subscription') }}">Update Subscriptions</a>
+                                <a href="{{ url_for('add_property_manager_page') }}">Add New Company</a>
+                                <a href="{{ url_for('registered_clients') }}">Clients</a>
+                                {% if session.get('send_emails') == 'yes' %}
+                                <a href="{{ url_for('activate_send_emails', send_emails='no') }}">Turn off emails</a>
+                                {% else %}
+                                <a href="{{ url_for('activate_send_emails', send_emails='yes') }}">Turn on emails</a>
+                                {% endif %}
+                                <a href="{{ url_for('logout_admin')}}">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </header>
+        <!-- end header section -->
+    </div>
+
+    <div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}"
+            style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="container-fluid-form">
+        <div style="width: 100%; height: 100%; overflow: auto; margin-top: 10px;" class="content-pannel">
+            <table class="tenant_table">
+                <tr>
+                    <th>No.</th>
+                    <th>
+                        Name
+                        <br>
+                        <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)"
+                            placeholder="Search for property...">
+                    </th>
+                    <th>Account Type</th>
+                    <th>Subscribed On</th>
+                    <th>Subscribed Days</th>
+                    <th>Remaining Days</th>
+                    <th>Amount</th>
+                </tr>
+                {% for manager in managers %}
+                <tr title="{{ name }}" style="cursor: pointer;">
+                    <td>{{ loop.index }}</td>
+                    <td>{{ manager.name }}</td>
+                    <td>{{ manager.account_type }}</td>
+                    <td>{{ (manager.last_subscribed_on).strftime('%Y-%m-%d') }}</td>
+                    <td>{{ manager.subscribed_days }}</td>
+                    <td>{{ manager.remaining_days }}</td>
+                    <td>{{ '{:,.0f}'.format(manager.amount_per_month) }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Hide all alerts after 5 seconds
+            setTimeout(function () {
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function (alert) {
+                    alert.style.display = 'none';
+                });
+            }, 5000);
+        });
+    </script>
+
+    <script>
+        function filterTable(inputId, columnIndex) {
+            // Get the input field and its value
+            var input = document.getElementById(inputId);
+            var filter = input.value.toLowerCase();
+
+            // Get the table and its rows
+            var table = document.querySelector(".tenant_table tbody");
+            var rows = table.getElementsByTagName("tr");
+
+            // Loop through the rows and hide those that don't match the filter
+            for (var i = 0; i < rows.length; i++) {
+                var cell = rows[i].getElementsByTagName("td")[columnIndex];
+                if (cell) {
+                    var cellText = cell.textContent || cell.innerText;
+                    if (cellText.toLowerCase().indexOf(filter) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script>
+        let counter = 0;
+        const spinner = document.getElementById('spinner');
+
+        const intervalId = setInterval(() => {
+            counter++;
+            spinner.textContent = `${counter}%`;
+
+            if (counter === 100) {
+                clearInterval(intervalId);
+            }
+        }, 100); // Adjust this value to control the speed of the counter
+    </script>
+
+    <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
+</body>
+</body>
+
+</html>
