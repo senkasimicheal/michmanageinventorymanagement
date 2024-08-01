@@ -1036,8 +1036,8 @@ h6{
 }
 
 @media screen and (min-width: 761px) {
-  .doc-section .menu-image{
-    width: 600px;
+  .doc-section .video-container {
+      width: 400px;
   }
 }
 
@@ -1539,29 +1539,10 @@ table td {
   border-color: #f5c6cb;
 }
 
-.doc-section .content {
-  display: none;
-}
-
-.documentation h2{
-  color: black;
-  text-decoration: underline;
-  margin-bottom: 2rem;
-  margin-top: 2rem;
-  font-size: 20px !important;
-  font-weight: normal !important;
-}
-
-.doc-section h3{
-  color: blue;
+.doc-section h3 {
   width: 70%;
-  font-size: 20px;
+  font-size: 18px;
   margin-top: 1rem;
-}
-
-.doc-section h3:hover{
-  cursor: pointer;
-  color: green;
 }
 
 .documentation{
@@ -1573,18 +1554,10 @@ table td {
   font-size: 25px;
 }
 
-.documentation h4{
-  font-size: 20px !important;
-  margin-top: 1rem;
-}
-
-.documentation p{
-  margin-top: 1rem;
-}
-
 .verification-code{
   width: 70px !important;
 }
+
 .linkedin {
   width: 30px;
 }
