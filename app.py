@@ -1708,7 +1708,6 @@ def add_complaint():
     
 ############SHOW MY COMPLAINTS######################
 @app.route('/my-complaints')
-
 def my_complaints():
     db, fs = get_db_and_fs()
     tenant_login_data = session.get('tenantID')
@@ -1746,6 +1745,8 @@ def my_complaints():
             complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
             # Remove duplicates
             complaints = list({v['_id']: v for v in complaints}.values())
+
+            print(complaints)
 
             dp = tenant_acc_setting.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
@@ -1819,7 +1820,6 @@ def tenant_reply_complaint():
   
 ############LOAD COMPLAINTS TO MANAGER######################
 @app.route('/resolve-complaints')
-
 def resolve_complaints():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -1872,7 +1872,7 @@ def resolve_complaints():
                     replies = [{'Reply': 'No reply', 'who': 'N/A', 'reply_date': 'N/A'}]
                 else:
                     for reply in replies:
-                        if reply['who'] != login_data:
+                        if reply['who'] != 'Manager':
                             db.tenant_complaints_replies.update_one({'_id': reply['_id']}, {'$set': {'status': 'seen'}})
                     # Sort replies by date, most recent first
                     replies = sorted(replies, key=lambda r: r['reply_date'], reverse=True)
@@ -1883,7 +1883,7 @@ def resolve_complaints():
                 if len(replies) == 1 and replies[0]['Reply'] == 'No reply':
                     complaint_copy['replies'] = [{'Reply': replies[0]['Reply'], 'who': replies[0]['who'], 'reply_date': replies[0]['reply_date'], 'status': ''}]
                 else:
-                    complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'other': login_data, 'status': reply.get('status', ''), 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
+                    complaint_copy['replies'] = [{'Reply': reply['Reply'], 'who': reply['who'], 'other': 'Manager', 'status': reply.get('status', ''), 'reply_date': reply['reply_date'].strftime('%Y-%m-%d %H:%M') if reply['reply_date'] != 'N/A' else 'N/A'} for reply in replies]
                 complaints.append(complaint_copy)
         # Sort complaints by date, most recent first
         complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)

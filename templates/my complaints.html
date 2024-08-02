@@ -269,13 +269,13 @@
                           {% for reply in complaint.replies %}
                           <div class="reply {% if reply.who == reply.other %} manager-reply {% else %} user-reply {% endif %}">
                               <div class="heading-container">
-                                  {% if reply.who != reply.other %}
+                                  {% if reply.who == 'Manager' %}
                                   <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
                                   {% else %}
                                   <p class="reply-details">{{ reply.reply_date }}</p>
                                   {% endif %}
                                   {% if reply.Reply != 'No reply' %}
-                                      {% if reply.who == reply.other %}
+                                      {% if reply.who != 'Manager' %}
                                           {% if reply.status == 'seen' %}
                                               <span class="seen-status-icon"><i class="fas fa-check-double"></i></span>
                                           {% else %}
