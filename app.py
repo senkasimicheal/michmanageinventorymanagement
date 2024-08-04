@@ -767,7 +767,7 @@ def before_request():
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
-                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients'):
+                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -2088,7 +2088,6 @@ def add_property():
 
 ########LOAD TENANT INFO################
 @app.route('/update-tenant-info')
-
 def update_tenant_info():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -2242,7 +2241,6 @@ def get_receipt():
 
 ###########UPDATE TENANT INFO################
 @app.route('/update', methods=['POST'])
-
 def update():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3257,7 +3255,6 @@ def delete_manager(company_name,email):
     
 ########ADD NEW MANAGER EMAIL################
 @app.route('/add-new-manager-email')
-
 def add_new_manager_email():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3300,7 +3297,6 @@ def update_new_manager_email():
 
 #######CLICK TO UPDATE TENANT#############
 @app.route('/selected-tenant/<tenantName>/<tenantEmail>/<propertyName>/<selected_section>/<payment_type>/<amount>/<months_paid>/<date_last_paid>')
-
 def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, payment_type, amount, months_paid,date_last_paid):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -3318,7 +3314,6 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
         
 ##########EDIT TENANT INFO###################
 @app.route('/edit/<tenantName>/<email>/<property_name>/<selected_section>/<payment_type>')
-
 def edit(tenantName, email, property_name, selected_section, payment_type):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5133,7 +5128,6 @@ def download_login_data():
 
 #####ACTIVATE SENDING EMAILS
 @app.route('/activate sending emails/<send_emails>')
-
 def activate_send_emails(send_emails):
     db, fs = get_db_and_fs()
     send_emails_state = db.send_emails.find_one()
@@ -5544,7 +5538,6 @@ def inhouse_used_items():
     return jsonify({'redirect': url_for('update_inhouse_use_page')})
     
 @app.route('/revenue-details')
-
 def revenue_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5674,7 +5667,6 @@ def sales_details():
             return render_template('sales info.html', sales_info = sales_info, dp=dp_str)
 
 @app.route('/stock-details')
-
 def stock_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6870,6 +6862,96 @@ def tenant_popup_notifications():
         session['viewed_notifications'] = viewed_notifications + new_viewed_notifications
 
     return jsonify([notification['notification'] for notification in notifications_to_send])
+
+####edit items
+@app.route('/edit-item/<item_id>', methods=['GET', 'POST'])
+def edit_item(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
+        if selected_item:
+            return render_template('edit-stock.html',item_id=item_id)
+        else:
+            flash('Please select an up-to-date item', 'error')
+            return redirect('/stock-details')
+    
+@app.route('/apply-item-edits', methods=['POST'])
+def apply_item_edits():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        item_id = request.form.get("item_id")
+        item_name = request.form.get("item_name")
+        quantity = request.form.get("quantity")
+        unit_price = request.form.get("unit_price")
+        stockdate = request.form.get("stockdate")
+
+        selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
+
+        applied = 0
+        if selected_item:
+            if item_name:
+                db.inventories.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                db.old_inventories.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                db.stock_sales.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                applied = 1
+            if quantity:
+                quantity = int(quantity)
+                if 'available_quantity' in selected_item:
+                    new_qty = selected_item['available_quantity'] - selected_item['quantity']
+                    if new_qty < 0:
+                        new_qty = 0
+                        flash('Item sales were already updated', 'error')
+                    available_quantity = new_qty + quantity
+                else:
+                    available_quantity = quantity
+                db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'quantity': quantity, 'available_quantity': available_quantity}})
+                applied = 1
+            if unit_price:
+                unit_price = int(unit_price)
+                if quantity:
+                    new_total_price = quantity * unit_price
+                else:
+                    new_total_price = selected_item['quantity'] * unit_price
+                db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'unitPrice': unit_price, 'totalPrice': new_total_price}})
+                applied = 1
+            if stockdate:
+                stockDate = datetime.strptime(stockdate, '%Y-%m-%d')
+                db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'stockDate': stockDate}})
+                applied = 1
+
+            if applied == 1:
+                flash('Item updates were applied', 'success')
+            else:
+                flash('No edits were made', 'error')
+            return redirect('/stock-details')
+        else:
+            flash('Please select an up-to-date item', 'error')
+            return redirect('/stock-details')
+        
+####delete items
+@app.route('/delete-item/<item_id>', methods=['POST'])
+def delete_item(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
+        if selected_item:
+            db.inventories.delete_one({'_id': ObjectId(item_id)})
+            flash('Item was deleted', 'success')
+        else:
+            flash('Please select an up-to-date item', 'error')
+        return redirect('/stock-details')
 
 if __name__ == '__main__':
     app.run()

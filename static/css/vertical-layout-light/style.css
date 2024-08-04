@@ -26215,3 +26215,24 @@ table td {
 .options-container div:hover {
   background-color: #f1f1f1;
 }
+/* Style for the action buttons */
+.action-button {
+  padding: 2px 5px;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+  background-color: #007bff;
+  color: white;
+}
+
+.action-button.delete-button {
+  background-color: #dc3545;
+}
+
+/* Ensure the button container doesn't disrupt the layout */
+.button-container {
+  display: inline-block;
+  margin-left: 10px;
+  /* Adjust as needed for spacing */
+}
