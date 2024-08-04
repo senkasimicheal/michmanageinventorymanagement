@@ -6410,7 +6410,11 @@ def view_production_info():
 
         company_name = company['company_name']
 
-        inhouse_info = list(db.inhouse.find({'company_name': company_name,'useDate': {'$gte': twelve_months_ago}},{'company_name':0}))
+        inhouse_info = list(db.inhouse.find({'company_name': company_name, 'useDate': {'$gte': twelve_months_ago}}, {'company_name': 0}))
+
+        if not inhouse_info:
+            flash('No inhouse production data available for the past 12 months.', 'info')
+            return render_template('production info.html', inhouse_df=None, dp=None)
 
         inhouse_product_ids = []
         inhouse_productName = []
@@ -6445,23 +6449,27 @@ def view_production_info():
 
         # Create the DataFrame
         inhouse_df = pd.DataFrame({
-            'Product ID':inhouse_product_ids,
-            'Product Name':inhouse_productName,
-            'Product Quantity':inhouse_productQuantity,
-            'Product Unit Price':inhouse_productPrice,
-            'Date Produced':inhouse_useDate,
+            'Product ID': inhouse_product_ids,
+            'Product Name': inhouse_productName,
+            'Product Quantity': inhouse_productQuantity,
+            'Product Unit Price': inhouse_productPrice,
+            'Date Produced': inhouse_useDate,
             'Item Used': inhouse_itemName,
             'Item Quantity': inhouse_itemQuantity,
             'Item Unit Price': inhouse_itemUnitPrices,
             'Item Stock Date': inhouse_itemStockDates
         })
 
+        # Ensure calculate_total_cost returns a single value
+        def calculate_total_cost(row):
+            return row['Product Quantity'] * row['Item Unit Price']
+
         # Apply the function to each row to calculate 'Total Production Cost'
         inhouse_df['Total Production Cost'] = inhouse_df.apply(calculate_total_cost, axis=1)
         inhouse_df_sorted = inhouse_df.sort_values(by='Date Produced')
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-        return render_template('production info.html', inhouse_df = inhouse_df_sorted, dp=dp_str)
+        return render_template('production info.html', inhouse_df=inhouse_df_sorted, dp=dp_str)
        
 ###DOANLOAD SALES DATA   
 @app.route('/download-inhouse-data', methods=["POST"])

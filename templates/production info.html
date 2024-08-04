@@ -383,6 +383,7 @@
                   </tr>
               </thead>
               <tbody>
+                {% if inhouse_df is not none %}
                   {% for index, product in inhouse_df.iterrows() %}
                   <tr title="{{ product['Product Name'] }}" style="cursor: pointer;">
                       <!-- <td>{{ index + 1 }}</td> -->
@@ -415,6 +416,14 @@
                       <td colspan="4"></td> <!-- Adjust colspan to match number of columns -->
                       <td style="font-weight: bold;" id="totalProductionCost">0</td>
                   </tr>
+                {% else %}
+                <tr id="totalRow">
+                  <td style="font-weight: bold;" colspan="3">Total</td>
+                  <td style="font-weight: bold;" id="totalProductPrice">0</td>
+                  <td colspan="4"></td> <!-- Adjust colspan to match number of columns -->
+                  <td style="font-weight: bold;" id="totalProductionCost">0</td>
+                </tr>
+                {% endif %}
               </tbody>
             </table>
           </div>

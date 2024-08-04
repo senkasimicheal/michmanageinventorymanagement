@@ -341,16 +341,21 @@
         <div class="inhouse-use-form content-wrapper">
           <form id="myForm" class="property_forn content-pannel" action="{{url_for('inhouse_used_items')}}" method="POST">
             <label class="input_labels" for="">Item Used</label>
-            <select name="inhouse_use_item" id="item_name_select">
-              <option value="" disabled selected>Select item</option>
-              {% for item in available_itemNames %}
-                <option value="{{ item.itemName }}" 
-                        data-available_quantity="{{ item.available_quantity }}" 
-                        data-unit_of_measurement="{{ item.unitOfMeasurement }}">
-                  {{ item.itemName }}
-                </option>
-              {% endfor %}
-            </select>
+            <div class="custom-select-container">
+              <input type="text" id="filterInputInhouseUseItem" name="typed_input" placeholder="Type to search...">
+              <div class="select-wrapper">
+                <select name="inhouse_use_item" id="item_name_select_inhouse_use" size="5">
+                  <option value="" disabled selected>Select item</option>
+                  {% for item in available_itemNames %}
+                    <option value="{{ item.itemName }}" 
+                            data-available_quantity="{{ item.available_quantity }}" 
+                            data-unit_of_measurement="{{ item.unitOfMeasurement }}">
+                      {{ item.itemName }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
             <p id="stock_details"></p> <!-- This will show the stock details dynamically -->
             <label class="input_labels" for="">Quantity Used</label>
             <input class="property_inputs" type="number" name="inhouse_use_quantity" id="update_sale_quantity" min="1">
@@ -363,7 +368,50 @@
         </div>
 
         <script>
-          document.getElementById('item_name_select').addEventListener('change', function() {
+          document.addEventListener('DOMContentLoaded', function() {
+            function setupFilterableSelect(inputId, selectId) {
+              const filterInput = document.getElementById(inputId);
+              const selectWrapper = filterInput.nextElementSibling;
+              const selectElement = document.getElementById(selectId);
+
+              filterInput.addEventListener('focus', function() {
+                selectWrapper.style.display = 'block';
+              });
+
+              filterInput.addEventListener('input', function() {
+                const filter = filterInput.value.toLowerCase().trim(); // Trim spaces
+                const options = selectElement.getElementsByTagName('option');
+
+                for (let i = 1; i < options.length; i++) {
+                  const optionText = options[i].textContent.toLowerCase();
+                  if (optionText.includes(filter)) {
+                    options[i].style.display = '';
+                  } else {
+                    options[i].style.display = 'none';
+                  }
+                }
+              });
+
+              selectElement.addEventListener('change', function() {
+                const selectedOption = selectElement.options[selectElement.selectedIndex];
+                filterInput.value = selectedOption.textContent.trim(); // Trim spaces
+                selectWrapper.style.display = 'none';
+              });
+
+              document.addEventListener('click', function(event) {
+                if (!selectWrapper.contains(event.target) && !filterInput.contains(event.target)) {
+                  selectWrapper.style.display = 'none';
+                }
+              });
+            }
+
+            setupFilterableSelect('filterInputInhouseUseItem', 'item_name_select_inhouse_use');
+          });
+        </script>
+
+        <script>
+          document.getElementById('item_name_select_inhouse_use').addEventListener('change', function() {
+            
             var selectedOption = this.options[this.selectedIndex];
             var availableQuantity = selectedOption.getAttribute('data-available_quantity');
             var unitOfMeasurement = selectedOption.getAttribute('data-unit_of_measurement');
@@ -374,9 +422,9 @@
             stockDetailsElement.innerText = stockDetails;
             stockDetailsElement.style.color = 'green';
           });
-        
+
           document.getElementById('update_sale_quantity').addEventListener('input', function() {
-            var selectedOption = document.getElementById('item_name_select').options[document.getElementById('item_name_select').selectedIndex];
+            var selectedOption = document.getElementById('item_name_select_inhouse_use').options[document.getElementById('item_name_select_inhouse_use').selectedIndex];
             var availableQuantity = parseInt(selectedOption.getAttribute('data-available_quantity'));
             var quantitySold = parseInt(this.value);
             
@@ -394,14 +442,14 @@
               submitButton.disabled = false;
             }
           });
-        
+
           document.getElementById('inhouse-use-button').addEventListener('click', function() {
             var addItemButton = document.getElementById('inhouse-use-button');
             if (addItemButton.disabled) {
               alert('Cannot add item. Quantity used exceeds available stock.');
             }
           });
-        </script>        
+        </script>
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
@@ -488,6 +536,7 @@
         itemsArray.push(itemObject);      
 
         // Clear the input fields
+        document.querySelector('input[name="typed_input"]').value = '';
         document.querySelector('select[name="inhouse_use_item"]').selectedIndex = 0;
         document.querySelector('input[name="inhouse_use_quantity"]').value = '';
       });
