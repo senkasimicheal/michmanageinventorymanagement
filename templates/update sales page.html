@@ -343,23 +343,14 @@
             <label class="input_labels" for="">Item Name Sold</label>
             <div class="custom-select-container">
               <input type="text" id="filterInput" name="typed_input" placeholder="Type to search...">
-              <div class="select-wrapper">
-                <select name="update_sale_item_name" id="item_name_select" size="5">
-                  <option value="" disabled selected>Select item</option>
-                  {% for item in available_itemNames %}
-                    <option value="{{ item.itemName }}" 
-                            data-available_quantity="{{ item.available_quantity }}" 
-                            data-unit_of_measurement="{{ item.unitOfMeasurement }}">
-                      {{ item.itemName }}
-                    </option>
-                  {% endfor %}
-                </select>
+              <div class="options-container" id="optionsContainer">
+                <!-- Options will be populated here by JavaScript -->
               </div>
             </div>
-            <p id="stock_details"></p> <!-- This will show the stock details dynamically -->
+            <div id="stock_details"></div> <!-- This will show the stock details dynamically -->
             <label class="input_labels" for="">Quantity Sold</label>
             <input class="property_inputs" type="number" name="update_sale_quantity" id="update_sale_quantity" min="1">
-            <span id="quantity_warning" style="color: red; display: none;">Cannot add item, Quantity sold exceeds available stock!</span>
+            <div id="quantity_warning" style="display: none; color: red;">Quantity sold exceeds available stock.</div>
             <label class="input_labels" for="">Unit Selling Price</label>
             <input class="property_inputs" type="number" name="update_sale_unit_price" min="1">
             <label class="input_labels" for="">Date</label>
@@ -370,83 +361,101 @@
         </div>
 
         <script>
-          document.addEventListener('DOMContentLoaded', function() {
+          // Convert the items_to_update list from Jinja to a JavaScript array
+          const itemsToUpdate = {{ available_itemNames | tojson }};
+        </script>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
             const filterInput = document.getElementById('filterInput');
-            const selectWrapper = document.querySelector('.select-wrapper');
-            const selectElement = document.getElementById('item_name_select');
+            const optionsContainer = document.getElementById('optionsContainer');
+            const stockDetailsElement = document.getElementById('stock_details');
+            const updateSaleQuantity = document.getElementById('update_sale_quantity');
+            const quantityWarning = document.getElementById('quantity_warning');
+            const updateSaleButton = document.getElementById('update-sale-button');
+            const submitButton = document.getElementById('submit-button');
+            let selectedItem = null;
 
-            filterInput.addEventListener('focus', function() {
-              selectWrapper.style.display = 'block';
+            // Ensure itemsToUpdate is available
+            if (typeof itemsToUpdate === 'undefined') {
+                console.error('itemsToUpdate is not defined.');
+                return;
+            }
+
+            // Populate options initially
+            function populateOptions() {
+                optionsContainer.innerHTML = ''; // Clear previous options
+                itemsToUpdate.forEach(item => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.textContent = item.itemName;
+                    optionDiv.dataset.availableQuantity = item.available_quantity;
+                    optionDiv.dataset.unitOfMeasurement = item.unitOfMeasurement;
+                    optionDiv.addEventListener('click', function () {
+                        filterInput.value = item.itemName;
+                        stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement;
+                        stockDetailsElement.style.color = 'green';
+                        selectedItem = item; // Store selected item
+                        optionsContainer.style.display = 'none';
+                        updateSaleQuantity.value = ''; // Reset the quantity input
+                        quantityWarning.style.display = 'none'; // Hide warning initially
+                        updateSaleButton.disabled = false; // Enable button
+                        submitButton.disabled = false; // Enable button
+                    });
+                    optionsContainer.appendChild(optionDiv);
+                });
+            }
+
+            filterInput.addEventListener('focus', function () {
+                optionsContainer.style.display = 'block';
             });
 
-            filterInput.addEventListener('input', function() {
-              const filter = filterInput.value.toLowerCase().trim(); // Trim spaces
-              const options = selectElement.getElementsByTagName('option');
+            filterInput.addEventListener('input', function () {
+                const filter = filterInput.value.toLowerCase().trim();
+                const options = optionsContainer.children;
 
-              for (let i = 1; i < options.length; i++) {
-                const optionText = options[i].textContent.toLowerCase();
-                if (optionText.includes(filter)) {
-                  options[i].style.display = '';
-                } else {
-                  options[i].style.display = 'none';
+                for (let i = 0; i < options.length; i++) {
+                    const optionText = options[i].textContent.toLowerCase();
+                    if (optionText.includes(filter)) {
+                        options[i].style.display = '';
+                    } else {
+                        options[i].style.display = 'none';
+                    }
                 }
-              }
             });
 
-            selectElement.addEventListener('change', function() {
-              const selectedOption = selectElement.options[selectElement.selectedIndex];
-              filterInput.value = selectedOption.textContent.trim(); // Trim spaces
-              selectWrapper.style.display = 'none';
+            document.addEventListener('click', function (event) {
+                if (!optionsContainer.contains(event.target) && !filterInput.contains(event.target)) {
+                    optionsContainer.style.display = 'none';
+                }
             });
 
-            document.addEventListener('click', function(event) {
-              if (!selectWrapper.contains(event.target) && !filterInput.contains(event.target)) {
-                selectWrapper.style.display = 'none';
-              }
+            updateSaleQuantity.addEventListener('input', function () {
+                if (selectedItem) {
+                    const availableQuantity = parseInt(selectedItem.available_quantity, 10);
+                    const quantitySold = parseInt(this.value, 10);
+
+                    if (quantitySold > availableQuantity) {
+                        quantityWarning.style.display = 'block';
+                        updateSaleButton.disabled = true;
+                        submitButton.disabled = true;
+                    } else {
+                        quantityWarning.style.display = 'none';
+                        updateSaleButton.disabled = false;
+                        submitButton.disabled = false;
+                    }
+                }
             });
+
+            updateSaleButton.addEventListener('click', function () {
+                if (updateSaleButton.disabled) {
+                    alert('Cannot add item. Quantity sold exceeds available stock.');
+                }
+            });
+
+            // Initial population of options
+            populateOptions();
           });
         </script>
-        
-        <script>
-          document.getElementById('item_name_select').addEventListener('change', function() {
-            var selectedOption = this.options[this.selectedIndex];
-            var availableQuantity = selectedOption.getAttribute('data-available_quantity');
-            var unitOfMeasurement = selectedOption.getAttribute('data-unit_of_measurement');
-            
-            var stockDetails = 'Available Quantity: ' + availableQuantity + ' ' + unitOfMeasurement;
-            var stockDetailsElement = document.getElementById('stock_details');
-            
-            stockDetailsElement.innerText = stockDetails;
-            stockDetailsElement.style.color = 'green';
-          });
-        
-          document.getElementById('update_sale_quantity').addEventListener('input', function() {
-            var selectedOption = document.getElementById('item_name_select').options[document.getElementById('item_name_select').selectedIndex];
-            var availableQuantity = parseInt(selectedOption.getAttribute('data-available_quantity'));
-            var quantitySold = parseInt(this.value);
-            
-            var warningMessage = document.getElementById('quantity_warning');
-            var addItemButton = document.getElementById('update-sale-button');
-            var submitButton = document.getElementById('submit-button');
-            
-            if (quantitySold > availableQuantity) {
-              warningMessage.style.display = 'block';
-              addItemButton.disabled = true;
-              submitButton.disabled = true;
-            } else {
-              warningMessage.style.display = 'none';
-              addItemButton.disabled = false;
-              submitButton.disabled = false;
-            }
-          });
-        
-          document.getElementById('update-sale-button').addEventListener('click', function() {
-            var addItemButton = document.getElementById('update-sale-button');
-            if (addItemButton.disabled) {
-              alert('Cannot add item. Quantity sold exceeds available stock.');
-            }
-          });
-        </script>        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
@@ -512,7 +521,7 @@
 
       document.getElementById('update-sale-button').addEventListener('click', () => {
         // Get the form values
-        const itemName = document.querySelector('select[name="update_sale_item_name"]').value;
+        const itemName = document.querySelector('input[name="typed_input"]').value;
         const quantity = document.querySelector('input[name="update_sale_quantity"]').value;
         const unitPrice = document.querySelector('input[name="update_sale_unit_price"]').value;
         const saleDate = document.querySelector('input[name="update_sale_date"]').value;
@@ -536,7 +545,6 @@
 
         // Clear the input fields
         document.querySelector('input[name="typed_input"]').value = '';
-        document.querySelector('select[name="update_sale_item_name"]').selectedIndex = 0;
         document.querySelector('input[name="update_sale_quantity"]').value = '';
         document.querySelector('input[name="update_sale_unit_price"]').value = '';
       });

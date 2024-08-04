@@ -343,19 +343,11 @@
             <label class="input_labels" for="">Item Name</label>
             <div class="custom-select-container">
               <input type="text" id="filterInput" name="typed_input" placeholder="Type to search...">
-              <div class="select-wrapper">
-                <select name="item_name" id="item_name_select" size="5">
-                  <option value="" disabled selected>Select item</option>
-                  {% for item in items_to_update %}
-                  <option value="{{ item.itemName }}" data-available_quantity="{{ item.available_quantity }}"
-                    data-unit_of_measurement="{{ item.unitOfMeasurement }}">
-                    {{ item.itemName }}
-                  </option>
-                  {% endfor %}
-                </select>
+              <div class="options-container" id="optionsContainer">
+                <!-- Options will be populated here by JavaScript -->
               </div>
-              </div>
-            <p id="stock_details"></p> <!-- This will show the stock details dynamically -->
+            </div>            
+            <div id="stock_details"></div> <!-- This will show the stock details dynamically -->
             <label class="input_labels" for="">Quantity</label>
             <input class="property_inputs" type="number" name="update_quantity" min="1">
             <label class="input_labels" for="">Unit Price</label>
@@ -368,55 +360,68 @@
         </div>
 
         <script>
+          // Convert the items_to_update list from Jinja to a JavaScript array
+          const itemsToUpdate = {{ items_to_update | tojson }};
+        </script>
+
+        <script>
           document.addEventListener('DOMContentLoaded', function () {
             const filterInput = document.getElementById('filterInput');
-            const selectWrapper = document.querySelector('.select-wrapper');
-            const selectElement = document.getElementById('item_name_select');
+            const optionsContainer = document.getElementById('optionsContainer');
+            const stockDetailsElement = document.getElementById('stock_details');
+
+            // Ensure itemsToUpdate is available
+            if (typeof itemsToUpdate === 'undefined') {
+                console.error('itemsToUpdate is not defined.');
+                return;
+            }
+
+            // Populate options initially
+            function populateOptions() {
+                optionsContainer.innerHTML = ''; // Clear previous options
+                itemsToUpdate.forEach(item => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.textContent = item.itemName;
+                    optionDiv.dataset.availableQuantity = item.available_quantity;
+                    optionDiv.dataset.unitOfMeasurement = item.unitOfMeasurement;
+                    optionDiv.addEventListener('click', function () {
+                        filterInput.value = item.itemName;
+                        stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement;
+                        stockDetailsElement.style.color = 'green';
+                        optionsContainer.style.display = 'none';
+                    });
+                    optionsContainer.appendChild(optionDiv);
+                });
+            }
 
             filterInput.addEventListener('focus', function () {
-              selectWrapper.style.display = 'block';
+                optionsContainer.style.display = 'block';
             });
 
             filterInput.addEventListener('input', function () {
-              const filter = filterInput.value.toLowerCase().trim(); // Trim spaces
-              const options = selectElement.getElementsByTagName('option');
+                const filter = filterInput.value.toLowerCase().trim();
+                const options = optionsContainer.children;
 
-              for (let i = 1; i < options.length; i++) {
-                const optionText = options[i].textContent.toLowerCase();
-                if (optionText.includes(filter)) {
-                  options[i].style.display = '';
-                } else {
-                  options[i].style.display = 'none';
+                for (let i = 0; i < options.length; i++) {
+                    const optionText = options[i].textContent.toLowerCase();
+                    if (optionText.includes(filter)) {
+                        options[i].style.display = '';
+                    } else {
+                        options[i].style.display = 'none';
+                    }
                 }
-              }
-            });
-
-            selectElement.addEventListener('change', function () {
-              const selectedOption = selectElement.options[selectElement.selectedIndex];
-              filterInput.value = selectedOption.textContent.trim(); // Trim spaces
-              selectWrapper.style.display = 'none';
             });
 
             document.addEventListener('click', function (event) {
-              if (!selectWrapper.contains(event.target) && !filterInput.contains(event.target)) {
-                selectWrapper.style.display = 'none';
-              }
+                if (!optionsContainer.contains(event.target) && !filterInput.contains(event.target)) {
+                    optionsContainer.style.display = 'none';
+                }
             });
+
+            // Initial population of options
+            populateOptions();
           });
         </script>
-        <script>
-          document.getElementById('item_name_select').addEventListener('change', function() {
-            var selectedOption = this.options[this.selectedIndex];
-            var availableQuantity = selectedOption.getAttribute('data-available_quantity');
-            var unitOfMeasurement = selectedOption.getAttribute('data-unit_of_measurement');
-            
-            var stockDetails = 'Available Quantity: ' + availableQuantity + ' ' + unitOfMeasurement;
-            var stockDetailsElement = document.getElementById('stock_details');
-            
-            stockDetailsElement.innerText = stockDetails;
-            stockDetailsElement.style.color = 'green';
-          });
-        </script>        
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
@@ -482,7 +487,7 @@
 
       document.getElementById('update-item-button').addEventListener('click', () => {
         // Get the form values
-        const itemName = document.querySelector('select[name="item_name"]').value;
+        const itemName = document.querySelector('input[name="typed_input"]').value;
         const quantity = document.querySelector('input[name="update_quantity"]').value;
         const unitPrice = document.querySelector('input[name="update_unit_price"]').value;
         const stockDate = document.querySelector('input[name="update_stockdatee"]').value;
@@ -506,7 +511,6 @@
 
         // Clear the input fields
         document.querySelector('input[name="typed_input"]').value = '';
-        document.querySelector('select[name="item_name"]').selectedIndex = 0;
         document.querySelector('input[name="update_quantity"]').value = '';
         document.querySelector('input[name="update_unit_price"]').value = '';
       });

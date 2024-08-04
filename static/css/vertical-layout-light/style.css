@@ -26182,6 +26182,7 @@ table td {
   cursor: pointer;
   text-decoration: none;
 }
+
 .custom-select-container {
   position: relative;
   width: 100%;
@@ -26192,10 +26193,9 @@ table td {
   box-sizing: border-box;
   margin-bottom: 5px;
   text-align: left;
-  /* Align text to the left */
 }
 
-.select-wrapper {
+.options-container {
   display: none;
   position: absolute;
   width: 100%;
@@ -26205,10 +26205,13 @@ table td {
   border: 1px solid #ccc;
   background-color: #fff;
   z-index: 1;
+  border-radius: 4px;
 }
 
-.select-wrapper select {
-  width: 100%;
-  box-sizing: border-box;
-  height: 100%;
+.options-container div {
+  padding: 8px;
+  cursor: pointer;
+}
+.options-container div:hover {
+  background-color: #f1f1f1;
 }
