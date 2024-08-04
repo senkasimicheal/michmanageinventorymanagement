@@ -5164,7 +5164,7 @@ def add_new_stock():
     all_items = request.json['items']  # Access the JSON data sent from the client
     skipped_items = []  # List to hold names of items that were not added
     added_items = []  # List to hold names of items that were successfully added
-
+    timestamp = datetime.now()
     for item in all_items:
         item['itemName'] = item['itemName'].strip()
         # Convert 'quantity' and 'unitPrice' to integers
@@ -5176,6 +5176,7 @@ def add_new_stock():
         # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
         item['totalPrice'] = item['unitPrice'] * item['quantity']
         item['company_name'] = company['company_name']
+        item['timestamp'] = timestamp
 
         # Check if the item already exists in the database
         existing_item = db.inventories.find_one({
@@ -5220,7 +5221,7 @@ def update_new_stock():
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
         
     all_items = request.json['items']  # Access the JSON data sent from the client
-
+    timestamp = datetime.now()
     for item in all_items:
         # Convert 'quantity' and 'unitPrice' to integers
         item['quantity'] = int(item['quantity'])
@@ -5228,6 +5229,7 @@ def update_new_stock():
         item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
         item['company_name'] = company['company_name']
         item['status'] = "updated stock"
+        item['timestamp'] = timestamp
 
         # Check if the item already exists in the database
         existing_item = db.inventories.find_one({
@@ -5280,12 +5282,13 @@ def update_sale():
     all_items = request.json['items']  # Access the JSON data sent from the client
     out_of_stock_items = []
     over_quantified = []
-    
+    timestamp = datetime.now()
     for item in all_items:
         item['quantity'] = int(item['quantity'])
         item['unitPrice'] = int(item['unitPrice'])
         item['saleDate'] = datetime.strptime(item['saleDate'], '%Y-%m-%d')
         item['company_name'] = company['company_name']
+        item['timestamp'] = timestamp
 
         existing_item = db.inventories.find_one({
             'itemName': item['itemName'],
@@ -5607,26 +5610,12 @@ def revenue_details():
             ]
 
             revenue_info = list(db.stock_sales.aggregate(pipeline))
-            revenue_info.sort(key=lambda x: x['inventoryDetails'][0]['stockDate'], reverse=True)
-
-            available_itemNames = []
-            items_to_update = []
-            available_items = list(db.inventories.find({'company_name': company['company_name']}))
-            if len(available_items) != 0:
-                for item in available_items:
-                    if 'available_quantity' in item:
-                        if item['available_quantity'] > 0:
-                            available_itemNames.append(item['itemName'])
-                    else:
-                        available_itemNames.append(item['itemName'])
-                for item in available_items:
-                    items_to_update.append(item['itemName'])
+            revenue_info.sort(key=lambda x: x['_id']['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
 
 @app.route('/sales-details')
-
 def sales_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5688,26 +5677,14 @@ def stock_details():
             current_stock = list(db.inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
             old_stock = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
             stock_info = current_stock + old_stock
-            stock_info.sort(key=lambda x: x['stockDate'], reverse=True)
+            stock_info.sort(key=lambda x: x.get('timestamp', x['stockDate']), reverse=True)
+            stock_info.sort(key=lambda x: x['itemName'])
 
-            available_itemNames = []
-            items_to_update = []
-            available_items = list(db.inventories.find({'company_name': company['company_name']}))
-            if len(available_items) != 0:
-                for item in available_items:
-                    if 'available_quantity' in item:
-                        if item['available_quantity'] > 0:
-                            available_itemNames.append(item['itemName'])
-                    else:
-                        available_itemNames.append(item['itemName'])
-                for item in available_items:
-                    items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
 
 @app.route('/inhouse-item-use-details')
-
 def inhouse_items_use_details():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
