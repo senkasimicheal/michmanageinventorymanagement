@@ -614,7 +614,6 @@ def add_tenants():
         return render_template('add tenants page.html', dp=dp_str, property_data=property_data_dict)
 
 @app.route('/export tenant data')
-
 def export_tenant_data():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -630,7 +629,6 @@ def export_tenant_data():
     return render_template('export tenant data.html', dp=dp_str)
 
 @app.route('/add new stock page')
-
 def add_new_stock_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -646,7 +644,6 @@ def add_new_stock_page():
     return render_template('add new stock.html', dp=dp_str)
 
 @app.route('/update existing stock')
-
 def update_existing_stock():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -669,11 +666,12 @@ def update_existing_stock():
             'unitOfMeasurement': item.get('unitOfMeasurement', '')
         }
         items_to_update.append(item_details)
+    
+    items_to_update = sorted(items_to_update, key=lambda x: x['itemName'])
 
     return render_template('update existing stock.html', dp=dp_str, items_to_update=items_to_update)
 
 @app.route('/update sales page')
-
 def update_sales_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -681,7 +679,7 @@ def update_sales_page():
         flash('Login first', 'error')
         return redirect('/')
     
-    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
     if not company:
         flash('Company not found', 'error')
         return redirect('/')
@@ -697,10 +695,12 @@ def update_sales_page():
                 'unitOfMeasurement': item['unitOfMeasurement']
             })
 
+    # Sort the available_itemNames list in alphabetical order by 'itemName'
+    available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+
     return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
 
 @app.route('/update production activity')
-
 def update_production_activity():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -723,11 +723,12 @@ def update_production_activity():
                     'available_quantity': item['available_quantity'],
                     'unitOfMeasurement': item['unitOfMeasurement']
                 })
+            
+    available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
     return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
 
 @app.route('/update inhouse use page')
-
 def update_inhouse_use_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -750,6 +751,8 @@ def update_inhouse_use_page():
                     'available_quantity': item['available_quantity'],
                     'unitOfMeasurement': item['unitOfMeasurement']
                 })
+
+    available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
     return render_template('update inhouse use.html', dp=dp_str, available_itemNames=available_itemNames)
 
