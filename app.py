@@ -6851,7 +6851,12 @@ def edit_item(item_id):
     else:
         selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
         if selected_item:
-            return render_template('edit-stock.html',item_id=item_id)
+            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+            if 'dp' in company:
+                dp_str = company['dp']
+            else:
+                dp_str = None
+            return render_template('edit-stock.html',item_id=item_id,dp=dp_str)
         else:
             flash('Please select an up-to-date item', 'error')
             return redirect('/stock-details')
