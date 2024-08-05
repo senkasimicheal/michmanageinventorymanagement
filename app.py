@@ -40,6 +40,12 @@ from collections import defaultdict
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
 
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    response = send_from_directory(app.static_folder, filename)
+    response.headers['Cache-Control'] = 'public, max-age=2592000'  # Cache for 30 days
+    return response
+
 def get_mongo_client():
     # client = MongoClient('mongodb://localhost:27017/')
     client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
@@ -5161,42 +5167,49 @@ def add_new_stock():
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
         
-    all_items = request.json['items']  # Access the JSON data sent from the client
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
     skipped_items = []  # List to hold names of items that were not added
     added_items = []  # List to hold names of items that were successfully added
     timestamp = datetime.now()
+
     for item in all_items:
-        item['itemName'] = item['itemName'].strip()
-        # Convert 'quantity' and 'unitPrice' to integers
-        item['quantity'] = int(item['quantity'])
-        item['available_quantity'] = item['quantity']
-        item['unitPrice'] = int(item['unitPrice'])
-        item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
+        item['itemName'] = item.get('itemName', '').strip()
+        
+        try:
+            # Convert 'quantity' and 'unitPrice' to floats
+            item['quantity'] = float(item.get('quantity', 0))
+            item['available_quantity'] = item['quantity']
+            item['unitPrice'] = float(item.get('unitPrice', 0))
+            item['stockDate'] = datetime.strptime(item.get('stockDate', ''), '%Y-%m-%d')
 
-        # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
-        item['totalPrice'] = item['unitPrice'] * item['quantity']
-        item['company_name'] = company['company_name']
-        item['timestamp'] = timestamp
+            # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
+            item['totalPrice'] = item['unitPrice'] * item['quantity']
+            item['company_name'] = company.get('company_name', '')
+            item['timestamp'] = timestamp
 
-        # Check if the item already exists in the database
-        existing_item = db.inventories.find_one({
-            'itemName': item['itemName'],
-            'company_name': item['company_name']
-        })
+            # Check if the item already exists in the database
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': item['company_name']
+            })
 
-        if existing_item:
-            skipped_items.append(item['itemName'])  # Add the name of the skipped item
-            continue  # Skip this iteration and don't add the existing item
+            if existing_item:
+                skipped_items.append(item['itemName'])  # Add the name of the skipped item
+                continue  # Skip this iteration and don't add the existing item
 
-        # Insert the new stock entry into MongoDB
-        db.inventories.insert_one(item)
-        db.audit_logs.insert_one({
-            'user': login_data,
-            'Activity': 'Added new item to stock',
-            'Item': item['itemName'],
-            'timestamp': datetime.now()
-        })
-        added_items.append(item['itemName'])
+            # Insert the new stock entry into MongoDB
+            db.inventories.insert_one(item)
+            db.audit_logs.insert_one({
+                'user': login_data,
+                'Activity': 'Added new item to stock',
+                'Item': item['itemName'],
+                'timestamp': datetime.now()
+            })
+            added_items.append(item['itemName'])
+        except (ValueError, TypeError) as e:
+            # Log or handle the exception as needed
+            flash(f"Error processing item {item.get('itemName', 'unknown')}: {e}", 'error')
+            skipped_items.append(item.get('itemName', 'unknown'))
 
     message = ""
     if added_items:
@@ -5220,51 +5233,64 @@ def update_new_stock():
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
         
-    all_items = request.json['items']  # Access the JSON data sent from the client
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
     timestamp = datetime.now()
+
     for item in all_items:
-        # Convert 'quantity' and 'unitPrice' to integers
-        item['quantity'] = int(item['quantity'])
-        item['unitPrice'] = int(item['unitPrice'])
-        item['stockDate'] = datetime.strptime(item['stockDate'], '%Y-%m-%d')
-        item['company_name'] = company['company_name']
-        item['status'] = "updated stock"
-        item['timestamp'] = timestamp
+        item['itemName'] = item.get('itemName', '').strip()
 
-        # Check if the item already exists in the database
-        existing_item = db.inventories.find_one({
-            'itemName': item['itemName'],
-            'company_name': company['company_name']
-        })
+        try:
+            # Convert 'quantity' and 'unitPrice' to floats
+            item['quantity'] = float(item.get('quantity', 0))
+            item['unitPrice'] = float(item.get('unitPrice', 0))
+            item['stockDate'] = datetime.strptime(item.get('stockDate', ''), '%Y-%m-%d')
+            item['company_name'] = company.get('company_name', '')
+            item['status'] = "updated stock"
+            item['timestamp'] = timestamp
 
-        if existing_item:
-            if 'available_quantity' in existing_item:
-                if existing_item['available_quantity'] > 0:
-                    # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
-                    item['totalPrice'] = item['quantity']*item['unitPrice']
-                    item['unitOfMeasurement'] = existing_item['unitOfMeasurement']
-                    item['oldTotalPrice'] = existing_item['totalPrice']
-                    item['oldUnitPrice'] = existing_item['unitPrice']
-                    new_available_quantity = existing_item['available_quantity'] + item['quantity']
-                    item['available_quantity'] = new_available_quantity
+            # Check if the item already exists in the database
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': item['company_name']
+            })
+
+            if existing_item:
+                if 'available_quantity' in existing_item:
+                    if existing_item['available_quantity'] > 0:
+                        # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
+                        item['totalPrice'] = item['quantity'] * item['unitPrice']
+                        item['unitOfMeasurement'] = existing_item.get('unitOfMeasurement', '')
+                        item['oldTotalPrice'] = existing_item.get('totalPrice', 0)
+                        item['oldUnitPrice'] = existing_item.get('unitPrice', 0)
+                        new_available_quantity = existing_item['available_quantity'] + item['quantity']
+                        item['available_quantity'] = new_available_quantity
+                    else:
+                        new_available_quantity = existing_item['available_quantity'] + item['quantity']
+                        item['available_quantity'] = new_available_quantity
+                        item['totalPrice'] = item['quantity'] * item['unitPrice']
                 else:
-                    new_available_quantity = existing_item['available_quantity'] + item['quantity']
+                    new_available_quantity = item['quantity']
                     item['available_quantity'] = new_available_quantity
-                    item['totalPrice'] = item['quantity']*item['unitPrice']
-            else:
-                new_available_quantity = item['quantity']
-                item['available_quantity'] = new_available_quantity
-                item['totalPrice'] = item['quantity']*item['unitPrice']
+                    item['totalPrice'] = item['quantity'] * item['unitPrice']
 
-            # Insert the new stock entry into MongoDB
-            db.inventories.insert_one(item)
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Updated item in stock', 'Item': 'Items', 'timestamp': datetime.now()})
-            db.inventories.delete_one({'_id': existing_item['_id']})
-            existing_item.pop('_id', None)
-            db.old_inventories.insert_one(existing_item)
-    
+                # Insert the updated stock entry into MongoDB
+                db.inventories.insert_one(item)
+                db.audit_logs.insert_one({
+                    'user': login_data,
+                    'Activity': 'Updated item in stock',
+                    'Item': item['itemName'],
+                    'timestamp': datetime.now()
+                })
+                db.inventories.delete_one({'_id': existing_item['_id']})
+                existing_item.pop('_id', None)
+                db.old_inventories.insert_one(existing_item)
+            else:
+                # Handle case where item does not exist if necessary
+                flash(f"Item {item['itemName']} does not exist.", 'error')
+        except (ValueError, TypeError) as e:
+            flash(f"Error processing item {item.get('itemName', 'unknown')}: {e}", 'error')
+
     flash('Stock updated successfully', 'success')
-    
     return jsonify({'redirect': url_for('update_existing_stock')})
     
 @app.route('/update-sale', methods=['POST'])
@@ -5279,47 +5305,58 @@ def update_sale():
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
         
-    all_items = request.json['items']  # Access the JSON data sent from the client
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
     out_of_stock_items = []
     over_quantified = []
     timestamp = datetime.now()
+
     for item in all_items:
-        item['quantity'] = int(item['quantity'])
-        item['unitPrice'] = int(item['unitPrice'])
-        item['saleDate'] = datetime.strptime(item['saleDate'], '%Y-%m-%d')
-        item['company_name'] = company['company_name']
-        item['timestamp'] = timestamp
+        try:
+            item['quantity'] = float(item.get('quantity', 0))
+            item['unitPrice'] = float(item.get('unitPrice', 0))
+            item['saleDate'] = datetime.strptime(item.get('saleDate', ''), '%Y-%m-%d')
+            item['company_name'] = company.get('company_name', '')
+            item['timestamp'] = timestamp
 
-        existing_item = db.inventories.find_one({
-            'itemName': item['itemName'],
-            'company_name': company['company_name']
-        })
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': company['company_name']
+            })
 
-        if existing_item:
-            if 'available_quantity' in existing_item:
-                if existing_item['available_quantity'] <= 0:
-                    out_of_stock_items.append(item['itemName'])
-                    continue
-                if item['quantity'] > existing_item['available_quantity']:
-                    over_quantified.append(item['itemName'])
-                    continue
-                revenue = item['quantity'] * item['unitPrice']
-                available_quantity = existing_item['available_quantity'] - item['quantity']
-                item['revenue'] = revenue
-                item['stockDate'] = existing_item['stockDate']
+            if existing_item:
+                if 'available_quantity' in existing_item:
+                    if existing_item['available_quantity'] <= 0:
+                        out_of_stock_items.append(item['itemName'])
+                        continue
+                    if item['quantity'] > existing_item['available_quantity']:
+                        over_quantified.append(item['itemName'])
+                        continue
+                    revenue = item['quantity'] * item['unitPrice']
+                    available_quantity = existing_item['available_quantity'] - item['quantity']
+                    item['revenue'] = revenue
+                    item['stockDate'] = existing_item['stockDate']
+                else:
+                    if item['quantity'] > existing_item['quantity']:
+                        over_quantified.append(item['itemName'])
+                        continue
+                    revenue = item['quantity'] * item['unitPrice']
+                    available_quantity = existing_item['quantity'] - item['quantity']
+                    item['revenue'] = revenue
+                    item['stockDate'] = existing_item['stockDate']
+
+                db.stock_sales.insert_one(item)
+                db.audit_logs.insert_one({
+                    'user': login_data,
+                    'Activity': 'Added a new sale',
+                    'Item': item['itemName'],
+                    'timestamp': datetime.now()
+                })
+                db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
             else:
-                if item['quantity'] > existing_item['quantity']:
-                    over_quantified.append(item['itemName'])
-                    continue
-                revenue = item['quantity'] * item['unitPrice']
-                available_quantity = existing_item['quantity'] - item['quantity']
-                item['revenue'] = revenue
-                item['stockDate'] = existing_item['stockDate']
+                flash(f"Item {item['itemName']} does not exist.", 'error')
+        except (ValueError, TypeError) as e:
+            flash(f"Error processing item {item.get('itemName', 'unknown')}: {e}", 'error')
 
-            db.stock_sales.insert_one(item)
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Added a new sale', 'Item': 'Items', 'timestamp': datetime.now()})
-            db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
-    
     message = 'Sales updated successfully'
     flash(message, 'success')
 
@@ -5342,99 +5379,99 @@ def inhouse():
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
         
-    all_items = request.json['items']  # Access the JSON data sent from the client
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
 
-    # Initialize empty arrays for itemNames and itemQuantities
+    # Initialize empty lists for item details
     itemNames = []
     itemQuantities = []
     itemStockDates = []
     itemUnitPrices = []
     itemOldUnitPrices = []
     
-    # Extract productName, productQuantity, productPrice, useDate from the first itemObject
-    productName = all_items[0]['productName']
-    productQuantity = int(all_items[0]['productQuantity'])
-    productPrice = int(all_items[0]['productPrice'])
-    useDate = all_items[0]['useDate']
-    useDate = datetime.strptime(useDate, '%Y-%m-%d')
-    company_name = company['company_name']
+    # Extract details from the first item
+    if all_items:
+        productName = all_items[0].get('productName', '')
+        productQuantity = float(all_items[0].get('productQuantity', 0))
+        productPrice = float(all_items[0].get('productPrice', 0))
+        useDate = datetime.strptime(all_items[0].get('useDate', ''), '%Y-%m-%d')
+        company_name = company.get('company_name', '')
 
-    out_of_stock_items = []
-    over_quantified = []
-    in_stockID = []
-    in_stockQty = []
+        out_of_stock_items = []
+        over_quantified = []
+        in_stockID = []
+        in_stockQty = []
 
-    for item in all_items:
-        itemNames.append(item['itemName'])
-        item['itemQuantity'] = int(item['itemQuantity'])
-        itemQuantities.append(item['itemQuantity'])
+        for item in all_items:
+            itemNames.append(item.get('itemName', ''))
+            itemQuantity = float(item.get('itemQuantity', 0))
+            itemQuantities.append(itemQuantity)
 
-        # Check if the item already exists in the database
-        existing_item = db.inventories.find_one({
-            'itemName': item['itemName'],
-            'company_name': company_name
-        })
+            # Check if the item exists in the database
+            existing_item = db.inventories.find_one({
+                'itemName': item['itemName'],
+                'company_name': company_name
+            })
 
-        if existing_item:
-            if 'available_quantity' in existing_item:
-                if existing_item['available_quantity'] <= 0:
-                    out_of_stock_items.append(item['itemName'])
-                    flash(f'Item {item["itemName"]} is out of stock', 'error')
-                    continue
-                else:
-                    if item['itemQuantity'] > existing_item['available_quantity']:
+            if existing_item:
+                if 'available_quantity' in existing_item:
+                    if existing_item['available_quantity'] <= 0:
+                        out_of_stock_items.append(item['itemName'])
+                        flash(f'Item {item["itemName"]} is out of stock', 'error')
+                        continue
+                    if itemQuantity > existing_item['available_quantity']:
                         over_quantified.append(item['itemName'])
                         flash(f'Quantity for item {item["itemName"]} is too high', 'error')
                         continue
                     else:
-                        available_quantity = existing_item['available_quantity'] - item['itemQuantity']
+                        available_quantity = existing_item['available_quantity'] - itemQuantity
                         itemStockDates.append(existing_item['stockDate'])
                         in_stockID.append(existing_item['_id'])
                         in_stockQty.append(available_quantity)
                         itemUnitPrices.append(existing_item['unitPrice'])
-                        if 'oldUnitPrice' in existing_item:
-                            itemOldUnitPrices.append(existing_item['oldUnitPrice'])
-                        else:
-                            itemOldUnitPrices.append(0)
+                        itemOldUnitPrices.append(existing_item.get('oldUnitPrice', 0))
+                        flash(f'Inhouse use of {item["itemName"]} updated successfully', 'success')
+                else:
+                    if itemQuantity > existing_item['quantity']:
+                        over_quantified.append(item['itemName'])
+                        flash(f'Quantity for item {item["itemName"]} is too high', 'error')
+                    else:
+                        available_quantity = existing_item['quantity'] - itemQuantity
+                        itemStockDates.append(existing_item['stockDate'])
+                        in_stockID.append(existing_item['_id'])
+                        in_stockQty.append(available_quantity)
+                        itemUnitPrices.append(existing_item['unitPrice'])
+                        itemOldUnitPrices.append(existing_item.get('oldUnitPrice', 0))
                         flash(f'Inhouse use of {item["itemName"]} updated successfully', 'success')
             else:
-                if item['itemQuantity'] > existing_item['quantity']:
-                    over_quantified.append(item['itemName'])
-                    flash(f'Quantity for item {item["itemName"]} is too high', 'error')
-                else:
-                    available_quantity = existing_item['quantity'] - item['itemQuantity']
-                    itemStockDates.append(existing_item['stockDate'])
-                    in_stockID.append(existing_item['_id'])
-                    in_stockQty.append(available_quantity)
-                    itemUnitPrices.append(existing_item['unitPrice'])
-                    if 'oldUnitPrice' in existing_item:
-                        itemOldUnitPrices.append(existing_item['oldUnitPrice'])
-                    else:
-                        itemOldUnitPrices.append(0)
-                    flash(f'Inhouse use of {item["itemName"]} updated successfully', 'success')
+                flash(f"Item {item['itemName']} does not exist.", 'error')
 
-    if out_of_stock_items:
-        flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
-    if over_quantified:
-        flash(f'Please enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
+        if out_of_stock_items:
+            flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
+        if over_quantified:
+            flash(f'Please enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
 
-    if not out_of_stock_items and not over_quantified:
-        document = {
-            'productName': productName,
-            'productQuantity': productQuantity,
-            'productPrice': productPrice,
-            'useDate': useDate,
-            'itemName': itemNames,
-            'itemQuantity': itemQuantities,
-            'itemUnitPrices': itemUnitPrices,
-            'itemOldUnitPrices': itemOldUnitPrices,
-            'itemStockDates': itemStockDates,
-            'company_name': company_name
-        }
-        for id, available_quantity in zip(in_stockID, in_stockQty):
-            db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
-        db.inhouse.insert_one(document)
-        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse production', 'Item': 'Items', 'timestamp': datetime.now()})
+        if not out_of_stock_items and not over_quantified:
+            document = {
+                'productName': productName,
+                'productQuantity': productQuantity,
+                'productPrice': productPrice,
+                'useDate': useDate,
+                'itemName': itemNames,
+                'itemQuantity': itemQuantities,
+                'itemUnitPrices': itemUnitPrices,
+                'itemOldUnitPrices': itemOldUnitPrices,
+                'itemStockDates': itemStockDates,
+                'company_name': company_name
+            }
+            for id, available_quantity in zip(in_stockID, in_stockQty):
+                db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
+            db.inhouse.insert_one(document)
+            db.audit_logs.insert_one({
+                'user': login_data,
+                'Activity': 'Inhouse production',
+                'Item': 'Items',
+                'timestamp': datetime.now()
+            })
 
     return jsonify({'redirect': url_for('update_production_activity')})
 
@@ -5445,98 +5482,99 @@ def inhouse_used_items():
     
     if login_data is None:
         flash('Please login first', 'error')
-        return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+        return jsonify({'redirect': url_for('/')})
+    
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
         
-        all_items = request.json['items']  # Access the JSON data sent from the client
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
 
-        # Initialize empty arrays for itemNames, itemQuantities, etc.
-        itemNames = []
-        itemQuantities = []
-        itemStockDates = []
-        itemUseDates = []
-        itemUnitPrices = []
-        itemOldUnitPrices = []
-        
-        company_name = company['company_name']
+    # Initialize lists for item details
+    itemNames = []
+    itemQuantities = []
+    itemStockDates = []
+    itemUseDates = []
+    itemUnitPrices = []
+    itemOldUnitPrices = []
+    
+    company_name = company.get('company_name', '')
 
-        out_of_stock_items = []
-        over_quantified = []
-        in_stockID = []
-        in_stockQty = []
+    out_of_stock_items = []
+    over_quantified = []
+    in_stockID = []
+    in_stockQty = []
 
-        for item in all_items:
-            itemNames.append(item['usedItemName'])
-            item['usedItemQuantity'] = int(item['usedItemQuantity'])
-            itemQuantities.append(item['usedItemQuantity'])
-            use_date = datetime.strptime(item['usedUseDate'], '%Y-%m-%d')
-            itemUseDates.append(use_date)
+    for item in all_items:
+        itemName = item.get('usedItemName', '')
+        itemQuantity = float(item.get('usedItemQuantity', 0))
+        use_date = item.get('usedUseDate', '')
+        useDate = datetime.strptime(use_date, '%Y-%m-%d') if use_date else None
 
-            existing_item = db.inventories.find_one({
-                'itemName': item['usedItemName'],
-                'company_name': company_name
-            })
+        itemNames.append(itemName)
+        itemQuantities.append(itemQuantity)
+        itemUseDates.append(useDate)
 
-            if existing_item:
-                if 'available_quantity' in existing_item:
-                    if existing_item['available_quantity'] <= 0:
-                        out_of_stock_items.append(item['usedItemName'])
-                        flash(f'Item {item["usedItemName"]} is out of stock', 'error')
-                        continue
-                    else:
-                        if item['usedItemQuantity'] > existing_item['available_quantity']:
-                            over_quantified.append(item['usedItemName'])
-                            flash(f'Quantity for item {item["usedItemName"]} is too high', 'error')
-                            continue
-                        else:
-                            available_quantity = existing_item['available_quantity'] - item['usedItemQuantity']
-                            itemStockDates.append(existing_item['stockDate'])
-                            in_stockID.append(existing_item['_id'])
-                            in_stockQty.append(available_quantity)
-                            itemUnitPrices.append(existing_item['unitPrice'])
-                            if 'oldUnitPrice' in existing_item:
-                                itemOldUnitPrices.append(existing_item['oldUnitPrice'])
-                            else:
-                                itemOldUnitPrices.append(0)
-                            flash(f'Inhouse use of {item["usedItemName"]} updated successfully', 'success')
+        existing_item = db.inventories.find_one({
+            'itemName': itemName,
+            'company_name': company_name
+        })
 
+        if existing_item:
+            if 'available_quantity' in existing_item:
+                if existing_item['available_quantity'] <= 0:
+                    out_of_stock_items.append(itemName)
+                    flash(f'Item {itemName} is out of stock', 'error')
+                    continue
+                if itemQuantity > existing_item['available_quantity']:
+                    over_quantified.append(itemName)
+                    flash(f'Quantity for item {itemName} is too high', 'error')
+                    continue
+                available_quantity = existing_item['available_quantity'] - itemQuantity
+                itemStockDates.append(existing_item['stockDate'])
+                in_stockID.append(existing_item['_id'])
+                in_stockQty.append(available_quantity)
+                itemUnitPrices.append(existing_item['unitPrice'])
+                itemOldUnitPrices.append(existing_item.get('oldUnitPrice', 0))
+                flash(f'Inhouse use of {itemName} updated successfully', 'success')
+            else:
+                if itemQuantity > existing_item['quantity']:
+                    over_quantified.append(itemName)
+                    flash(f'Quantity for item {itemName} is too high', 'error')
                 else:
-                    if item['usedItemQuantity'] > existing_item['quantity']:
-                        over_quantified.append(item['usedItemName'])
-                        flash(f'Quantity for item {item["usedItemName"]} is too high', 'error')
-                    else:
-                        available_quantity = existing_item['quantity'] - item['usedItemQuantity']
-                        itemStockDates.append(existing_item['stockDate'])
-                        in_stockID.append(existing_item['_id'])
-                        in_stockQty.append(available_quantity)
-                        itemUnitPrices.append(existing_item['unitPrice'])
-                        if 'oldUnitPrice' in existing_item:
-                            itemOldUnitPrices.append(existing_item['oldUnitPrice'])
-                        else:
-                            itemOldUnitPrices.append(0)
-                        flash(f'Inhouse use of {item["usedItemName"]} updated successfully', 'success')
+                    available_quantity = existing_item['quantity'] - itemQuantity
+                    itemStockDates.append(existing_item['stockDate'])
+                    in_stockID.append(existing_item['_id'])
+                    in_stockQty.append(available_quantity)
+                    itemUnitPrices.append(existing_item['unitPrice'])
+                    itemOldUnitPrices.append(existing_item.get('oldUnitPrice', 0))
+                    flash(f'Inhouse use of {itemName} updated successfully', 'success')
+        else:
+            flash(f'Item {itemName} does not exist', 'error')
 
-        if out_of_stock_items:
-            flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
-        if over_quantified:
-            flash(f'Please enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
+    if out_of_stock_items:
+        flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
+    if over_quantified:
+        flash(f'Please enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
 
-        if not out_of_stock_items and not over_quantified:
-            document = {
-                'itemName': itemNames,
-                'itemQuantity': itemQuantities,
-                'itemUnitPrices': itemUnitPrices,
-                'itemOldUnitPrices': itemOldUnitPrices,
-                'itemStockDates': itemStockDates,
-                'useDate': itemUseDates,
-                'company_name': company_name
-            }
-            for id, available_quantity in zip(in_stockID, in_stockQty):
-                db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
-            db.inhouse_use.insert_one(document)
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Inhouse use of items', 'Item': 'Items', 'timestamp': datetime.now()})
+    if not out_of_stock_items and not over_quantified:
+        document = {
+            'itemName': itemNames,
+            'itemQuantity': itemQuantities,
+            'itemUnitPrices': itemUnitPrices,
+            'itemOldUnitPrices': itemOldUnitPrices,
+            'itemStockDates': itemStockDates,
+            'useDate': itemUseDates,
+            'company_name': company_name
+        }
+        for id, available_quantity in zip(in_stockID, in_stockQty):
+            db.inventories.update_one({'_id': id}, {'$set': {'available_quantity': available_quantity}})
+        db.inhouse_use.insert_one(document)
+        db.audit_logs.insert_one({
+            'user': login_data,
+            'Activity': 'Inhouse use of items',
+            'Item': 'Items',
+            'timestamp': datetime.now()
+        })
 
     return jsonify({'redirect': url_for('update_inhouse_use_page')})
     
@@ -6885,7 +6923,7 @@ def apply_item_edits():
                 db.stock_sales.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
                 applied = 1
             if quantity:
-                quantity = int(quantity)
+                quantity = float(quantity)
                 if 'available_quantity' in selected_item:
                     new_qty = selected_item['available_quantity'] - selected_item['quantity']
                     if new_qty < 0:
@@ -6897,7 +6935,7 @@ def apply_item_edits():
                 db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'quantity': quantity, 'available_quantity': available_quantity}})
                 applied = 1
             if unit_price:
-                unit_price = int(unit_price)
+                unit_price = float(unit_price)
                 if quantity:
                     new_total_price = quantity * unit_price
                 else:
