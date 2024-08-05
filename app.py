@@ -5711,16 +5711,40 @@ def stock_details():
 
         if 'Enterprise Resource Planning' in account_type:
             company_name = company['company_name']
-            twelve_months_ago = datetime.now() - timedelta(days=365)
-            current_stock = list(db.inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
-            old_stock = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
-            stock_info = current_stock + old_stock
+            stock_info = list(db.inventories.find({'company_name': company_name}))
             stock_info.sort(key=lambda x: x.get('timestamp', x['stockDate']), reverse=True)
             stock_info.sort(key=lambda x: x['itemName'])
 
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
+        
+@app.route('/stock-history-details')
+def stock_history_details():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            twelve_months_ago = datetime.now() - timedelta(days=365)
+            stock_info = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
+            stock_info.sort(key=lambda x: x.get('timestamp', x['stockDate']), reverse=True)
+            stock_info.sort(key=lambda x: x['itemName'])
+
+            dp = company.get('dp')
+            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+            return render_template('stock history.html', stock_info = stock_info, dp=dp_str)
 
 @app.route('/inhouse-item-use-details')
 def inhouse_items_use_details():
@@ -6003,9 +6027,10 @@ def stock_overview():
 
 
         for profit_record in profit_info:
-            profit_item_names.append(profit_record['_id']['itemName'])
-            profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
-            profit_stock_dates.append(profit_record['_id']['stockDate'])
+            if 'inventoryDetails' in profit_record and profit_record['inventoryDetails']:
+                profit_item_names.append(profit_record['_id']['itemName'])
+                profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
+                profit_stock_dates.append(profit_record['_id']['stockDate'])
 
         # Create the DataFrame
         profit_info_df = pd.DataFrame({

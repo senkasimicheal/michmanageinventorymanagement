@@ -270,6 +270,36 @@
             </a>
           </li>
           {% endif %}
+          {% if session.get('view_stock_info') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_details') }}">
+              <i class="typcn typcn-cloud-storage menu-icon"></i>
+              <span class="menu-title">Current Stock</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('stock_history_details') }}">
+              <i class="typcn typcn-cloud-storage menu-icon"></i>
+              <span class="menu-title">Stock History</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('view_revenue') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('revenue_details') }}">
+              <i class="typcn typcn-business-card menu-icon"></i>
+              <span class="menu-title">Profits</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('view_sales') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('sales_details') }}">
+              <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+              <span class="menu-title">Sales</span>
+            </a>
+          </li>
+          {% endif %}
           {% if session.get('inhouse') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('update_production_activity') }}" id="inhouse">
@@ -293,30 +323,6 @@
             <a class="nav-link" href="{{ url_for('view_production_info') }}">
               <i class="typcn typcn-calculator menu-icon"></i>
               <span class="menu-title">Production Info</span>
-            </a>
-          </li>
-          {% endif %}
-          {% if session.get('view_stock_info') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_details') }}">
-              <i class="typcn typcn-cloud-storage menu-icon"></i>
-              <span class="menu-title">Stock Info</span>
-            </a>
-          </li>
-          {% endif %}
-          {% if session.get('view_revenue') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('revenue_details') }}">
-              <i class="typcn typcn-business-card menu-icon"></i>
-              <span class="menu-title">Sales Revenue</span>
-            </a>
-          </li>
-          {% endif %}
-          {% if session.get('view_sales') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('sales_details') }}">
-              <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
-              <span class="menu-title">Sales</span>
             </a>
           </li>
           {% endif %}
