@@ -5343,6 +5343,8 @@ def update_sale():
                     available_quantity = existing_item['quantity'] - item['quantity']
                     item['revenue'] = revenue
                     item['stockDate'] = existing_item['stockDate']
+                
+                item['stock_id'] = existing_item['_id']
 
                 db.stock_sales.insert_one(item)
                 db.audit_logs.insert_one({
@@ -5676,19 +5678,6 @@ def sales_details():
 
             sales_info = list(db.stock_sales.find({'company_name': company_name, 'saleDate': {'$gte': twelve_months_ago}}))
             sales_info.sort(key=lambda x: x['saleDate'], reverse=True)
-
-            available_itemNames = []
-            items_to_update = []
-            available_items = list(db.inventories.find({'company_name': company['company_name']}))
-            if len(available_items) != 0:
-                for item in available_items:
-                    if 'available_quantity' in item:
-                        if item['available_quantity'] > 0:
-                            available_itemNames.append(item['itemName'])
-                    else:
-                        available_itemNames.append(item['itemName'])
-                for item in available_items:
-                    items_to_update.append(item['itemName'])
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('sales info.html', sales_info = sales_info, dp=dp_str)
@@ -6997,6 +6986,32 @@ def delete_item(item_id):
         else:
             flash('Please select an up-to-date item', 'error')
         return redirect('/stock-details')
+    
+####delete sale
+@app.route('/delete-sale/<item_id>', methods=['POST'])
+def delete_sale(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        sale_to_delete = db.stock_sales.find_one({'_id': ObjectId(item_id)})
+        if sale_to_delete:
+            if 'stock_id' in sale_to_delete:
+                stock_to_undo = db.inventories.find_one({'_id': sale_to_delete['stock_id']})
+                available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
+                db.inventories.update_one({'_id': sale_to_delete['stock_id']}, {'$set': {'available_quantity': available_quantity}})
+                db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+            else:
+                stock_to_undo = db.inventories.find_one({'itemName': sale_to_delete['itemName']})
+                available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
+                db.inventories.update_one({'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
+                db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+            flash('Sale was deleted', 'success')
+        else:
+            flash('Sale does not exist', 'error')
+        return redirect('/sales-details')
 
 if __name__ == '__main__':
     app.run()
