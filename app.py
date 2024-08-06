@@ -5645,6 +5645,11 @@ def revenue_details():
                         ],
                         'as': 'inventoryDetails'
                     }
+                },
+                {
+                    '$match': {
+                        'inventoryDetails': {'$ne': []}
+                    }
                 }
             ]
 
