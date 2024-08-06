@@ -773,7 +773,7 @@ def before_request():
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
-                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits'):
+                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -4680,7 +4680,6 @@ def manage_user_rights():
         return render_template('user rights.html',managers=managers,dp=dp_str)
     
 @app.route('/manage-user-rights-page/<email>/<company_name>')
-
 def manage_user_rights_page(email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -5162,7 +5161,7 @@ def add_new_stock():
     
     if login_data is None:
         flash('Login first', 'error')
-        return jsonify({'redirect': url_for('/')})
+        return redirect('/')
     
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
@@ -5228,7 +5227,7 @@ def update_new_stock():
     
     if login_data is None:
         flash('Login first', 'error')
-        return jsonify({'redirect': url_for('/')})
+        return redirect('/')
     
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
@@ -5300,7 +5299,7 @@ def update_sale():
     
     if login_data is None:
         flash('Login first', 'error')
-        return jsonify({'redirect': url_for('/')})
+        return redirect('/')
     
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
@@ -5376,7 +5375,7 @@ def inhouse():
     
     if login_data is None:
         flash('Login first', 'error')
-        return jsonify({'redirect': url_for('/')})
+        return redirect('/')
     
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
@@ -5484,7 +5483,7 @@ def inhouse_used_items():
     
     if login_data is None:
         flash('Please login first', 'error')
-        return jsonify({'redirect': url_for('/')})
+        return redirect('/')
     
     company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                              'password': 0, 'auth': 0, 'dark_mode': 0})
@@ -6901,16 +6900,21 @@ def edit_item(item_id):
         flash('Login first', 'error') 
         return redirect('/')
     else:
-        selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
-        if selected_item:
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+        manager = db.registered_managers.find_one({'username':login_data},{'_id':0,'createdAt':0,'code':0,'address':0})
+        if manager.get('update_stock') in ('yes', None):
+            selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
+            if selected_item:
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                return render_template('edit-stock.html',item_id=item_id,dp=dp_str)
             else:
-                dp_str = None
-            return render_template('edit-stock.html',item_id=item_id,dp=dp_str)
+                flash('Please select an up-to-date item', 'error')
+                return redirect('/stock-details')
         else:
-            flash('Please select an up-to-date item', 'error')
+            flash('You do not have rights to edit', 'error')
             return redirect('/stock-details')
     
 @app.route('/apply-item-edits', methods=['POST'])
@@ -6979,12 +6983,16 @@ def delete_item(item_id):
         flash('Login first', 'error') 
         return redirect('/')
     else:
-        selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
-        if selected_item:
-            db.inventories.delete_one({'_id': ObjectId(item_id)})
-            flash('Item was deleted', 'success')
+        manager = db.registered_managers.find_one({'username':login_data},{'_id':0,'createdAt':0,'code':0,'address':0})
+        if manager.get('update_stock') in ('yes', None):
+            selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
+            if selected_item:
+                db.inventories.delete_one({'_id': ObjectId(item_id)})
+                flash('Item was deleted', 'success')
+            else:
+                flash('Please select an up-to-date item', 'error')
         else:
-            flash('Please select an up-to-date item', 'error')
+            flash('You do not have rights to delete', 'error')
         return redirect('/stock-details')
     
 ####delete sale
@@ -6996,22 +7004,253 @@ def delete_sale(item_id):
         flash('Login first', 'error') 
         return redirect('/')
     else:
-        sale_to_delete = db.stock_sales.find_one({'_id': ObjectId(item_id)})
-        if sale_to_delete:
-            if 'stock_id' in sale_to_delete:
-                stock_to_undo = db.inventories.find_one({'_id': sale_to_delete['stock_id']})
-                available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
-                db.inventories.update_one({'_id': sale_to_delete['stock_id']}, {'$set': {'available_quantity': available_quantity}})
-                db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+        manager = db.registered_managers.find_one({'username':login_data},{'_id':0,'createdAt':0,'code':0,'address':0})
+        if manager.get('update_sales') in ('yes', None):
+            sale_to_delete = db.stock_sales.find_one({'_id': ObjectId(item_id)})
+            if sale_to_delete:
+                if 'stock_id' in sale_to_delete:
+                    stock_to_undo = db.inventories.find_one({'_id': sale_to_delete['stock_id']})
+                    available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
+                    db.inventories.update_one({'_id': sale_to_delete['stock_id']}, {'$set': {'available_quantity': available_quantity}})
+                    db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+                else:
+                    stock_to_undo = db.inventories.find_one({'itemName': sale_to_delete['itemName']})
+                    available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
+                    db.inventories.update_one({'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
+                    db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+                flash('Sale was deleted', 'success')
             else:
-                stock_to_undo = db.inventories.find_one({'itemName': sale_to_delete['itemName']})
-                available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
-                db.inventories.update_one({'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
-                db.stock_sales.delete_one({'_id': ObjectId(item_id)})
-            flash('Sale was deleted', 'success')
+                flash('Sale does not exist', 'error')
         else:
-            flash('Sale does not exist', 'error')
+            flash('You do not have rights to delete', 'error')
         return redirect('/sales-details')
+
+######add expenses
+@app.route('/expenses-page')
+def expenses_page():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+        
+        if company.get('update_sales') in ('yes', None):
+            if 'dp' in company:
+                dp_str = company['dp']
+            else:
+                dp_str = None
+            return render_template('stock expenses.html', dp=dp_str)
+        else:
+            flash('You do not have rights to add expenses', 'error')
+            return redirect('/stock-details')
+
+@app.route('/add-new-expense', methods=['POST'])
+def add_new_expense():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
+    timestamp = datetime.now()
+
+    for expense in all_items:
+        expense['expenseName'] = expense.get('expenseName', '').strip()
+        
+        try:
+            # Convert 'quantity' and 'unitPrice' to floats
+            expense['amount'] = float(expense.get('amount', 0))
+            expense['expenseDate'] = datetime.strptime(expense.get('expenseDate', ''), '%Y-%m-%d')
+
+            expense['company_name'] = company.get('company_name', '')
+            expense['timestamp'] = timestamp
+
+            # Insert the new stock entry into MongoDB
+            db.stock_expenses.insert_one(expense)
+            db.audit_logs.insert_one({
+                'user': login_data,
+                'Activity': 'Added new expense',
+                'Item': expense['expenseName'],
+                'timestamp': datetime.now()
+            })
+            flash('Expense(s) were added', 'success')
+        except (ValueError, TypeError) as e:
+            # Log or handle the exception as needed
+            flash(f"Error processing expense {expense.get('expenseName', 'unknown')}: {e}", 'error')
+
+    return jsonify({'redirect': url_for('expenses_page')})
+
+###viewing stock history
+@app.route('/view-expenses')
+def view_expenses():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        if company.get('update_sales') in ('yes', None):
+            subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
+            account_type = subscription['account_type']
+            # Remove any empty strings from the list
+            account_type = [atype for atype in account_type if atype]
+
+            if 'Enterprise Resource Planning' in account_type:
+                company_name = company['company_name']
+                twelve_months_ago = datetime.now() - timedelta(days=365)
+                expense_info = list(db.stock_expenses.find({'company_name': company_name, 'expenseDate': {'$gte': twelve_months_ago}}))
+                expense_info.sort(key=lambda x: x.get('timestamp', x['expenseDate']), reverse=True)
+
+                dp = company.get('dp')
+                dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+                return render_template('view expenses.html', expense_info = expense_info, dp=dp_str)
+        else:
+            flash('You do not have rights to view expenses', 'error')
+            return redirect('/stock-details')
+
+###DOANLOAD EXPENSE DATA   
+@app.route('/download-expense-data', methods=["POST"])
+def download_expense_data():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+
+        expenses = list(db.stock_expenses.find(
+            {'company_name': company['company_name'], 'expenseDate': {'$gte': startdate, '$lte': enddate}},
+            {'_id': 0, 'company_name': 0}
+        ))
+
+        # Sort data by expenseDate in descending order
+        sorted_expenses = sorted(expenses, key=lambda x: x["expenseDate"], reverse=True)
+
+        # Create Excel file
+        excel_buffer = BytesIO()
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Expenses"
+
+        # Write header row
+        headers = ['Expense', 'Amount', 'Date']
+        ws.append(headers)
+
+        # Write data rows
+        for expense in sorted_expenses:
+            row = [
+                expense.get('expenseName', ''),
+                expense.get('amount', 0),
+                expense.get('expenseDate', '').strftime('%Y-%m-%d') if isinstance(expense.get('expenseDate'), datetime) else '',
+            ]
+            ws.append(row)
+
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+
+        # Create the response
+        response = make_response(excel_buffer.getvalue())
+        response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Expenses_{startdate_on_str}_{enddate_on_str}.xlsx"
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        # Clean up
+        del wb
+        del excel_buffer
+        gc.collect()
+
+        return response
+    
+####edit expense
+@app.route('/edit-expense/<item_id>', methods=['GET', 'POST'])
+def edit_expense(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        manager = db.registered_managers.find_one({'username':login_data},{'_id':0,'createdAt':0,'code':0,'address':0})
+        if manager.get('update_sales') in ('yes', None):
+            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+            if 'dp' in company:
+                dp_str = company['dp']
+            else:
+                dp_str = None
+            return render_template('edit-expense.html',item_id=item_id,dp=dp_str)
+        else:
+            flash('You do not have rights to edit', 'error')
+            return redirect('/stock-details')
+    
+@app.route('/apply-expense-edits', methods=['POST'])
+def apply_expense_edits():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        item_id = request.form.get("item_id")
+        expense_name = request.form.get("expense_name")
+        amount = request.form.get("amount")
+        expensedate = request.form.get("expensedate")
+
+        selected_item = db.stock_expenses.find_one({'_id': ObjectId(item_id)})
+
+        fields_to_update = {}
+        if selected_item:
+            if expense_name:
+                fields_to_update['expenseName'] = expense_name
+            if amount:
+                fields_to_update['amount'] = float(amount)
+            if expensedate:
+                expensedate = datetime.strptime(expensedate, '%Y-%m-%d')
+                fields_to_update['expenseDate'] = expensedate
+
+            db.stock_expenses.update_one({'_id': ObjectId(item_id)},
+                                {'$set': fields_to_update})
+            flash('Expense updates were applied', 'success')
+            return redirect('/view-expenses')
+        else:
+            flash('Please select an up-to-date expense', 'error')
+            return redirect('/view-expenses')
+
+####delete expense
+@app.route('/delete-expense/<item_id>', methods=['POST'])
+def delete_expense(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        manager = db.registered_managers.find_one({'username':login_data},{'_id':0,'createdAt':0,'code':0,'address':0})
+        if manager.get('update_sales') in ('yes', None):
+            selected_item = db.stock_expenses.find_one({'_id': ObjectId(item_id)})
+            if selected_item:
+                db.stock_expenses.delete_one({'_id': ObjectId(item_id)})
+                flash('Expense was deleted', 'success')
+            else:
+                flash('Expense does not exist', 'error')
+        else:
+            flash('You do not have rights to delete', 'error')
+        return redirect('/view-expenses')
 
 if __name__ == '__main__':
     app.run()

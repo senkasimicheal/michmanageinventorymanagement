@@ -5,7 +5,7 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Edit Item</title>
+    <title>Expenses</title>
     {% if session['dark_mode'] == 'yes' %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
     {% endif %}
@@ -18,9 +18,11 @@
     <!-- inject:css -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
     <!-- endinject -->
-    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
     <script>
         function fetchNotifications() {
             fetch('/notifications')
@@ -103,7 +105,7 @@
                         </a>
                         <div class="dropdown-menu dropdown-menu-right navbar-dropdown"
                             aria-labelledby="profileDropdown">
-                            <a class="dropdown-item" href="{{url_for('account_setup_page')}}">
+                            <a class="dropdown-item" href="#">
                                 <i class="typcn typcn-cog-outline text-primary"></i>
                                 Settings
                             </a>
@@ -218,7 +220,7 @@
             <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
                 <ul class="navbar-nav mr-lg-2">
                     <li class="nav-item ml-0">
-                        <h4 class="mb-0">Edit Item</h4>
+                        <h4 class="mb-0">Expenses</h4>
                     </li>
                 </ul>
                 <ul class="navbar-nav navbar-nav-right">
@@ -228,28 +230,29 @@
                 </ul>
             </div>
         </nav>
+
         <div class="container-fluid page-body-wrapper">
 
             <!-- partial -->
             <!-- partial:partials/_sidebar.html -->
             <nav class="sidebar sidebar-offcanvas" id="sidebar">
                 <ul class="nav">
-                {% if session['account_type'] == 'all_accounts' %}
-                {% if session['is_manager'] == 'is_manager' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-                        <i class="typcn typcn-device-desktop menu-icon"></i>
-                        <span class="menu-title">Go To Property Mgt</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% endif %}
-                {% if session['is_manager'] == 'is_manager' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_overview') }}">
-                        <i class="typcn typcn-device-desktop menu-icon"></i>
-                    <span class="menu-title">Dashboard</span>
-                    </a>
+                    {% if session['account_type'] == 'all_accounts' %}
+                    {% if session['is_manager'] == 'is_manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
+                            <i class="typcn typcn-device-desktop menu-icon"></i>
+                            <span class="menu-title">Go To Property Mgt</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                    {% if session['is_manager'] == 'is_manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stock_overview') }}">
+                            <i class="typcn typcn-device-desktop menu-icon"></i>
+                            <span class="menu-title">Dashboard</span>
+                        </a>
                     </li>
                     {% endif %}
                     {% if session.get('add_stock') != 'no' %}
@@ -276,34 +279,34 @@
                         </a>
                     </li>
                     {% endif %}
-                {% if session.get('update_sales') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('expenses_page') }}" id="update-sale">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                    <span class="menu-title">Record Expenses</span>
-                    </a>
+                    {% if session.get('update_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('expenses_page') }}" id="update-sale">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">Record Expenses</span>
+                        </a>
                     </li>
-                {% endif %}
-                {% if session.get('view_stock_info') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_details') }}">
-                        <i class="typcn typcn-cloud-storage menu-icon"></i>
-                        <span class="menu-title">Current Stock</span>
-                    </a>
+                    {% endif %}
+                    {% if session.get('view_stock_info') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stock_details') }}">
+                            <i class="typcn typcn-cloud-storage menu-icon"></i>
+                            <span class="menu-title">Current Stock</span>
+                        </a>
                     </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_history_details') }}">
-                        <i class="typcn typcn-cloud-storage menu-icon"></i>
-                    <span class="menu-title">Stock History</span>
-                    </a>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stock_history_details') }}">
+                            <i class="typcn typcn-cloud-storage menu-icon"></i>
+                            <span class="menu-title">Stock History</span>
+                        </a>
                     </li>
                     {% endif %}
                     {% if session.get('view_revenue') != 'no' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('revenue_details') }}">
                             <i class="typcn typcn-business-card menu-icon"></i>
-                    <span class="menu-title">Profits</span>
-                    </a>
+                            <span class="menu-title">Profits</span>
+                        </a>
                     </li>
                     {% endif %}
                     {% if session.get('view_sales') != 'no' %}
@@ -314,43 +317,53 @@
                         </a>
                     </li>
                     {% endif %}
-                {% if session.get('view_sales') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view_expenses') }}" id="update-sale">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                        <span class="menu-title">View Expenses</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if session.get('inhouse') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('update_production_activity') }}" id="inhouse">
-                        <i class="typcn typcn-document-add menu-icon"></i>
-                        <span class="menu-title">Production</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('update_inhouse_use_page') }}" id="inhouse-use">
-                        <i class="typcn typcn-document-add menu-icon"></i>
-                        <span class="menu-title">In-House Use</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('inhouse_items_use_details') }}">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                        <span class="menu-title">In-House Info</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view_production_info') }}">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                        <span class="menu-title">Production Info</span>
-                    </a>
-                </li>
-                {% endif %}
+                    {% if session.get('view_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_expenses') }}" id="update-sale">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">View Expenses</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('inhouse') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('update_production_activity') }}" id="inhouse">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">Production</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('update_inhouse_use_page') }}" id="inhouse-use">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">In-House Use</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('inhouse_items_use_details') }}">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">In-House Info</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_production_info') }}">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">Production Info</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </nav>
             <!-- partial -->
+
+            <script>
+                const notification = document.querySelector('.notification');
+                const closeBtn = document.querySelector('.close-btn');
+
+                closeBtn.addEventListener('click', () => {
+                    notification.style.display = 'none';
+                });
+            </script>
+
             <div class="main-panel">
                 <div id="notification" class="notification"></div>
 
@@ -366,24 +379,55 @@
                     {% endif %}
                     {% endwith %}
                 </div>
-
-                <div class="inhouse-updates-form content-wrapper" id="stock-form">
-                    <form id="myForm" class="property_forn content-pannel" action="{{url_for('apply_item_edits')}}"
+                <div class="content-wrapper">
+                    <form class="dashboard-form-form content-pannel" action="{{url_for('download_expense_data')}}"
                         method="POST">
-                        <input type="hidden" name="item_id" value="{{item_id}}">
-                        <label class="input_labels" for="">Item Name (Optional)</label>
-                        <input class="property_inputs" type="text" name="item_name">
-                        <label class="input_labels" for="">Quantity (Optional)</label>
-                        <input class="property_inputs" type="number" name="quantity" min="1">
-                        <label class="input_labels" for="">Unit Price (Optional)</label>
-                        <input class="property_inputs" type="number" name="unit_price" min="1">
-                        <label class="input_labels" for="">Stock Date (Optional)</label>
-                        <input class="property_inputs" type="date" name="stockdatee" id="stockdatee"
-                            placeholder="enter date"><br>
-                        <input type="submit" id="submit-button" class="btn" value="Edit">
+                        <label class="dashboard-form" for="">From</label>
+                        <input class="dashboard-form" type="date" name="startdate" required>
+                        <label class="dashboard-form" for="">To</label>
+                        <input class="dashboard-form" type="date" name="enddate" required>
+                        <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Download">
                     </form>
+                    <div style="width: 100%; height: 100%; overflow: auto;">
+                        <table class="tenant_table" id="tenantTable">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>
+                                        Expense Name
+                                        <br>
+                                        <input type="text" id="itemNameFilter"
+                                            onkeyup="filterTable('itemNameFilter', 1)"
+                                            placeholder="Search for item names...">
+                                    </th>
+                                    <th>
+                                        Date
+                                        <br>
+                                        <input type="text" id="stockDateFilter"
+                                            onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
+                                    </th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in expense_info %}
+                                <tr data-id="{{ expense['_id'] }}" title="{{ expense['expenseName'] }}"
+                                    style="cursor: pointer;">
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ expense['expenseName'] }}</td>
+                                    <td>{{ expense['expenseDate'].strftime('%Y-%m-%d') }}</td>
+                                    <td class="total-expenses">{{ '{:,.0f}'.format(expense['amount']) }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr id="totalRow">
+                                    <td style="font-weight: bold;" colspan="3">Total</td>
+                                    <td style="font-weight: bold;" id="totalExpenses">0</td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-
                 <!-- content-wrapper ends -->
                 <!-- partial:partials/_footer.html -->
                 <footer class="footer">
@@ -405,6 +449,163 @@
         <!-- page-body-wrapper ends -->
     </div>
     <!-- container-scroller -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const table = document.getElementById('tenantTable');
+            let buttonContainer = null;
+
+            // Create button container and buttons once
+            function createButtons() {
+                buttonContainer = document.createElement('div');
+                buttonContainer.classList.add('button-container');
+                buttonContainer.style.display = 'inline-block';
+
+                // Create edit button
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.classList.add('action-button', 'edit-button');
+                editButton.style.marginRight = '5px';
+
+                // Create delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.classList.add('action-button', 'delete-button');
+
+                // Append buttons to the container
+                buttonContainer.appendChild(editButton);
+                buttonContainer.appendChild(deleteButton);
+
+                // Set button actions
+                editButton.onclick = function (e) {
+                    e.stopPropagation();
+                    const itemId = buttonContainer.parentElement.parentElement.getAttribute('data-id');
+                    const itemName = buttonContainer.parentElement.parentElement.cells[1].textContent;
+                    const stockDate = buttonContainer.parentElement.parentElement.cells[2].textContent;
+                    if (confirm(`Are you sure you want to edit expense: ${itemName}, Date: ${stockDate}?`)) {
+                        window.location.href = `/edit-expense/${itemId}`;
+                    }
+                };
+
+                deleteButton.onclick = function (e) {
+                    e.stopPropagation();
+                    const itemId = buttonContainer.parentElement.parentElement.getAttribute('data-id');
+                    const itemName = buttonContainer.parentElement.parentElement.cells[1].textContent;
+                    const stockDate = buttonContainer.parentElement.parentElement.cells[2].textContent;
+                    if (confirm(`Are you sure you want to delete expense: ${itemName}, Date: ${stockDate}?`)) {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `/delete-expense/${itemId}`;
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                };
+            }
+
+            // When a row is clicked
+            table.addEventListener('click', (e) => {
+                if (e.target && e.target.nodeName === 'TD') {
+                    // Get the clicked row
+                    const currentRow = e.target.parentElement;
+
+                    // Skip if the row has id 'totalRow'
+                    if (currentRow.id === 'totalRow') return;
+
+                    // Remove buttons from the previous row, if any
+                    if (buttonContainer && buttonContainer.parentNode) {
+                        buttonContainer.parentNode.removeChild(buttonContainer);
+                    }
+
+                    // Insert the container into the second cell of the clicked row if not already present
+                    if (!currentRow.cells[1].querySelector('.button-container')) {
+                        currentRow.cells[1].appendChild(buttonContainer);
+                    }
+                }
+            });
+
+            // Remove buttons when clicking outside the table
+            window.addEventListener('click', function (event) {
+                if (!table.contains(event.target) && buttonContainer && buttonContainer.parentNode) {
+                    buttonContainer.parentNode.removeChild(buttonContainer);
+                }
+            });
+
+            // Initial button creation
+            createButtons();
+        });
+    </script>
+
+    <script>
+        function calculateTotals() {
+            let table = document.getElementById("tenantTable");
+            let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+            let totalBuyingPrice = 0;
+
+            for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
+                let buyingPriceCell = rows[i].getElementsByClassName("total-expenses")[0];
+
+                if (buyingPriceCell && rows[i].style.display !== "none") {
+                    let buyingPrice = parseFloat(buyingPriceCell.textContent.replace(/,/g, '')) || 0;
+                    totalBuyingPrice += buyingPrice;
+                }
+            }
+
+            document.getElementById("totalExpenses").textContent = totalBuyingPrice.toLocaleString();
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            calculateTotals();
+        });
+
+        function filterTable(inputId, columnIndex) {
+            // Get the input field and its value
+            var input = document.getElementById(inputId);
+            var filter = input.value.toLowerCase();
+
+            // Get the table and its rows
+            var table = document.querySelector(".tenant_table tbody");
+            var rows = table.getElementsByTagName("tr");
+
+            // Loop through the rows and hide those that don't match the filter
+            for (var i = 0; i < rows.length - 1; i++) { // Exclude the last row
+                var cell = rows[i].getElementsByTagName("td")[columnIndex];
+                if (cell) {
+                    var cellText = cell.textContent || cell.innerText;
+                    if (cellText.toLowerCase().indexOf(filter) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+
+            calculateTotals(); // Recalculate totals after filtering
+        }
+    </script>
+
+    <script>
+        window.onload = function () {
+            var date = new Date();
+            var day = date.getDate();
+            var month = date.getMonth() + 1;
+            var year = date.getFullYear();
+
+            if (month < 10) month = "0" + month;
+            if (day < 10) day = "0" + day;
+
+            var today = year + "-" + month + "-" + day;
+
+            var enddateFields = document.getElementsByName("startdate");
+            for (var i = 0; i < enddateFields.length; i++) {
+                enddateFields[i].setAttribute("max", today);
+            }
+
+            var enddateFields = document.getElementsByName("enddate");
+            for (var i = 0; i < enddateFields.length; i++) {
+                enddateFields[i].setAttribute("max", today);
+            }
+        }
+    </script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -430,26 +631,6 @@
                 clearInterval(intervalId);
             }
         }, 100); // Adjust this value to control the speed of the counter
-    </script>
-
-    <script>
-        window.onload = function () {
-            var date = new Date();
-            var day = date.getDate();
-            var month = date.getMonth() + 1;
-            var year = date.getFullYear();
-
-            if (month < 10) month = "0" + month;
-            if (day < 10) day = "0" + day;
-
-            var today = year + "-" + month + "-" + day;
-
-            var enddateFields = document.getElementsByName("stockdatee");
-            for (var i = 0; i < enddateFields.length; i++) {
-                enddateFields[i].setAttribute("max", today);
-            }
-
-        }
     </script>
 
     <!-- base:js -->

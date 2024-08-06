@@ -5,7 +5,7 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Edit Item</title>
+    <title>Edit Expense</title>
     {% if session['dark_mode'] == 'yes' %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
     {% endif %}
@@ -218,7 +218,7 @@
             <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
                 <ul class="navbar-nav mr-lg-2">
                     <li class="nav-item ml-0">
-                        <h4 class="mb-0">Edit Item</h4>
+                        <h4 class="mb-0">Edit Expense</h4>
                     </li>
                 </ul>
                 <ul class="navbar-nav navbar-nav-right">
@@ -234,22 +234,22 @@
             <!-- partial:partials/_sidebar.html -->
             <nav class="sidebar sidebar-offcanvas" id="sidebar">
                 <ul class="nav">
-                {% if session['account_type'] == 'all_accounts' %}
-                {% if session['is_manager'] == 'is_manager' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-                        <i class="typcn typcn-device-desktop menu-icon"></i>
-                        <span class="menu-title">Go To Property Mgt</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% endif %}
-                {% if session['is_manager'] == 'is_manager' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_overview') }}">
-                        <i class="typcn typcn-device-desktop menu-icon"></i>
-                    <span class="menu-title">Dashboard</span>
-                    </a>
+                    {% if session['account_type'] == 'all_accounts' %}
+                    {% if session['is_manager'] == 'is_manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
+                            <i class="typcn typcn-device-desktop menu-icon"></i>
+                            <span class="menu-title">Go To Property Mgt</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                    {% if session['is_manager'] == 'is_manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stock_overview') }}">
+                            <i class="typcn typcn-device-desktop menu-icon"></i>
+                            <span class="menu-title">Dashboard</span>
+                        </a>
                     </li>
                     {% endif %}
                     {% if session.get('add_stock') != 'no' %}
@@ -276,34 +276,34 @@
                         </a>
                     </li>
                     {% endif %}
-                {% if session.get('update_sales') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('expenses_page') }}" id="update-sale">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                    <span class="menu-title">Record Expenses</span>
-                    </a>
+                    {% if session.get('update_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('expenses_page') }}" id="update-sale">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">Record Expenses</span>
+                        </a>
                     </li>
-                {% endif %}
-                {% if session.get('view_stock_info') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_details') }}">
-                        <i class="typcn typcn-cloud-storage menu-icon"></i>
-                        <span class="menu-title">Current Stock</span>
-                    </a>
+                    {% endif %}
+                    {% if session.get('view_stock_info') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stock_details') }}">
+                            <i class="typcn typcn-cloud-storage menu-icon"></i>
+                            <span class="menu-title">Current Stock</span>
+                        </a>
                     </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_history_details') }}">
-                        <i class="typcn typcn-cloud-storage menu-icon"></i>
-                    <span class="menu-title">Stock History</span>
-                    </a>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stock_history_details') }}">
+                            <i class="typcn typcn-cloud-storage menu-icon"></i>
+                            <span class="menu-title">Stock History</span>
+                        </a>
                     </li>
                     {% endif %}
                     {% if session.get('view_revenue') != 'no' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('revenue_details') }}">
                             <i class="typcn typcn-business-card menu-icon"></i>
-                    <span class="menu-title">Profits</span>
-                    </a>
+                            <span class="menu-title">Profits</span>
+                        </a>
                     </li>
                     {% endif %}
                     {% if session.get('view_sales') != 'no' %}
@@ -314,40 +314,40 @@
                         </a>
                     </li>
                     {% endif %}
-                {% if session.get('view_sales') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view_expenses') }}" id="update-sale">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                        <span class="menu-title">View Expenses</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if session.get('inhouse') != 'no' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('update_production_activity') }}" id="inhouse">
-                        <i class="typcn typcn-document-add menu-icon"></i>
-                        <span class="menu-title">Production</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('update_inhouse_use_page') }}" id="inhouse-use">
-                        <i class="typcn typcn-document-add menu-icon"></i>
-                        <span class="menu-title">In-House Use</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('inhouse_items_use_details') }}">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                        <span class="menu-title">In-House Info</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view_production_info') }}">
-                        <i class="typcn typcn-calculator menu-icon"></i>
-                        <span class="menu-title">Production Info</span>
-                    </a>
-                </li>
-                {% endif %}
+                    {% if session.get('view_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_expenses') }}" id="update-sale">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">View Expenses</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('inhouse') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('update_production_activity') }}" id="inhouse">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">Production</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('update_inhouse_use_page') }}" id="inhouse-use">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">In-House Use</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('inhouse_items_use_details') }}">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">In-House Info</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_production_info') }}">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">Production Info</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </nav>
             <!-- partial -->
@@ -368,17 +368,15 @@
                 </div>
 
                 <div class="inhouse-updates-form content-wrapper" id="stock-form">
-                    <form id="myForm" class="property_forn content-pannel" action="{{url_for('apply_item_edits')}}"
+                    <form id="myForm" class="property_forn content-pannel" action="{{url_for('apply_expense_edits')}}"
                         method="POST">
                         <input type="hidden" name="item_id" value="{{item_id}}">
-                        <label class="input_labels" for="">Item Name (Optional)</label>
-                        <input class="property_inputs" type="text" name="item_name">
-                        <label class="input_labels" for="">Quantity (Optional)</label>
-                        <input class="property_inputs" type="number" name="quantity" min="1">
-                        <label class="input_labels" for="">Unit Price (Optional)</label>
-                        <input class="property_inputs" type="number" name="unit_price" min="1">
-                        <label class="input_labels" for="">Stock Date (Optional)</label>
-                        <input class="property_inputs" type="date" name="stockdatee" id="stockdatee"
+                        <label class="input_labels" for="">Expense Name (Optional)</label>
+                        <input class="property_inputs" type="text" name="expense_name">
+                        <label class="input_labels" for="">Amount (Optional)</label>
+                        <input class="property_inputs" type="number" name="amount" min="1">
+                        <label class="input_labels" for="">Date (Optional)</label>
+                        <input class="property_inputs" type="date" name="expensedate" id="expensedate"
                             placeholder="enter date"><br>
                         <input type="submit" id="submit-button" class="btn" value="Edit">
                     </form>

@@ -249,7 +249,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stock_overview') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">ERP Overview</span>
+              <span class="menu-title">Dashboard</span>
             </a>
           </li>
           {% endif %}
@@ -274,6 +274,14 @@
             <a class="nav-link" href="{{ url_for('update_sales_page') }}" id="update-sale">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Update Sales</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('update_sales') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('expenses_page') }}" id="update-sale">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">Record Expenses</span>
             </a>
           </li>
           {% endif %}
@@ -304,6 +312,14 @@
             <a class="nav-link" href="{{ url_for('sales_details') }}">
               <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
               <span class="menu-title">Sales</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('view_sales') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('view_expenses') }}" id="update-sale">
+              <i class="typcn typcn-calculator menu-icon"></i>
+              <span class="menu-title">View Expenses</span>
             </a>
           </li>
           {% endif %}
