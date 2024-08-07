@@ -6749,7 +6749,6 @@ def manager_notifications():
     
 #Tenant notifications
 @app.route('/tenant notifications')
-
 def tenant_notifications():
     db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
@@ -6972,6 +6971,7 @@ def apply_item_edits():
 
             if applied == 1:
                 flash('Item updates were applied', 'success')
+                db.audit_logs.insert_one({'user': login_data,'Activity': 'Stock edit','Item': item_id,'timestamp': datetime.now()})
             else:
                 flash('No edits were made', 'error')
             return redirect('/stock-details')
@@ -6993,6 +6993,7 @@ def delete_item(item_id):
             selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
             if selected_item:
                 db.inventories.delete_one({'_id': ObjectId(item_id)})
+                db.audit_logs.insert_one({'user': login_data,'Activity': 'Stock deletion','Item': item_id,'timestamp': datetime.now()})
                 flash('Item was deleted', 'success')
             else:
                 flash('Please select an up-to-date item', 'error')
@@ -7023,6 +7024,7 @@ def delete_sale(item_id):
                     available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
                     db.inventories.update_one({'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
                     db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+                db.audit_logs.insert_one({'user': login_data,'Activity': 'Sale deletion','Item': item_id,'timestamp': datetime.now()})
                 flash('Sale was deleted', 'success')
             else:
                 flash('Sale does not exist', 'error')
@@ -7227,14 +7229,17 @@ def apply_expense_edits():
             if expensedate:
                 expensedate = datetime.strptime(expensedate, '%Y-%m-%d')
                 fields_to_update['expenseDate'] = expensedate
-
-            db.stock_expenses.update_one({'_id': ObjectId(item_id)},
-                                {'$set': fields_to_update})
-            flash('Expense updates were applied', 'success')
-            return redirect('/view-expenses')
         else:
             flash('Please select an up-to-date expense', 'error')
-            return redirect('/view-expenses')
+        
+        if not fields_to_update:
+            flash('No edits were applied', 'error')
+        else:
+            db.stock_expenses.update_one({'_id': ObjectId(item_id)},
+                                {'$set': fields_to_update})
+            db.audit_logs.insert_one({'user': login_data,'Activity': 'Edit expense','Item': item_id,'timestamp': datetime.now()})
+            flash('Expense updates were applied', 'success')
+        return redirect('/view-expenses')
 
 ####delete expense
 @app.route('/delete-expense/<item_id>', methods=['POST'])
@@ -7250,6 +7255,7 @@ def delete_expense(item_id):
             selected_item = db.stock_expenses.find_one({'_id': ObjectId(item_id)})
             if selected_item:
                 db.stock_expenses.delete_one({'_id': ObjectId(item_id)})
+                db.audit_logs.insert_one({'user': login_data,'Activity': 'Expense deletion','Item': item_id,'timestamp': datetime.now()})
                 flash('Expense was deleted', 'success')
             else:
                 flash('Expense does not exist', 'error')
