@@ -370,12 +370,18 @@
             <select name="unit_of_measurement" id="">
               <option value="" disabled selected>Select one</option>
               <option value="Kg">Kilogram</option>
-              <option value="Ltr">Litres</option>
+              <option value="Gram">Gram</option>
+              <option value="Ltr">Litre</option>
+              <option value="Meter">Meter</option>
               <option value="Pcs">Pieces</option>
               <option value="Bxs">Boxes</option>
               <option value="Tns">Tins</option>
               <option value="Ctns">Cartons</option>
               <option value="Bts">Bottles</option>
+              <option value="Set">Set</option>
+              <option value="Pair">Pair</option>
+              <option value="Dozen">Dozen</option>
+              <option value="Kit">Kit</option>
             </select>
             <label class="input_labels" for="">Unit Price</label>
             <input class="property_inputs" type="number" name="unit_price" min="1">
@@ -477,7 +483,6 @@
         // Clear the input fields
         document.querySelector('input[name="item_name"]').value = '';
         document.querySelector('input[name="quantity"]').value = '';
-        document.querySelector('select[name="unit_of_measurement"]').selectedIndex = 0;
         document.querySelector('input[name="unit_price"]').value = '';
       });
 

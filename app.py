@@ -6934,15 +6934,19 @@ def apply_item_edits():
         quantity = request.form.get("quantity")
         unit_price = request.form.get("unit_price")
         stockdate = request.form.get("stockdate")
+        unit_of_measurement = request.form.get("unit_of_measurement")
 
         selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
 
         applied = 0
         if selected_item:
             if item_name:
-                db.inventories.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                db.inventories.update_one({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
                 db.old_inventories.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
                 db.stock_sales.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                applied = 1
+            if unit_of_measurement:
+                db.inventories.update_one({'itemName': selected_item['itemName']}, {'$set': {'unitOfMeasurement': unit_of_measurement}})
                 applied = 1
             if quantity:
                 quantity = float(quantity)
