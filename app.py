@@ -7173,16 +7173,24 @@ def delete_sale(item_id):
             if sale_to_delete:
                 if 'stock_id' in sale_to_delete:
                     stock_to_undo = db.inventories.find_one({'_id': sale_to_delete['stock_id']})
-                    available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
-                    db.inventories.update_one({'_id': sale_to_delete['stock_id']}, {'$set': {'available_quantity': available_quantity}})
-                    db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+                    if stock_to_undo:
+                        available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
+                        db.inventories.update_one({'_id': sale_to_delete['stock_id']}, {'$set': {'available_quantity': available_quantity}})
+                        db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+                        db.audit_logs.insert_one({'user': login_data,'Activity': 'Sale deletion','Item': item_id,'timestamp': datetime.now()})
+                        flash('Sale was deleted', 'success')
+                    else:
+                        flash('Unable to delete: No stock available', 'error')
                 else:
                     stock_to_undo = db.inventories.find_one({'itemName': sale_to_delete['itemName']})
-                    available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
-                    db.inventories.update_one({'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
-                    db.stock_sales.delete_one({'_id': ObjectId(item_id)})
-                db.audit_logs.insert_one({'user': login_data,'Activity': 'Sale deletion','Item': item_id,'timestamp': datetime.now()})
-                flash('Sale was deleted', 'success')
+                    if stock_to_undo:
+                        available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
+                        db.inventories.update_one({'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
+                        db.stock_sales.delete_one({'_id': ObjectId(item_id)})
+                        db.audit_logs.insert_one({'user': login_data,'Activity': 'Sale deletion','Item': item_id,'timestamp': datetime.now()})
+                        flash('Sale was deleted', 'success')
+                    else:
+                        flash('Unable to delete: No stock available', 'error')
             else:
                 flash('Sale does not exist', 'error')
         else:
