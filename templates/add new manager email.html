@@ -347,6 +347,20 @@
           <form id="myForm" class="property_forn content-pannel" action="{{url_for('update_new_manager_email')}}" method="POST">
             <label class="input_labels" for="">New email</label>
             <input class="property_inputs" type="email" name="email" required><br>
+            <label class="input_labels" for="">Account Type</label>
+            <select name="account_type" id="" required>
+              <option value="" disabled selected>Select one</option>
+              {% if session['account_type'] == 'Property Management' %}
+              <option value="Property Management">Property Management</option>
+              {% endif %}
+              {% if session['account_type'] == 'Enterprise Resource Planning' %}
+              <option value="Stock Management">Stock Management</option>
+              {% endif %}
+              {% if session['account_type'] == 'all_accounts' %}
+              <option value="Property Management">Property Management</option>
+              <option value="Stock Management">Stock Management</option>
+              {% endif %}
+            </select>
             <input required type="submit" class="btn" value="Submit">
           </form>
         </div>

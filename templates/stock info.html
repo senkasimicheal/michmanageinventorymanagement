@@ -397,6 +397,7 @@
                       <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
                     </th>
                     <th>Stocked Quantity</th>
+                    <th>Measurement</th>
                     <th>Buying Price</th>
                     <th>Total Buying Price</th>
                     <th>Available Stock</th>
@@ -409,6 +410,7 @@
                   <td>{{ stock['itemName'] }}</td>
                   <td>{{ stock['stockDate'].strftime('%Y-%m-%d') }}</td>
                   <td>{{ stock['quantity'] }}</td>
+                  <td>{{stock['unitOfMeasurement']}}</td>
                   <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
                   <td class="total-buying-price">{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
                   <td>
@@ -421,7 +423,7 @@
                 </tr>
                 {% endfor %}
                 <tr id="totalRow">
-                  <td style="font-weight: bold;" colspan="5">Total</td>
+                  <td style="font-weight: bold;" colspan="6">Total</td>
                   <td style="font-weight: bold;" id="totalBuyingPrice">0</td>
                   <td></td>
                 </tr>

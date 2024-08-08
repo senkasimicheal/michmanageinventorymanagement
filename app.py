@@ -773,7 +773,7 @@ def before_request():
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
-                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses'):
+                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -845,19 +845,20 @@ def register_account():
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     is_manager = db.managers.find_one({'manager_email': email})
     if is_manager:
-        manager = {
-            'createdAt': datetime.now(),
-            'code': code,
-            'name': name,
-            'email': email,
-            'phone_number': phone_number,
-            'company_name': company_name,
-            'username': username,
-            'address': address,
-            'registered_on': datetime.now(),
-            'password': hashed_password
-        }
-    else:
+        account = company['account_type']
+        # Remove any empty strings from the list
+        account = [atype for atype in account if atype]
+
+        if 'Enterprise Resource Planning' in account and len(account) == 1:
+            # If only 'Enterprise Resource Planning' is present
+            account_type = 'Enterprise Resource Planning'
+        elif 'Property Management' in account and len(account) == 1:
+            # If only 'Property Management' is present
+            account_type = 'Property Management'
+        elif 'Enterprise Resource Planning' in account and 'Property Management' in account:
+            # If both are present
+            account_type = 'all_accounts'
+
         manager = {
             'createdAt': datetime.now(),
             'code': code,
@@ -869,6 +870,45 @@ def register_account():
             'address': address,
             'registered_on': datetime.now(),
             'password': hashed_password,
+            'account_type': account_type
+        }
+    else:
+        other_manager = db.other_managers.find_one({'company_name': company_name, 'manager_email':email})
+        if other_manager:
+            account = other_manager['account_type']
+
+            if account == 'Property Management':
+                account_type = 'Property Management'
+            elif account == 'Stock Management':
+                account_type = 'Stock Management'
+        else:
+            account = company['account_type']
+        
+            # Remove any empty strings from the list
+            account = [atype for atype in account if atype]
+
+            if 'Enterprise Resource Planning' in account and len(account) == 1:
+                # If only 'Enterprise Resource Planning' is present
+                account_type = 'Enterprise Resource Planning'
+            elif 'Property Management' in account and len(account) == 1:
+                # If only 'Property Management' is present
+                account_type = 'Property Management'
+            elif 'Enterprise Resource Planning' in account and 'Property Management' in account:
+                # If both are present
+                account_type = 'all_accounts'
+
+        manager = {
+            'createdAt': datetime.now(),
+            'code': code,
+            'name': name,
+            'email': email,
+            'phone_number': phone_number,
+            'company_name': company_name,
+            'username': username,
+            'address': address,
+            'registered_on': datetime.now(),
+            'password': hashed_password,
+            'account_type': account_type,
             'add_properties': 'no',
             'add_tenants': 'no',
             'update_tenant': 'no',
@@ -899,12 +939,13 @@ def register_account():
         <p>Thank you for registering with us. Please verify your email address by entering the following code in the verification field on our website:</p>
         <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
         <p>Please copy the code above and click on verify:</p>
-        <p><b style="font-size: 20px;"><a href="https://michmanagement.onrender.com//load-verification-page">Verify</a></b></p>
+        <p><b style="font-size: 20px;"><a href="https://michmanagement.onrender.com/auto-registration-verification?email={email}&code={code}">Verify</a></b></p>
         <p>Best Regards,</p>
         <p>Mich Manage</p>
         </body>
         </html>
         """
+
         thread = threading.Thread(target=send_async_email, args=[app, msg])
         thread.start()
     else:
@@ -917,6 +958,29 @@ def register_account():
 
     flash('Please verify your account', 'success')
     return render_template('verify_manager.html', no_send_emails_code=no_send_emails_code)
+
+####AUTO VERIFICATION######
+@app.route('/auto-registration-verification')
+def auto_registration_verification():
+    email = request.args.get('email')
+    code = request.args.get('code')
+
+    if email and code:
+        db, fs = get_db_and_fs()
+        code_exists = db.registration_verification_codes.find_one({'email': email, 'code': code})
+
+        if code_exists:
+            try:
+                db.registered_managers.insert_one(code_exists)
+                db.registration_verification_codes.delete_one({'email': email, 'code': code})
+                flash('User registered successfully', 'success')
+                return redirect('/')
+            except Exception as e:
+                flash('An error occurred while registering the user: ' + str(e), 'error')
+        else:
+            flash('Code expired or Invalid', 'error')
+    
+    return render_template('verify_manager.html')
 
     
 ##########VERIFYING MANAGER ACCOUNT##############
@@ -1142,9 +1206,6 @@ def userlogin():
             user_message1 = f"{manager['name']}"
             login_username = f"{manager['username']}"
             phone_number = f"{manager['phone_number']}"
-            is_manager = db.managers.find_one({'manager_email': manager['email']})
-            if is_manager:
-                session['is_manager'] = 'is_manager'
 
             logged_in_data = {
                 'username': username,
@@ -1165,22 +1226,54 @@ def userlogin():
                 if value is not None:
                     session[field] = value
             
-            account_type = subscription['account_type']
-            # Remove any empty strings from the list
-            account_type = [atype for atype in account_type if atype]
+            is_manager = db.managers.find_one({'manager_email': manager['email']})
+            if is_manager:
+                session['is_manager'] = 'is_manager'
+                account_type = subscription['account_type']
+                # Remove any empty strings from the list
+                account_type = [atype for atype in account_type if atype]
 
-            if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
-                # If only 'Enterprise Resource Planning' is present
-                session['account_type'] = 'Enterprise Resource Planning'
-                return redirect("/stock-overview")
-            elif 'Property Management' in account_type and len(account_type) == 1:
-                # If only 'Property Management' is present
-                session['account_type'] = 'Property Management'
-                return redirect("/load-dashboard-page")
-            elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
-                # If both are present
-                session['account_type'] = 'all_accounts'
-                return redirect('/all-accounts-overview')
+                if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+                    # If only 'Enterprise Resource Planning' is present
+                    session['account_type'] = 'Enterprise Resource Planning'
+                    return redirect("/stock-overview")
+                elif 'Property Management' in account_type and len(account_type) == 1:
+                    # If only 'Property Management' is present
+                    session['account_type'] = 'Property Management'
+                    return redirect("/load-dashboard-page")
+                elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+                    # If both are present
+                    session['account_type'] = 'all_accounts'
+                    return redirect('/all-accounts-overview')
+            else:
+                other_manager = db.other_managers.find_one({'company_name': manager['company_name'], 'manager_email': manager['email']})
+                if other_manager:
+                    account_type = other_manager['account_type']
+
+                    if account_type == 'Stock Management':
+                        session['account_type'] = 'Enterprise Resource Planning'
+                        return redirect("/stock-overview")
+                    elif account_type == 'Property Management':
+                        # If only 'Property Management' is present
+                        session['account_type'] = 'Property Management'
+                        return redirect("/load-dashboard-page")
+                else:
+                    account_type = subscription['account_type']
+                    # Remove any empty strings from the list
+                    account_type = [atype for atype in account_type if atype]
+
+                    if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+                        # If only 'Enterprise Resource Planning' is present
+                        session['account_type'] = 'Enterprise Resource Planning'
+                        return redirect("/stock-overview")
+                    elif 'Property Management' in account_type and len(account_type) == 1:
+                        # If only 'Property Management' is present
+                        session['account_type'] = 'Property Management'
+                        return redirect("/load-dashboard-page")
+                    elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+                        # If both are present
+                        session['account_type'] = 'all_accounts'
+                        return redirect('/all-accounts-overview')
             
 #RESEND CODE
 @app.route("/resend auth code/<username>")
@@ -1266,23 +1359,51 @@ def authentication():
         is_manager = db.managers.find_one({'manager_email': manager['email']})
         if is_manager:
             session['is_manager'] = 'is_manager'
+            account_type = subscription['account_type']
+            # Remove any empty strings from the list
+            account_type = [atype for atype in account_type if atype]
 
-        account_type = subscription['account_type']
-        # Remove any empty strings from the list
-        account_type = [atype for atype in account_type if atype]
+            if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+                # If only 'Enterprise Resource Planning' is present
+                session['account_type'] = 'Enterprise Resource Planning'
+                return redirect("/stock-overview")
+            elif 'Property Management' in account_type and len(account_type) == 1:
+                # If only 'Property Management' is present
+                session['account_type'] = 'Property Management'
+                return redirect("/load-dashboard-page")
+            elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+                # If both are present
+                session['account_type'] = 'all_accounts'
+                return redirect('/all-accounts-overview')
+        else:
+            other_manager = db.other_managers.find_one({'company_name': manager['company_name'], 'manager_email': manager['email']})
+            if other_manager:
+                account_type = other_manager['account_type']
 
-        if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
-            # If only 'Enterprise Resource Planning' is present
-            session['account_type'] = 'Enterprise Resource Planning'
-            return redirect("/stock-overview")
-        elif 'Property Management' in account_type and len(account_type) == 1:
-            # If only 'Property Management' is present
-            session['account_type'] = 'Property Management'
-            return redirect("/load-dashboard-page")
-        elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
-            # If both are present
-            session['account_type'] = 'all_accounts'
-            return redirect('/all-accounts-overview')
+                if account_type == 'Stock Management':
+                    session['account_type'] = 'Enterprise Resource Planning'
+                    return redirect("/stock-overview")
+                elif account_type == 'Property Management':
+                    # If only 'Property Management' is present
+                    session['account_type'] = 'Property Management'
+                    return redirect("/load-dashboard-page")
+            else:
+                account_type = subscription['account_type']
+                # Remove any empty strings from the list
+                account_type = [atype for atype in account_type if atype]
+
+                if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+                    # If only 'Enterprise Resource Planning' is present
+                    session['account_type'] = 'Enterprise Resource Planning'
+                    return redirect("/stock-overview")
+                elif 'Property Management' in account_type and len(account_type) == 1:
+                    # If only 'Property Management' is present
+                    session['account_type'] = 'Property Management'
+                    return redirect("/load-dashboard-page")
+                elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+                    # If both are present
+                    session['account_type'] = 'all_accounts'
+                    return redirect('/all-accounts-overview')
         
 ##ACCOUNT SETTING
 @app.route('/account-setup-page')
@@ -1754,8 +1875,6 @@ def my_complaints():
             complaints = sorted(complaints, key=lambda c: c['complained_on'], reverse=True)
             # Remove duplicates
             complaints = list({v['_id']: v for v in complaints}.values())
-
-            print(complaints)
 
             dp = tenant_acc_setting.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
@@ -3289,16 +3408,22 @@ def update_new_manager_email():
         return redirect('/')
     else:
         email = request.form.get('email')
+        account_type = request.form.get('account_type')
         manager_found = db.registered_managers.find_one({'username': login_data})
         company = db.managers.find_one({'name':manager_found['company_name']})
         managers = company['managers']
+        exists = 0
         for manager in managers:
             if email == manager:
                 flash('This email already exists', 'error')
                 return redirect('/add-new-manager-email')
-        db.managers.update_one({'name': manager_found['company_name']}, {'$push': {'managers': email}})
-        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new manager', 'email':email, 'timestamp': datetime.now()})
-        flash('New manager email was successfully added', 'success')
+            else:
+                exists = 1
+        if exists == 1:
+            db.managers.update_one({'name': manager_found['company_name']}, {'$push': {'managers': email}})
+            db.other_managers.insert_one({'company_name': manager_found['company_name'], 'manager_email': email, 'account_type': account_type})
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new manager', 'email':email, 'timestamp': datetime.now()})
+            flash('New manager email was successfully added', 'success')
         return redirect('/add-new-manager-email')
 
 #######CLICK TO UPDATE TENANT#############
@@ -6683,7 +6808,6 @@ def download_inhouse_item_use():
 
 #Manager notifications
 @app.route('/manager notifications')
-
 def manager_notifications():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6813,6 +6937,35 @@ def tenant_notifications():
 def notifications():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
+
+    manager_account = db.registered_managers.find_one({'username': login_data}, {'_id':0,'createdAt':0,'code':0,'phone_number':0,'address':0,'registered_on':0,'password':0,'auth':0,'dp':0,'dark_mode':0,'password':0})
+    if manager_account:
+        fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock','update_sales','inhouse','view_stock_info','view_revenue','view_sales']
+        for field in fields:
+            value = manager_account.get(field)
+            if value is not None:
+                session[field] = value
+
+        account_type = manager_account.get('account_type')
+        if account_type is None:
+            manager_type = db.managers.find_one({'name': manager_account['company_name']})
+            account_type = manager_type['account_type']
+            # Remove any empty strings from the list
+            account_type = [atype for atype in account_type if atype]
+            if 'Enterprise Resource Planning' in account_type and len(account_type) == 1:
+                session['account_type'] = 'Enterprise Resource Planning'
+            elif 'Property Management' in account_type and len(account_type) == 1:
+                session['account_type'] = 'Property Management'
+            elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
+                session['account_type'] = 'all_accounts'
+        else:
+            if account_type == 'Property Management':
+                session['account_type'] = 'Property Management'
+            elif account_type == 'Enterprise Resource Planning':
+                session['account_type'] = 'Enterprise Resource Planning'
+            elif account_type == 'all_accounts':
+                session['account_type'] = 'all_accounts'
+            session['is_manager'] = 'is_manager'
 
     # Get the last seen timestamp from the session
     last_seen_timestamp = session.get('last_seen_timestamp', datetime.min)

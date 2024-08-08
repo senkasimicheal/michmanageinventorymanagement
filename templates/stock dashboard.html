@@ -351,8 +351,7 @@
       <!-- partial -->
       <div class="main-panel">
         <div id="notification" class="notification"></div>
-        
-
+        {% if session['is_manager'] == 'is_manager' %}
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
@@ -406,6 +405,21 @@
               </div>
             </div>
           </div>
+          {% else %}
+          <div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}"
+              style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+              {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+          </div>
+          <p style="padding: 0 1.812rem 1.812rem;">You do not have rights to view the dashboard</p>
+          {% endif %}
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <!-- <footer class="footer">
