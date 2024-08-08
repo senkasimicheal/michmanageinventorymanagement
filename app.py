@@ -6178,95 +6178,13 @@ def stock_overview():
             'values': monthly_profits_df['Monthly Profit'].tolist()
         }
 
-        ###INHOUSE UPDATES
-        inhouse_info = list(db.inhouse.find({'company_name': company['company_name'], 'useDate': {
-                        '$gte': start_of_previous_month,
-                        '$lt': first_day_of_current_month}}))
-        
-        inhouse_itemName = []
-        inhouse_itemQuantity = []
-        inhouse_itemUnitPrices = []
-
-        for record in inhouse_info:
-            item_name = record['itemName']
-            item_quantity = record['itemQuantity']
-            item_unit_price = record['itemUnitPrices']
-            
-            inhouse_itemName.append(item_name)
-            inhouse_itemQuantity.append(item_quantity)
-            inhouse_itemUnitPrices.append(item_unit_price)
-
-        # Create the DataFrame
-        inhouse_df = pd.DataFrame({
-            'Item Name': inhouse_itemName,
-            'quantity': inhouse_itemQuantity,
-            'unit price': inhouse_itemUnitPrices
-        })
-
-        # Assuming you have the DataFrame 'inhouse_df_new'
-        # Explode all variables (Item Name, quantity, unit price)
-        inhouse_df_exploded = inhouse_df.explode('Item Name')
-        inhouse_df_exploded['quantity'] = inhouse_df.explode('quantity')['quantity']
-        inhouse_df_exploded['unit price'] = inhouse_df.explode('unit price')['unit price']
-        inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
-
-        inhouse_df_exploded['cost'] = inhouse_df_exploded['quantity']*inhouse_df_exploded['unit price']
-
-        total_cost_by_item = inhouse_df_exploded.groupby('Item Name')['cost'].sum()
-        inhouse_cost_df = pd.DataFrame(total_cost_by_item).reset_index()
-
-        ##total inhouse cost
-        if not inhouse_cost_df.empty:
-            session['inhouse_costs_chart'] = 'inhouse_costs_chart'
-        
-        inhouse_cost_chart = {
-            'labels': inhouse_cost_df['Item Name'].tolist(),
-            'values': inhouse_cost_df['cost'].tolist()
-        }
-
-        ##inhouse revenues
-        inhouse_productName = []
-        inhouse_productQuantity = []
-        inhouse_productPrice = []
-
-        for record in inhouse_info:
-            productName = record['productName']
-            productQuantity = record['productQuantity']
-            productPrice = record['productPrice']
-            
-            inhouse_productName.append(productName)
-            inhouse_productQuantity.append(productQuantity)
-            inhouse_productPrice.append(productPrice)
-
-
-        # Create the DataFrame
-        inhouse_revenue_df = pd.DataFrame({
-            'Product Name': inhouse_productName,
-            'Quantity': inhouse_productQuantity,
-            'Unit Price': inhouse_productPrice
-        })
-
-        inhouse_revenue_df['Revenue'] = inhouse_revenue_df['Quantity']*inhouse_revenue_df['Unit Price']
-
-        # Group by 'Product Name' and sum 'Revenue'
-        product_revenue_summary = inhouse_revenue_df.groupby('Product Name', as_index=False)['Revenue'].sum()
-        
-        ##total inhouse revenue
-        if not product_revenue_summary.empty:
-            session['inhouse_revenue_chart'] = 'inhouse_revenue_chart'
-        
-        inhouse_revenue_chart = {
-            'labels': product_revenue_summary['Product Name'].tolist(),
-            'values': product_revenue_summary['Revenue'].tolist()
-        }
-
-        del df_ungrouped, df, positive_profits_df, negative_profits_df, profit_info_df, monthly_profits, monthly_profits_df, inhouse_df, inhouse_df_exploded, inhouse_cost_df, inhouse_revenue_df, product_revenue_summary
+        del df_ungrouped, df, positive_profits_df, negative_profits_df, profit_info_df, monthly_profits, monthly_profits_df
         gc.collect()
         dp = company.get('dp')
         dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
         return render_template('stock dashboard.html',profits_chart=profits_chart,Losses_chart=Losses_chart,revenue=revenue,
-                               quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit,inhouse_cost_chart=inhouse_cost_chart,
-                               inhouse_revenue_chart=inhouse_revenue_chart,start_of_previous_month=start_of_previous_month,
+                               quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit,
+                               start_of_previous_month=start_of_previous_month,
                                first_day_of_current_month=first_day_of_current_month, dp=dp_str)
     
 @app.route('/all-accounts-overview')
