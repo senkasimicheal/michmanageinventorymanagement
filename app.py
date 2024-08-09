@@ -4803,7 +4803,6 @@ def manage_user_rights_page(email,company_name):
         add_tenants = manager.get('add_tenants', "no")
         update_tenant = manager.get('update_tenant', "no")
         edit_tenant = manager.get('edit_tenant', "no")
-
         manage_contracts = manager.get('manage_contracts', "no")
         add_stock = manager.get('add_stock', "no")
         update_stock = manager.get('update_stock', "no")
@@ -4811,13 +4810,23 @@ def manage_user_rights_page(email,company_name):
         inhouse = manager.get('inhouse', "no")
         view_stock_info = manager.get('view_stock_info', "no")
         view_revenue = manager.get('view_revenue', "no")
+        view_sales = manager.get('view_revenue', "no")
+        view_finance_dashboard = manager.get('view_finance_dashboard', "no")
+        add_new_finance_account = manager.get('add_new_finance_account', "no")
+        update_finance_account = manager.get('update_finance_account', "no")
+        view_finance = manager.get('view_finance', "no")
+        edit_finance = manager.get('edit_finance', "no")
+        delete_finance = manager.get('delete_finance', "no")
         
         return render_template('user rights page.html', email=email,company_name=company_name,
                                add_properties=add_properties,add_tenants=add_tenants,
                                update_tenant=update_tenant,edit_tenant=edit_tenant,
                                manage_contracts=manage_contracts,add_stock=add_stock,
                                update_stock=update_stock,update_sales=update_sales,inhouse=inhouse,
-                               view_stock_info=view_stock_info,view_revenue=view_revenue,dp=dp_str)
+                               view_stock_info=view_stock_info,view_revenue=view_revenue,view_sales=view_sales,
+                               view_finance_dashboard=view_finance_dashboard,add_new_finance_account=add_new_finance_account,
+                               update_finance_account=update_finance_account,view_finance=view_finance,
+                               edit_finance=edit_finance,delete_finance=delete_finance,dp=dp_str)
 
 @app.route('/user-rights-initiated', methods=["POST"])
 def user_rights_initiated():
@@ -4849,48 +4858,69 @@ def user_rights_initiated():
         delete_finance = request.form.get('delete_finance')
 
         update_fields = {}
-
+        update=0
         if add_properties:
+            update=1
             update_fields['add_properties'] = add_properties
         if add_tenants:
+            update=1
             update_fields['add_tenants'] = add_tenants
         if update_tenant:
+            update=1
             update_fields['update_tenant'] = update_tenant
         if edit_tenant:
+            update=1
             update_fields['edit_tenant'] = edit_tenant
         if manage_contracts:
+            update=1
             update_fields['manage_contracts'] = manage_contracts        
         if add_stock:
+            update=1
             update_fields['add_stock'] = add_stock
         if update_stock:
+            update=1
             update_fields['update_stock'] = update_stock
         if update_sales:
+            update=1
             update_fields['update_sales'] = update_sales
         if inhouse:
+            update=1
             update_fields['inhouse'] = inhouse
         if view_stock_info:
+            update=1
             update_fields['view_stock_info'] = view_stock_info
         if view_revenue:
+            update=1
             update_fields['view_revenue'] = view_revenue
         if view_sales:
+            update=1
             update_fields['view_sales'] = view_sales
         if view_finance_dashboard:
+            update=1
             update_fields['view_finance_dashboard'] = view_finance_dashboard
         if add_new_finance_account:
+            update=1
             update_fields['add_new_finance_account'] = add_new_finance_account
         if update_finance_account:
+            update=1
             update_fields['update_finance_account'] = update_finance_account
         if view_finance:
+            update=1
             update_fields['view_finance'] = view_finance
         if edit_finance:
+            update=1
             update_fields['edit_finance'] = edit_finance
         if delete_finance:
+            update=1
             update_fields['delete_finance'] = delete_finance
 
         # Update the document with the non-empty fields
         db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
         db.audit_logs.insert_one({'user': login_data, 'Activity': 'Change of user rights', 'email':email, 'timestamp': datetime.now()})
-        flash("User rights were set successfully", 'success')
+        if update==1:
+            flash("User rights were set successfully", 'success')
+        else:
+            flash("No updates were made", 'error')
         return redirect('/manage-user-rights')
     
 ####ASSIGN PROPERTIES TO MANAGERS
@@ -4920,7 +4950,6 @@ def assign_properties():
         return render_template('assign properties.html',managers=managers,dp=dp_str)
     
 @app.route('/assign-properties-page/<name>/<email>/<company_name>')
-
 def assign_properties_page(name,email,company_name):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
