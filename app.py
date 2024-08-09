@@ -39,6 +39,7 @@ from collections import defaultdict
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
+scheduler = BackgroundScheduler()
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -338,6 +339,9 @@ def send_reports():
 
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_reminders():
+    current_day_of_week = datetime.now().weekday()
+    if current_day_of_week != 1:
+        return
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
@@ -406,6 +410,9 @@ def send_payment_reminders():
 
 ##########SEND CONTRACT EXPIRY REMINDERS###########
 def send_contract_expiry_reminders():
+    current_day_of_week = datetime.now().weekday()
+    if current_day_of_week != 2:
+        return
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
@@ -454,36 +461,6 @@ def send_contract_expiry_reminders():
                 with app.app_context():
                     thread = threading.Thread(target=send_async_email, args=[app, msg])
                     thread.start()
-
-scheduler = BackgroundScheduler()
-# Schedule monthly report
-scheduler.add_job(
-    func=send_reports,
-    trigger=CronTrigger(day=1, hour=9, minute=0),
-    id='send_reports_job',
-    name='Send reports on the 1st of every month',
-    replace_existing=True
-)
-
-# Schedule payment reminders
-scheduler.add_job(
-    func=send_payment_reminders,
-    trigger=CronTrigger(day_of_week='wed', hour=9, minute=0),
-    id='send_payment_reminders_job',
-    name='Send payment reminders every Wednesday at 9 AM',
-    replace_existing=True
-)
-
-# Schedule contract expiry reminders
-scheduler.add_job(
-    func=send_contract_expiry_reminders,
-    trigger=CronTrigger(day_of_week='wed', hour=9, minute=0),
-    id='send_contract_expiry_reminders_job',
-    name='Send contract expiry reminders every Wednesday at 9 AM',
-    replace_existing=True
-)
-
-scheduler.start()
 
 ###########SEND US A MESSAGE###############
 @app.route('/send-message', methods=["POST"])
@@ -696,9 +673,9 @@ def update_sales_page():
     for item in available_items:
         if item.get('available_quantity', 0) > 0:
             available_itemNames.append({
-                'itemName': item['itemName'],
-                'available_quantity': item['available_quantity'],
-                'unitOfMeasurement': item['unitOfMeasurement']
+                'itemName': item.get('itemName', ''),
+                'available_quantity': item.get('available_quantity', ''),
+                'unitOfMeasurement': item.get('unitOfMeasurement', '') 
             })
 
     # Sort the available_itemNames list in alphabetical order by 'itemName'
@@ -725,9 +702,9 @@ def update_production_activity():
         for item in available_items:
             if item.get('available_quantity', 0) > 0:
                 available_itemNames.append({
-                    'itemName': item['itemName'],
-                    'available_quantity': item['available_quantity'],
-                    'unitOfMeasurement': item['unitOfMeasurement']
+                    'itemName': item.get('itemName', ''),  # Provide a default value
+                    'available_quantity': item.get('available_quantity', ''),
+                    'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
                 })
             
     available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
@@ -753,9 +730,9 @@ def update_inhouse_use_page():
         for item in available_items:
             if item.get('available_quantity', 0) > 0:
                 available_itemNames.append({
-                    'itemName': item['itemName'],
-                    'available_quantity': item['available_quantity'],
-                    'unitOfMeasurement': item['unitOfMeasurement']
+                    'itemName': item.get('itemName', ''),  # Provide a default value
+                    'available_quantity': item.get('available_quantity', ''),
+                    'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
                 })
 
     available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
@@ -773,7 +750,7 @@ def before_request():
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
-                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification'):
+                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -920,7 +897,13 @@ def register_account():
             'inhouse': 'no',
             'view_stock_info': 'no',
             'view_revenue': 'no',
-            'view_sales': 'no'
+            'view_sales': 'no',
+            'view_finance_dashboard': 'no',
+            'add_new_finance_account': 'no',
+            'update_finance_account': 'no',
+            'view_finance': 'no',
+            'edit_finance': 'no',
+            'delete_finance': 'no'
         }
 
     # Delete existing verification code if exists
@@ -1220,7 +1203,10 @@ def userlogin():
             session['login_username'] = login_username
             session['phone_number'] = phone_number
 
-            fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock','update_sales','inhouse','view_stock_info','view_revenue','view_sales']
+            fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock',
+                      'update_sales','inhouse','view_stock_info','view_revenue','view_sales','view_finance_dashboard','add_new_finance_account',
+                      'update_finance_account','view_finance','edit_finance','delete_finance']
+            
             for field in fields:
                 value = manager.get(field)
                 if value is not None:
@@ -1476,7 +1462,6 @@ def account_setup_initiated():
     
 ##ACCOUNT SETTING FOR TENANT
 @app.route('/tenant-account-setup-page')
-
 def tenant_account_setup_page():
     db, fs = get_db_and_fs()
     login_data = session.get('tenantID')
@@ -4564,7 +4549,6 @@ def view_file_passwords():
 
 ####MANAGE CONTRACTS
 @app.route('/manage-contracts')
-
 def manage_contracts():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4617,7 +4601,6 @@ def manage_contracts():
             return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp=dp_str)
         
 @app.route('/upload-contract-page')
-
 def upload_contract_page():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4707,7 +4690,6 @@ def delete_contract(contractID):
 
 ##UPDATE CONTRACTS
 @app.route('/update-contract/<contractID>/<company_name>/<receiver>')
-
 def selected_contract(contractID, company_name, receiver):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4780,7 +4762,6 @@ def download_contract(fileID):
 
 ####MANAGE USER RIGHTS
 @app.route('/manage-user-rights')
-
 def manage_user_rights():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -4860,6 +4841,12 @@ def user_rights_initiated():
         view_stock_info = request.form.get('view_stock_info')
         view_revenue = request.form.get('view_revenue')
         view_sales = request.form.get('view_sales')
+        view_finance_dashboard = request.form.get('view_finance_dashboard')
+        add_new_finance_account = request.form.get('add_new_finance_account')
+        update_finance_account = request.form.get('update_finance_account')
+        view_finance = request.form.get('view_finance')
+        edit_finance = request.form.get('edit_finance')
+        delete_finance = request.form.get('delete_finance')
 
         update_fields = {}
 
@@ -4887,6 +4874,18 @@ def user_rights_initiated():
             update_fields['view_revenue'] = view_revenue
         if view_sales:
             update_fields['view_sales'] = view_sales
+        if view_finance_dashboard:
+            update_fields['view_finance_dashboard'] = view_finance_dashboard
+        if add_new_finance_account:
+            update_fields['add_new_finance_account'] = add_new_finance_account
+        if update_finance_account:
+            update_fields['update_finance_account'] = update_finance_account
+        if view_finance:
+            update_fields['view_finance'] = view_finance
+        if edit_finance:
+            update_fields['edit_finance'] = edit_finance
+        if delete_finance:
+            update_fields['delete_finance'] = delete_finance
 
         # Update the document with the non-empty fields
         db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
@@ -4896,7 +4895,6 @@ def user_rights_initiated():
     
 ####ASSIGN PROPERTIES TO MANAGERS
 @app.route('/assign-properties')
-
 def assign_properties():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6858,7 +6856,9 @@ def notifications():
 
     manager_account = db.registered_managers.find_one({'username': login_data}, {'_id':0,'createdAt':0,'code':0,'phone_number':0,'address':0,'registered_on':0,'password':0,'auth':0,'dp':0,'dark_mode':0,'password':0})
     if manager_account:
-        fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock','update_sales','inhouse','view_stock_info','view_revenue','view_sales']
+        fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock',
+                      'update_sales','inhouse','view_stock_info','view_revenue','view_sales','view_finance_dashboard','add_new_finance_account',
+                      'update_finance_account','view_finance','edit_finance','delete_finance']
         for field in fields:
             value = manager_account.get(field)
             if value is not None:
@@ -7345,6 +7345,711 @@ def delete_expense(item_id):
         else:
             flash('You do not have rights to delete', 'error')
         return redirect('/view-expenses')
+    
+####ACCOUNTING
+@app.route('/accounting-dashboard')
+def accounting_dashboard():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+        return render_template('accounting dashboard.html',dp=dp_str)
+
+@app.route('/new-accounts-page')
+def new_accounts_page():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+        if 'dp' in company:
+            dp_str = company['dp']
+        else:
+            dp_str = None
+        return render_template('add new account.html',dp=dp_str)
+    
+@app.route('/add-new-account', methods=['POST'])
+def add_new_account():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
+    timestamp = datetime.now()
+    added = 0
+    for item in all_items:
+        item['client_name'] = item.get('client_name', '').strip().title()
+        item['project_name'] = item.get('project_name', '').strip().title()
+        
+        try:
+            item['measure'] = float(item.get('measure', 0))
+            item['value_amount'] = float(item.get('value_amount', 0))
+            item['amount_paid'] = float(item.get('amount_paid', 0))
+            item['amount'] = item['amount_paid']
+            item['date_of_payment'] = datetime.strptime(item.get('date_of_payment', ''), '%Y-%m-%d')
+            item['amount_demanded'] = item['value_amount'] - item['amount_paid']
+            item['company_name'] = company.get('company_name', '')
+            item['timestamp'] = timestamp
+
+            if item['amount_demanded'] == 0:
+                result = db.old_transaction_finance_accounts.insert_one(item)
+                generated_id = result.inserted_id
+                db.old_transaction_finance_accounts.update_one(
+                    {'_id': generated_id},
+                    {'$set': {'client_id': generated_id}}
+                )
+            else:
+                db.transaction_finance_accounts.insert_one(item)
+            db.audit_logs.insert_one({
+                'user': login_data,
+                'Activity': 'Added new account',
+                'Item': item['client_name'],
+                'timestamp': timestamp
+            })
+            added = 1
+  
+        except (ValueError, TypeError) as e:
+            # Log or handle the exception as needed
+            flash(f"Error processing account {item.get('itemName', 'unknown')}: {e}", 'error')
+    if added == 1:
+        flash('Accounts were added','success')
+    return jsonify({'redirect': url_for('new_accounts_page')})
+
+@app.route('/update existing account')
+def update_existing_account():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    
+    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+    if 'dp' in company:
+        dp_str = company['dp']
+    else:
+        dp_str = None
+    items_to_update = []
+    available_accounts = db.transaction_finance_accounts.find({'company_name': company['company_name'],'amount_demanded': {'$ne': 0}})
+    for item in available_accounts:
+        item_details = {
+            'client_id': str(item['_id']),
+            'client_name': item['client_name'],
+            'project_name': item['project_name'],
+            'amount_demanded': item.get('amount_demanded', '')
+        }
+        items_to_update.append(item_details)
+    
+    items_to_update = sorted(items_to_update, key=lambda x: x['client_name'])
+
+    return render_template('update accounts.html', dp=dp_str, items_to_update=items_to_update)
+
+@app.route('/update-accounts', methods=['POST'])
+def update_accounts():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+        
+    all_items = request.json.get('items', [])  # Access the JSON data sent from the client
+    timestamp = datetime.now()
+
+    updated = 0
+    for item in all_items:
+        updated = 1
+        account = db.transaction_finance_accounts.find_one({'_id': ObjectId(item['client_id'])})
+        account['client_id'] = account.pop('_id')
+        item['amount_paid'] = float(item.get('amount_paid', 0))
+        item['date_of_payment'] = datetime.strptime(item.get('date_of_payment', ''), '%Y-%m-%d')
+        amount = account['amount'] + item['amount_paid']
+        amount_demanded = account['value_amount'] - amount
+        db.old_transaction_finance_accounts.insert_one(account)
+        db.transaction_finance_accounts.update_one({'_id': ObjectId(item['client_id'])},{'$set': {'payment_mode': item['payment_mode'], 'amount_paid': item['amount_paid'], 'amount': amount, 'amount_demanded': amount_demanded, 'timestamp':timestamp}})
+
+        updated_document = db.transaction_finance_accounts.find_one({'_id': ObjectId(item['client_id'])})
+        if updated_document['amount_demanded'] == 0:
+            updated_document['client_id'] = updated_document.pop('_id')
+            db.old_transaction_finance_accounts.insert_one(updated_document)
+            db.transaction_finance_accounts.delete_one({'_id': ObjectId(item['client_id'])})
+        db.audit_logs.insert_one({'user': login_data,'Activity': 'Updated account','Item': item['client_id'],'timestamp': timestamp})
+
+    if updated == 1:
+        flash('Client updated successfully', 'success')
+    return jsonify({'redirect': url_for('update_existing_account')})
+
+@app.route('/current-accounts')
+def current_accounts():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            current_accounts = list(db.transaction_finance_accounts.find({'company_name': company_name}))
+            current_accounts.sort(key=lambda x: x.get('timestamp', x['date_of_payment']), reverse=True)
+            current_accounts.sort(key=lambda x: x['client_name'])
+
+            if 'dp' in company:
+                dp_str = company['dp']
+            else:
+                dp_str = None
+            return render_template('current accounts.html', current_accounts = current_accounts, dp=dp_str)
+
+@app.route('/accounts-history')
+def accounts_history():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+        
+        subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
+        account_type = subscription['account_type']
+        # Remove any empty strings from the list
+        account_type = [atype for atype in account_type if atype]
+
+        if 'Enterprise Resource Planning' in account_type:
+            company_name = company['company_name']
+            twelve_months_ago = datetime.now() - timedelta(days=365)
+            old_accounts = list(db.old_transaction_finance_accounts.find({'company_name': company_name,'date_of_payment': {'$gte': twelve_months_ago}}))
+            old_accounts.sort(key=lambda x: x.get('timestamp', x['date_of_payment']), reverse=True)
+            old_accounts.sort(key=lambda x: x['client_name'])
+
+            if 'dp' in company:
+                dp_str = company['dp']
+            else:
+                dp_str = None
+            return render_template('old accounts.html', old_accounts = old_accounts, dp=dp_str)
+
+####edit finances
+@app.route('/edit-finance-accounts/<item_id>', methods=['GET', 'POST'])
+def edit_finance_accounts(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+        if company.get('edit_finance') in ('yes', None):
+            if 'dp' in company:
+                dp_str = company['dp']
+            else:
+                dp_str = None
+            return render_template('edit finance accounts.html',item_id=item_id,dp=dp_str)
+        else:
+            flash('You do not have rights to make edits', 'error')
+            return redirect('/current-accounts')
+    
+@app.route('/apply-finance-edits', methods=['POST'])
+def apply_finance_edits():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        item_id = request.form.get("item_id")
+        client_name = request.form.get("client_name")
+        telephone = request.form.get("telephone")
+        email = request.form.get("email")
+        project_name = request.form.get("project_name")
+        measure = request.form.get("measure")
+        unit_of_measurement = request.form.get("unit_of_measurement")
+        value_amount = request.form.get("value_amount")
+        payment_mode = request.form.get("payment_mode")
+        amount_paid = request.form.get("amount_paid")
+        date_of_payment = request.form.get("date_of_payment")
+
+        selected_item = db.transaction_finance_accounts.find_one({'_id': ObjectId(item_id)})
+
+        if selected_item:
+            if client_name:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'client_name': client_name}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'client_name': client_name}})
+            if telephone:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'telephone': telephone}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'telephone': telephone}})
+            if email:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'email': email}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'email': email}})
+            if project_name:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'project_name': project_name}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'project_name': project_name}})
+            if measure:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'measure': measure}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'measure': measure}})
+            if unit_of_measurement:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'unit_of_measurement': unit_of_measurement}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'unit_of_measurement': unit_of_measurement}})
+            if value_amount:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'value_amount': value_amount}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'value_amount': value_amount}})
+            if payment_mode:
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'payment_mode': payment_mode}})
+                db.old_transaction_finance_accounts.update_one({'client_id': ObjectId(item_id)},{'$set': {'payment_mode': payment_mode}})
+            if amount_paid:
+                amount_paid = float(amount_paid)
+                if amount_paid <= (selected_item['amount_paid'] + selected_item['amount_demanded']):
+                    new_amount = selected_item['amount'] - selected_item['amount_paid'] + amount_paid
+                    amount_demanded = selected_item['value_amount'] - new_amount
+                    db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'amount_paid': amount_paid, 'amount': new_amount, 'amount_demanded': amount_demanded}})
+                else:
+                    flash('Please enter another amount', 'error')
+            if date_of_payment:
+                date_of_payment = datetime.strptime(date_of_payment, '%Y-%m-%d')
+                db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'date_of_payment': date_of_payment}})
+            flash('Account has been updated', 'success')
+            db.audit_logs.insert_one({'user': login_data,'Activity': 'Edit finance accounts','Item': item_id,'timestamp': datetime.now()})
+        else:
+            flash('Please select an up-to-date expense', 'error')
+        return redirect('/current-accounts')
+    
+####delete expense
+@app.route('/delete-finance-account/<item_id>', methods=['POST'])
+def delete_finance_account(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+        if company.get('edit_finance') in ('yes', None):
+            selected_item = db.transaction_finance_accounts.find_one({'_id': ObjectId(item_id)})
+            if selected_item:
+                db.transaction_finance_accounts.delete_one({'_id': ObjectId(item_id)})
+                db.old_transaction_finance_accounts.delete_many({'client_id': ObjectId(item_id)})
+                db.audit_logs.insert_one({'user': login_data,'Activity': 'Finance account deletion','Item': item_id,'timestamp': datetime.now()})
+                flash('Account was deleted', 'success')
+            else:
+                flash('Selection does not exist in current accounts', 'error')
+            return redirect('/current-accounts')
+        else:
+            flash('You do not have rights to delete', 'error')
+            return redirect('/current-accounts')
+
+###DOANLOAD FINANCE DATA   
+@app.route('/download-financial-data', methods=["POST"])
+def download_financial_data():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+
+        current_accounts = list(db.transaction_finance_accounts.find(
+            {'company_name': company['company_name'], 'date_of_payment': {'$gte': startdate, '$lte': enddate}},
+            {'_id': 0, 'company_name': 0}
+        ))
+
+        old_accounts = list(db.old_transaction_finance_accounts.find(
+            {'company_name': company['company_name'], 'date_of_payment': {'$gte': startdate, '$lte': enddate}},
+            {'_id': 0, 'company_name': 0}
+        ))
+
+        accounts = current_accounts + old_accounts
+
+        if len(accounts) != 0:
+            # Sort data by expenseDate in descending order
+            sorted_accounts = sorted(accounts, key=lambda x: x["date_of_payment"], reverse=True)
+
+            # Create Excel file
+            excel_buffer = BytesIO()
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Expenses"
+
+            # Write header row
+            headers = ['Client Name','Telephone','Email','Project','Measure','Unit','Value','Mode Of Payment','Amount Last Paid','Total Payment','Date Of Payment','Balance']
+            ws.append(headers)
+
+            # Write data rows
+            for account in sorted_accounts:
+                row = [
+                    account.get('client_name', ''),
+                    account.get('telephone', ''),
+                    account.get('email', ''),
+                    account.get('project_name', ''),
+                    account.get('measure', 0),
+                    account.get('unit_of_measurement', ''),
+                    account.get('value_amount', 0),
+                    account.get('payment_mode', ''),
+                    account.get('amount_paid', 0),
+                    account.get('date_of_payment', '').strftime('%Y-%m-%d') if isinstance(account.get('date_of_payment'), datetime) else '',
+                    account.get('amount', 0),
+                    account.get('amount_demanded', 0)
+                ]
+                ws.append(row)
+
+            wb.save(excel_buffer)
+            excel_buffer.seek(0)
+
+            # Create the response
+            response = make_response(excel_buffer.getvalue())
+            response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Finances_{startdate_on_str}_{enddate_on_str}.xlsx"
+            response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+            # Clean up
+            del wb
+            del excel_buffer
+            gc.collect()
+
+            return response
+        else:
+            flash('No data was found', 'error')
+            return redirect('/current-accounts')
+        
+@app.route('/accounts-overview', methods=["GET", "POST"])
+def accounts_overview():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                             'password': 0, 'auth': 0, 'dark_mode': 0})
+
+        startdate_on_str = request.form.get("startdate")
+        enddate_on_str = request.form.get("enddate")
+
+        if startdate_on_str and enddate_on_str:
+            start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+            first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+        else:
+            today = datetime.today()
+
+            # Get the first day of the current month
+            start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+            # Calculate the first day of the next month
+            if today.month == 12:  # If it's December, the next month is January of the next year
+                first_day_of_current_month = today.replace(year=today.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            else:
+                first_day_of_current_month = today.replace(month=today.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        current_accounts_info_pipeline = [
+            {
+                '$match': {
+                    'company_name': company['company_name'],
+                    'date_of_payment': {'$gte': start_of_previous_month, '$lte': first_day_of_current_month}
+                }
+            },
+            {
+                '$group': {
+                    '_id': '$project_name',  # Group by project_name
+                    'total_amount': {'$sum': '$amount'},  # Sum of amount
+                    'total_amount_demanded': {'$sum': '$amount_demanded'}  # Sum of amount_demanded
+                }
+            },
+            {
+                '$sort': {'total_amount': -1}  # Sort by total_amount in descending order
+            }
+        ]
+
+        current_accounts_info = list(db.transaction_finance_accounts.aggregate(current_accounts_info_pipeline))
+
+        project_name = []
+        amount = []
+        amount_demanded = []
+
+        for current_record in current_accounts_info:
+            project_name.append(current_record['_id'])
+            amount.append(current_record['total_amount'])
+            amount_demanded.append(current_record['total_amount_demanded'])
+
+        # Create the DataFrame
+        current_accounts_info_df = pd.DataFrame({
+            'Project Name': project_name,
+            'Total Amount Paid': amount,
+            'Amount Demanded': amount_demanded
+        })
+
+        # Count of clients by project
+        old_accounts_counts = db.old_transaction_finance_accounts.aggregate([
+            {
+                '$match': {
+                    'company_name': company['company_name'],
+                    'date_of_payment': {'$gte': start_of_previous_month, '$lte': first_day_of_current_month}
+                }
+            },
+            {
+                '$group': {
+                    '_id': '$project_name',
+                    'unique_clients': {'$addToSet': '$client_id'}
+                }
+            },
+            {
+                '$project': {
+                    '_id': 1,
+                    'unique_client_count': {'$size': '$unique_clients'}
+                }
+            }
+        ])
+
+        current_accounts_counts = db.transaction_finance_accounts.aggregate([
+            {
+                '$match': {
+                    'company_name': company['company_name'],
+                    'date_of_payment': {'$gte': start_of_previous_month, '$lte': first_day_of_current_month}
+                }
+            },
+            {
+                '$group': {
+                    '_id': '$project_name',
+                    'unique_clients': {'$addToSet': '$_id'}
+                }
+            },
+            {
+                '$project': {
+                    '_id': 1,
+                    'unique_client_count': {'$size': '$unique_clients'}
+                }
+            }
+        ])
+
+        old_accounts_dict = {item['_id']: item['unique_client_count'] for item in old_accounts_counts}
+        current_accounts_dict = {item['_id']: item['unique_client_count'] for item in current_accounts_counts}
+
+        combined_counts = []
+
+        for project_name in set(old_accounts_dict.keys()).union(current_accounts_dict.keys()):
+            old_count = old_accounts_dict.get(project_name, 0)
+            current_count = current_accounts_dict.get(project_name, 0)
+            combined_count = old_count + current_count
+            combined_counts.append({
+                'Project Name': project_name,
+                'Count': combined_count
+            })
+
+        count_clients_per_project_df = pd.DataFrame(combined_counts)
+        default_count_labels = []
+        default_count_values = []
+        if not count_clients_per_project_df.empty:
+            count_clients_per_project_df = count_clients_per_project_df.sort_values(by='Count', ascending=False)
+            count_clients_per_project_df = count_clients_per_project_df.reset_index(drop=True) 
+            count_labels = count_clients_per_project_df['Project Name'].tolist()
+            count_values = count_clients_per_project_df['Count'].tolist()
+        else:
+            count_labels = default_count_labels
+            count_values = default_count_values
+
+        ##PAYMENT TRENDS
+        twelve_months_ago = datetime.now() - timedelta(days=365)
+        old_accounts_aggregation = db.old_transaction_finance_accounts.aggregate([
+            {
+                '$match': {
+                    'company_name': company['company_name'],
+                    'date_of_payment': {'$gte': twelve_months_ago}
+                }
+            },
+            {
+                '$group': {
+                    '_id': {
+                        'year': {'$year': '$date_of_payment'},
+                        'month': {'$month': '$date_of_payment'}
+                    },
+                    'total_amount': {'$sum': '$amount'}
+                }
+            },
+            {
+                '$sort': {
+                    '_id.year': 1,
+                    '_id.month': 1
+                }
+            }
+        ])
+
+        current_accounts_aggregation = db.transaction_finance_accounts.aggregate([
+            {
+                '$match': {
+                    'company_name': company['company_name'],
+                    'date_of_payment': {'$gte': twelve_months_ago}
+                }
+            },
+            {
+                '$group': {
+                    '_id': {
+                        'year': {'$year': '$date_of_payment'},
+                        'month': {'$month': '$date_of_payment'}
+                    },
+                    'total_amount': {'$sum': '$amount'}
+                }
+            },
+            {
+                '$sort': {
+                    '_id.year': 1,
+                    '_id.month': 1
+                }
+            }
+        ])
+
+        # Convert the aggregations to dictionaries for easier processing
+        old_accounts_dict = {f"{item['_id']['year']}-{item['_id']['month']:02d}": item['total_amount'] for item in old_accounts_aggregation}
+        current_accounts_dict = {f"{item['_id']['year']}-{item['_id']['month']:02d}": item['total_amount'] for item in current_accounts_aggregation}
+
+        # Combine sums for the same months
+        combined_sums = {}
+
+        for key in set(old_accounts_dict.keys()).union(current_accounts_dict.keys()):
+            old_sum = old_accounts_dict.get(key, 0)
+            current_sum = current_accounts_dict.get(key, 0)
+            combined_sums[key] = old_sum + current_sum
+
+        df_trended = pd.DataFrame(
+            list(combined_sums.items()), 
+            columns=['Month', 'Total Amount']
+        )
+
+        # Sort DataFrame by Month (year and month)
+        df_trended['Month'] = pd.to_datetime(df_trended['Month'], format='%Y-%m')
+        df_trended['Month_Name'] = df_trended['Month'].dt.strftime('%B %Y')
+
+        # Drop the original 'Month' column if needed and sort by 'Month'
+        df_trended = df_trended[['Month_Name', 'Total Amount']]
+        df_trended = df_trended.sort_values(by='Month_Name').reset_index(drop=True)
+
+        #####PLOTS
+        current_total_amount_paid_chart = {
+            'labels': current_accounts_info_df['Project Name'].tolist(),
+            'values': current_accounts_info_df['Total Amount Paid'].tolist()
+        }
+
+        current_total_amount_demanded_chart = {
+            'labels': current_accounts_info_df['Project Name'].tolist(),
+            'values': current_accounts_info_df['Amount Demanded'].tolist()
+        }
+
+        count_clients_by_project_chart = {
+            'labels': count_labels,
+            'values': count_values
+        }
+
+        trended_chart = {
+            'labels': df_trended['Month_Name'].tolist(),
+            'values': df_trended['Total Amount'].tolist()
+        }
+
+        del current_accounts_info_df,count_clients_per_project_df,df_trended
+        gc.collect()
+        dp = company.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        return render_template('accounting dashboard.html',current_total_amount_paid_chart=current_total_amount_paid_chart,
+                               current_total_amount_demanded_chart=current_total_amount_demanded_chart,
+                               count_clients_by_project_chart=count_clients_by_project_chart,trended_chart=trended_chart,
+                               start_of_previous_month=start_of_previous_month,
+                               first_day_of_current_month=first_day_of_current_month, dp=dp_str)
+
+##########SEND PAYMENT REMINDERS###########
+def send_payment_financial_reminders():
+    current_day_of_week = datetime.now().weekday()
+    if current_day_of_week != 3:
+        return
+    db, fs = get_db_and_fs()
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
+
+    accounts = list(db.transaction_finance_accounts.find())
+    for account in accounts:
+        if account['amount_demanded'] > 0:
+            email = account.get('email')
+            if email and email.strip():
+                user_email = account['email']
+                #Sending reminder message
+                if send_emails is not None:
+                    msg = Message('Payment Reminders - Mich Manage', 
+                    sender='michpmts@gmail.com', 
+                    recipients=[user_email])
+                    msg.html = f"""
+                    <html>
+                    <body>
+                    <p>Dear {account['client_name']},</p>
+                    <p>This is a friendly reminder that a payment of <b>{ account['amount_demanded'] }</b> is currently due from <b>{ account['company_name'] }</b>.</p>
+                    <p>We kindly request that you ensure your payment is processed at your earliest convenience.</p>
+                    <p>If you have any questions or require further assistance, please do not hesitate to contact us.</p>
+                    <p>Thank you for your prompt attention to this matter.</p>
+                    <p>Best Regards,</p>
+                    <p>Mich Manage</p>
+                    </body>
+                    </html>
+                    """
+                    # Send the email
+                    with app.app_context():
+                        thread = threading.Thread(target=send_async_email, args=[app, msg])
+                        thread.start()
+
+########SCHEDULE TASKS
+scheduler.add_job(
+    func=send_reports,
+    trigger=CronTrigger(day=1, hour=9, minute=0),
+    id='send_reports_job',
+    name='Send reports on the 1st of every month',
+    replace_existing=True
+)
+
+scheduler.add_job(
+    send_payment_reminders,
+    CronTrigger(hour=9, minute=0),
+    id='send_payment_reminders_job',
+    name='Run job every day at 9 AM',
+    replace_existing=True
+)
+
+scheduler.add_job(
+    send_contract_expiry_reminders,
+    CronTrigger(hour=9, minute=0),
+    id='send_payment_reminders_job',
+    name='Run job every day at 9 AM',
+    replace_existing=True
+)
+
+scheduler.add_job(
+    send_payment_financial_reminders,
+    CronTrigger(hour=9, minute=0),
+    id='send_payment_reminders_job',
+    name='Run job every day at 9 AM',
+    replace_existing=True
+)
+
+scheduler.start()
 
 if __name__ == '__main__':
     app.run()

@@ -415,6 +415,18 @@
             <label style="margin-top: 5px;" class="input_labels" for="">View Sales</label>
             <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch12" onclick="updateHiddenInput12()"><br>
             <input type="hidden" id="hiddenInput12" name="view_sales" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch13" onclick="updateHiddenInput13()"><br>
+            <input type="hidden" id="hiddenInput13" name="view_finance_dashboard" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch14" onclick="updateHiddenInput14()"><br>
+            <input type="hidden" id="hiddenInput14" name="add_new_finance_account" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch15" onclick="updateHiddenInput15()"><br>
+            <input type="hidden" id="hiddenInput15" name="update_finance_account" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch16" onclick="updateHiddenInput16()"><br>
+            <input type="hidden" id="hiddenInput16" name="view_finance" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch17" onclick="updateHiddenInput17()"><br>
+            <input type="hidden" id="hiddenInput17" name="edit_finance" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch18" onclick="updateHiddenInput18()"><br>
+            <input type="hidden" id="hiddenInput18" name="delete_finance" value="no">
             <input required type="submit" class="btn" value="Save">
           </form>
           {% endif %}
@@ -458,6 +470,18 @@
             <label style="margin-top: 5px;" class="input_labels" for="">View Sales</label>
             <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch24" onclick="updateHiddenInput12()"><br>
             <input type="hidden" id="hiddenInput24" name="view_sales" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch25" onclick="updateHiddenInput13()"><br>
+            <input type="hidden" id="hiddenInput25" name="view_finance_dashboard" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch26" onclick="updateHiddenInput14()"><br>
+            <input type="hidden" id="hiddenInput26" name="add_new_finance_account" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch27" onclick="updateHiddenInput15()"><br>
+            <input type="hidden" id="hiddenInput27" name="update_finance_account" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch28" onclick="updateHiddenInput16()"><br>
+            <input type="hidden" id="hiddenInput28" name="view_finance" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch29" onclick="updateHiddenInput17()"><br>
+            <input type="hidden" id="hiddenInput29" name="edit_finance" value="no">
+            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch30" onclick="updateHiddenInput18()"><br>
+            <input type="hidden" id="hiddenInput30" name="delete_finance" value="no">
             <input required type="submit" class="btn" value="Save">
           </form>
           {% endif %}
@@ -597,6 +621,16 @@
         checkbox: document.getElementById("mySwitch12"),
         hiddenInput: document.getElementById("hiddenInput12"),
         value: "{{ view_sales }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch13"),
+        hiddenInput:           {
+        checkbox: doc             value: "{{ add_new_fi        hiddenInput: document.getE        checkbox: document.getElem        {{ view_finance }}"
+             tElementById("hiddenInput17"),
+        value: "{{ edit_finance }}"
+      },            checkbox: document.getElementById("mySwitch17"),
+        hiddenInp ut: documen          mentById("hiddenInput17"),
+        value: "{{ edit_finance }}"
       }
     ];
 
@@ -680,6 +714,36 @@
         checkbox: document.getElementById("mySwitch24"),
         hiddenInput: document.getElementById("hiddenInput24"),
         value: "{{ view_sales }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch25"),
+        hiddenInput: document.getElementById("hiddenInput25"),
+        value: "{{ view_finance_dashboard }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch26"),
+        hiddenInput: document.getElementById("hiddenInput26"),
+        value: "{{ add_new_finance_account }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch27"),
+        hiddenInput: document.getElementById("hiddenInput27"),
+        value: "{{ update_finance_account }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch28"),
+        hiddenInput: document.getElementById("hiddenInput28"),
+        value: "{{ view_finance }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch29"),
+        hiddenInput: document.getElementById("hiddenInput29"),
+        value: "{{ edit_finance }}"
+      },
+      {
+        checkbox: document.getElementById("mySwitch30"),
+        hiddenInput: document.getElementById("hiddenInput30"),
+        value: "{{ edit_finance }}"
       }
     ];
 

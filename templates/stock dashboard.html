@@ -250,6 +250,12 @@
             </a>
           </li>
           {% endif %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
+              <i class="typcn typcn-credit-card menu-icon"></i>
+              <span class="menu-title">Accounting</span>
+            </a>
+          </li>
           {% if session.get('add_stock') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('add_new_stock_page') }}" id="new-stock">
