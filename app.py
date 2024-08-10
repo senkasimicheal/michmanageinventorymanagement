@@ -7724,7 +7724,7 @@ def update_accounts():
         qr.add_data(url)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
-        img.save(f'payment_receipt_qr_{item['client_id']}.png')
+        img.save(f'payment_receipt_qr_{item["client_id"]}.png')
 
         # Create the receipt details
         data = [
@@ -7762,7 +7762,7 @@ def update_accounts():
         ]))
 
         # Load your QR code image
-        qr_code_img = f'payment_receipt_qr_{item['client_id']}.png'
+        qr_code_img = f'payment_receipt_qr_{item["client_id"]}.png'
         qr_code = Image(qr_code_img)
         qr_code.hAlign = 'CENTER'
 
@@ -7776,7 +7776,7 @@ def update_accounts():
         payment_receipt_base64 = base64.b64encode(pdf_data).decode()
 
         # Delete the QR code image file
-        os.remove(f'payment_receipt_qr_{item['client_id']}.png')
+        os.remove(f'payment_receipt_qr_{item["client_id"]}.png')
 
         ###send payment receipt
         email = account.get('email')
