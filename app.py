@@ -7714,7 +7714,7 @@ def update_accounts():
         doc = SimpleDocTemplate(buffer, pagesize=letter)
 
         # QR Code Generation
-        url = f'https://michmanagement.onrender.com//get_financial_receipt?id={item['client_id']}'
+        url = f'https://michmanagement.onrender.com//get_financial_receipt?id={item["client_id"]}'
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
