@@ -26236,3 +26236,12 @@ table td {
   margin-left: 10px;
   /* Adjust as needed for spacing */
 }
+.property_forn div label {
+  display: inline-block;
+  width: 200px;
+}
+
+.property_forn div input[type="checkbox"] {
+  margin-right: 10px;
+  vertical-align: middle;
+}

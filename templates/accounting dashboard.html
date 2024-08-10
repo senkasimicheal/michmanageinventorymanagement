@@ -258,7 +258,7 @@
               <span class="menu-title">Dashboard</span>
             </a>
           </li>
-          {% if session.get('add_new_finance_account') == 'yes' %}
+          {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('new_accounts_page') }}" id="new-stock">
               <i class="typcn typcn-document-add menu-icon"></i>
@@ -266,7 +266,7 @@
             </a>
           </li>
           {% endif %}
-          {% if session.get('update_finance_account') == 'yes' %}
+          {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('update_existing_account') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
@@ -274,7 +274,7 @@
             </a>
           </li>
           {% endif %}
-          {% if session.get('view_finance') == 'yes' %}
+          {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('current_accounts') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
@@ -293,7 +293,7 @@
       <!-- partial -->
       <div class="main-panel">
         <div id="notification" class="notification"></div>
-        {% if session.get('view_finance_dashboard') != 'yes' %}
+        {% if (session.get('view_finance_dashboard') == 'yes') or (session['is_manager'] == 'is_manager') %}
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}

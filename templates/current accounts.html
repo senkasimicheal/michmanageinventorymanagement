@@ -257,7 +257,7 @@
               <span class="menu-title">Dashboard</span>
             </a>
           </li>
-          {% if session.get('add_new_finance_account') != 'yes' %}
+          {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('new_accounts_page') }}" id="new-stock">
               <i class="typcn typcn-document-add menu-icon"></i>
@@ -265,7 +265,7 @@
             </a>
           </li>
           {% endif %}
-          {% if session.get('update_finance_account') != 'yes' %}
+          {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('update_existing_account') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
@@ -273,7 +273,7 @@
             </a>
           </li>
           {% endif %}
-          {% if session.get('view_finance') != 'yes' %}
+          {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('current_accounts') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
@@ -351,6 +351,7 @@
                       placeholder="YYYY-MM-DD">
                   </th>
                   <th>Balance</th>
+                  <th>Receipt</th>
                 </tr>
               </thead>
               <tbody>
@@ -369,6 +370,9 @@
                   <td class="total-amount">{{ '{:,.0f}'.format(account['amount']) }}</td>
                   <td>{{ account['date_of_payment'].strftime('%Y-%m-%d') }}</td>
                   <td class="amount-demanded">{{ '{:,.0f}'.format(account['amount_demanded']) }}</td>
+                  <td>
+                    <a href="{{ url_for('view_finance_receipt', id=account['_id']) }}" class="btn btn-primary">View</a>
+                  </td>
                 </tr>
                 {% endfor %}
                 <tr id="totalRow">

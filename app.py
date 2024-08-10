@@ -48,8 +48,8 @@ def static_files(filename):
     return response
 
 def get_mongo_client():
-    # client = MongoClient('mongodb://localhost:27017/')
-    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    client = MongoClient('mongodb://localhost:27017/')
+    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
 
 # Function to get the database and GridFS instance
@@ -746,7 +746,7 @@ def logout_admin():
 
 @app.before_request
 def before_request():
-    if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt',
+    if 'logged_in' not in session and request.endpoint not in ('send_message', 'tenant_register_account', 'register_account','load_verification_page', 'verifying_your_account', 'terms_of_service', 'privacy_policy', 'admin', 'adminlogin', 'add_property_manager', 'complaint_form', 'tenant_data', 'tenant_download', 'get_receipt','get_financial_receipt',
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
@@ -2315,9 +2315,26 @@ def get_receipt():
             'months_paid': months_paid,
             'year': year
         }, {'payment_receipt': 1, '_id': 0})
+        if old_receipt_data:
+            # Convert the base64 string back to bytes
+            payment_receipt = base64.b64decode(old_receipt_data['payment_receipt'])
 
+            # Create a BytesIO object from the PDF data
+            pdf_io = io.BytesIO(payment_receipt)
+
+            # Create the file name
+            file_name = f"{property_name}_{selected_section}_{months_paid}_{year}.pdf"
+
+            # Create a custom response
+            response = make_response(pdf_io.getvalue())
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
+
+            return response
+
+    else:
         # Convert the base64 string back to bytes
-        payment_receipt = base64.b64decode(old_receipt_data['payment_receipt'])
+        payment_receipt = base64.b64decode(receipt_data['payment_receipt'])
 
         # Create a BytesIO object from the PDF data
         pdf_io = io.BytesIO(payment_receipt)
@@ -2331,6 +2348,32 @@ def get_receipt():
         response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
 
         return response
+    
+@app.route('/get_financial_receipt', methods=['GET'])
+def get_financial_receipt():
+    db, fs = get_db_and_fs()
+    id = request.args.get('id')
+
+    receipt_data = db.transaction_finance_accounts.find_one({'_id': ObjectId(id)}, {'payment_receipt': 1, '_id': 0})
+
+    if receipt_data is None:
+        old_receipt_data = db.old_transaction_finance_accounts.find_one({'client_id': ObjectId(id)}, {'payment_receipt': 1, '_id': 0})
+        if old_receipt_data:
+            # Convert the base64 string back to bytes
+            payment_receipt = base64.b64decode(old_receipt_data['payment_receipt'])
+
+            # Create a BytesIO object from the PDF data
+            pdf_io = io.BytesIO(payment_receipt)
+
+            # Create the file name
+            file_name = f"{id}.pdf"
+
+            # Create a custom response
+            response = make_response(pdf_io.getvalue())
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
+
+            return response
 
     else:
         # Convert the base64 string back to bytes
@@ -2340,7 +2383,7 @@ def get_receipt():
         pdf_io = io.BytesIO(payment_receipt)
 
         # Create the file name
-        file_name = f"{property_name}_{selected_section}_{months_paid}_{year}.pdf"
+        file_name = f"{id}.pdf"
 
         # Create a custom response
         response = make_response(pdf_io.getvalue())
@@ -4858,69 +4901,50 @@ def user_rights_initiated():
         delete_finance = request.form.get('delete_finance')
 
         update_fields = {}
-        update=0
         if add_properties:
-            update=1
             update_fields['add_properties'] = add_properties
         if add_tenants:
-            update=1
             update_fields['add_tenants'] = add_tenants
         if update_tenant:
-            update=1
             update_fields['update_tenant'] = update_tenant
         if edit_tenant:
-            update=1
             update_fields['edit_tenant'] = edit_tenant
         if manage_contracts:
-            update=1
             update_fields['manage_contracts'] = manage_contracts        
         if add_stock:
-            update=1
             update_fields['add_stock'] = add_stock
         if update_stock:
-            update=1
             update_fields['update_stock'] = update_stock
         if update_sales:
-            update=1
             update_fields['update_sales'] = update_sales
         if inhouse:
-            update=1
             update_fields['inhouse'] = inhouse
         if view_stock_info:
-            update=1
             update_fields['view_stock_info'] = view_stock_info
         if view_revenue:
-            update=1
             update_fields['view_revenue'] = view_revenue
         if view_sales:
-            update=1
             update_fields['view_sales'] = view_sales
         if view_finance_dashboard:
-            update=1
             update_fields['view_finance_dashboard'] = view_finance_dashboard
         if add_new_finance_account:
-            update=1
             update_fields['add_new_finance_account'] = add_new_finance_account
         if update_finance_account:
-            update=1
             update_fields['update_finance_account'] = update_finance_account
         if view_finance:
-            update=1
             update_fields['view_finance'] = view_finance
         if edit_finance:
-            update=1
             update_fields['edit_finance'] = edit_finance
         if delete_finance:
-            update=1
             update_fields['delete_finance'] = delete_finance
 
-        # Update the document with the non-empty fields
-        db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
-        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Change of user rights', 'email':email, 'timestamp': datetime.now()})
-        if update==1:
-            flash("User rights were set successfully", 'success')
-        else:
+        if not update_fields:
             flash("No updates were made", 'error')
+        else:
+            # Update the document with the non-empty fields
+            db.registered_managers.update_one({'email': email, 'company_name': company_name}, {'$set': update_fields})
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Change of user rights', 'email':email, 'timestamp': datetime.now()})
+            flash("User rights were set successfully", 'success')
         return redirect('/manage-user-rights')
     
 ####ASSIGN PROPERTIES TO MANAGERS
@@ -7410,6 +7434,7 @@ def new_accounts_page():
 def add_new_account():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
     
     if login_data is None:
         flash('Login first', 'error')
@@ -7435,15 +7460,187 @@ def add_new_account():
             item['company_name'] = company.get('company_name', '')
             item['timestamp'] = timestamp
 
-            if item['amount_demanded'] == 0:
+            if item['amount_demanded'] == 0:                
                 result = db.old_transaction_finance_accounts.insert_one(item)
                 generated_id = result.inserted_id
+                receipt_id = str(generated_id)
+
+                # Create a payment receipt PDF file
+                buffer = BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+                # QR Code Generation
+                url = f'https://michmanagement.onrender.com//get_financial_receipt?id={receipt_id}'
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=3,
+                    border=4,
+                )
+                qr.add_data(url)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                img.save(f'payment_receipt_qr_{receipt_id}.png')
+
+                # Create the receipt details
+                data = [
+                    ['Payment Receipt - ' + company['company_name'], ''],
+                    ['Receipt for:', item['client_name']],
+                    ['Tel:', item['telephone']],
+                    ['Email:', item['email']],
+                    ['Project Name:', item['project_name']],
+                    ['Measure:', f"{item['measure']} {item['unit_of_measurement']}"],
+                    ['Value:', f"UGX {item['value_amount']}"],
+                    ['Amount Paid:', f"UGX {item['amount_paid']}"],
+                    ['Payment Mode:', item['payment_mode']],
+                    ['Date Paid:', (item['date_of_payment']).strftime('%Y-%m-%d')],
+                    ['Balance:', f"UGX {item['amount_demanded']}"],
+                    ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
+                ]
+
+                # Create a table with the receipt details
+                table = Table(data)
+
+                # Add a table style
+                table.setStyle(TableStyle([
+                    ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('GRID', (0,0), (-1,-1), 1, colors.black),
+                    ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+                ]))
+
+                # Load your QR code image
+                qr_code_img = f'payment_receipt_qr_{receipt_id}.png'
+                qr_code = Image(qr_code_img)
+                qr_code.hAlign = 'CENTER'
+
+                # Add the QR code image to the elements list before building the PDF
+                elements = [table, qr_code]
+                doc.build(elements)
+
+                # Get the PDF data and encode it as base64
+                pdf_data = buffer.getvalue()
+                buffer.close()
+                payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+                # Delete the QR code image file
+                os.remove(f'payment_receipt_qr_{receipt_id}.png')
+                
                 db.old_transaction_finance_accounts.update_one(
                     {'_id': generated_id},
-                    {'$set': {'client_id': generated_id}}
+                    {'$set': {'client_id': generated_id, 'payment_receipt': payment_receipt_base64}}
                 )
             else:
-                db.transaction_finance_accounts.insert_one(item)
+                result = db.transaction_finance_accounts.insert_one(item)
+
+                generated_id = result.inserted_id
+                receipt_id = str(generated_id)
+
+                # Create a payment receipt PDF file
+                buffer = BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+                # QR Code Generation
+                url = f'https://michmanagement.onrender.com//get_financial_receipt?id={receipt_id}'
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=3,
+                    border=4,
+                )
+                qr.add_data(url)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                img.save(f'payment_receipt_qr_{receipt_id}.png')
+
+                # Create the receipt details
+                data = [
+                    ['Payment Receipt - ' + company['company_name'], ''],
+                    ['Receipt for:', item['client_name']],
+                    ['Tel:', item['telephone']],
+                    ['Email:', item['email']],
+                    ['Project Name:', item['project_name']],
+                    ['Measure:', f"{item['measure']} {item['unit_of_measurement']}"],
+                    ['Value:', f"UGX {item['value_amount']}"],
+                    ['Amount Paid:', f"UGX {item['amount_paid']}"],
+                    ['Payment Mode:', item['payment_mode']],
+                    ['Date Paid:', (item['date_of_payment']).strftime('%Y-%m-%d')],
+                    ['Balance:', f"UGX {item['amount_demanded']}"],
+                    ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
+                ]
+
+                # Create a table with the receipt details
+                table = Table(data)
+
+                # Add a table style
+                table.setStyle(TableStyle([
+                    ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('GRID', (0,0), (-1,-1), 1, colors.black),
+                    ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+                ]))
+
+                # Load your QR code image
+                qr_code_img = f'payment_receipt_qr_{receipt_id}.png'
+                qr_code = Image(qr_code_img)
+                qr_code.hAlign = 'CENTER'
+
+                # Add the QR code image to the elements list before building the PDF
+                elements = [table, qr_code]
+                doc.build(elements)
+
+                # Get the PDF data and encode it as base64
+                pdf_data = buffer.getvalue()
+                buffer.close()
+                payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+                # Delete the QR code image file
+                os.remove(f'payment_receipt_qr_{receipt_id}.png')
+                
+                db.transaction_finance_accounts.update_one(
+                    {'_id': generated_id},
+                    {'$set': {'payment_receipt': payment_receipt_base64}}
+                )
+            # Create the email message
+            if item['email']:
+                if send_emails is not None:
+                    msg = Message(f"Payment Receipt From {company['company_name']}", 
+                                sender='michpmts@gmail.com', 
+                                recipients=[item['email']])
+                    msg.html = f"""
+                    <html>
+                    <body>
+                    <p>Dear {item['client_name']},</p>
+                    <p>Please find attached your payment receipt on the {item['project_name']} project at {company['company_name']}.</p>
+                    <p>Best Regards,</p>
+                    <p>Mich Manage</p>
+                    </body>
+                    </html>
+                    """
+
+                    # Attach the PDF receipt to the email
+                    msg.attach("Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                    # Send the email
+                    thread = threading.Thread(target=send_async_email, args=[app, msg])
+                    thread.start()
+                    
             db.audit_logs.insert_one({
                 'user': login_data,
                 'Activity': 'Added new account',
@@ -7491,6 +7688,7 @@ def update_existing_account():
 def update_accounts():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
     
     if login_data is None:
         flash('Login first', 'error')
@@ -7509,7 +7707,103 @@ def update_accounts():
         amount = account['amount'] + item['amount_paid']
         amount_demanded = account['value_amount'] - amount
         db.old_transaction_finance_accounts.insert_one(account)
-        db.transaction_finance_accounts.update_one({'_id': ObjectId(item['client_id'])},{'$set': {'payment_mode': item['payment_mode'], 'amount_paid': item['amount_paid'], 'amount': amount, 'amount_demanded': amount_demanded, 'timestamp':timestamp}})
+
+        ##generate payment receipt
+        # Create a payment receipt PDF file
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+        # QR Code Generation
+        url = f'https://michmanagement.onrender.com//get_financial_receipt?id={item['client_id']}'
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=3,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        img.save(f'payment_receipt_qr_{item['client_id']}.png')
+
+        # Create the receipt details
+        data = [
+            ['Payment Receipt - ' + account['company_name'], ''],
+            ['Receipt for:', account['client_name']],
+            ['Tel:', account['telephone']],
+            ['Email:', account['email']],
+            ['Project Name:', account['project_name']],
+            ['Measure:', f"{account['measure']} {account['unit_of_measurement']}"],
+            ['Value:', f"UGX {account['value_amount']}"],
+            ['Amount Paid:', f"UGX {item['amount_paid']}"],
+            ['Payment Mode:', item['payment_mode']],
+            ['Date Paid:', (item['date_of_payment']).strftime('%Y-%m-%d')],
+            ['Balance:', f"UGX {amount_demanded}"],
+            ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
+        ]
+
+        # Create a table with the receipt details
+        table = Table(data)
+
+        # Add a table style
+        table.setStyle(TableStyle([
+            ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+        ]))
+
+        # Load your QR code image
+        qr_code_img = f'payment_receipt_qr_{item['client_id']}.png'
+        qr_code = Image(qr_code_img)
+        qr_code.hAlign = 'CENTER'
+
+        # Add the QR code image to the elements list before building the PDF
+        elements = [table, qr_code]
+        doc.build(elements)
+
+        # Get the PDF data and encode it as base64
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+        # Delete the QR code image file
+        os.remove(f'payment_receipt_qr_{item['client_id']}.png')
+
+        ###send payment receipt
+        email = account.get('email')
+        if email and email.strip():
+            if send_emails is not None:
+                msg = Message(f"Payment Receipt From {account['company_name']}", 
+                            sender='michpmts@gmail.com', 
+                            recipients=[account['email']])
+                msg.html = f"""
+                <html>
+                <body>
+                <p>Dear {account['client_name']},</p>
+                <p>Please find attached your payment receipt on the {account['project_name']} project at {account['company_name']}.</p>
+                <p>Best Regards,</p>
+                <p>Mich Manage</p>
+                </body>
+                </html>
+                """
+
+                # Attach the PDF receipt to the email
+                msg.attach("Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                # Send the email
+                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                thread.start()
+
+        db.transaction_finance_accounts.update_one({'_id': ObjectId(item['client_id'])},{'$set': {'payment_mode': item['payment_mode'], 'amount_paid': item['amount_paid'], 'amount': amount, 'amount_demanded': amount_demanded, 'timestamp':timestamp, 'payment_receipt':payment_receipt_base64}})
 
         updated_document = db.transaction_finance_accounts.find_one({'_id': ObjectId(item['client_id'])})
         if updated_document['amount_demanded'] == 0:
@@ -7607,6 +7901,7 @@ def apply_finance_edits():
         flash('Login first', 'error') 
         return redirect('/')
     else:
+        send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
         item_id = request.form.get("item_id")
         client_name = request.form.get("client_name")
         telephone = request.form.get("telephone")
@@ -7619,6 +7914,8 @@ def apply_finance_edits():
         amount_paid = request.form.get("amount_paid")
         date_of_payment = request.form.get("date_of_payment")
 
+        timestamp = datetime.now()
+        
         selected_item = db.transaction_finance_accounts.find_one({'_id': ObjectId(item_id)})
 
         if selected_item:
@@ -7651,7 +7948,103 @@ def apply_finance_edits():
                 if amount_paid <= (selected_item['amount_paid'] + selected_item['amount_demanded']):
                     new_amount = selected_item['amount'] - selected_item['amount_paid'] + amount_paid
                     amount_demanded = selected_item['value_amount'] - new_amount
-                    db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'amount_paid': amount_paid, 'amount': new_amount, 'amount_demanded': amount_demanded}})
+
+                    ##generate payment receipt
+                    # Create a payment receipt PDF file
+                    buffer = BytesIO()
+                    doc = SimpleDocTemplate(buffer, pagesize=letter)
+
+                    # QR Code Generation
+                    url = f'https://michmanagement.onrender.com//get_financial_receipt?id={item_id}'
+                    qr = qrcode.QRCode(
+                        version=1,
+                        error_correction=qrcode.constants.ERROR_CORRECT_L,
+                        box_size=3,
+                        border=4,
+                    )
+                    qr.add_data(url)
+                    qr.make(fit=True)
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    img.save(f'payment_receipt_qr_{item_id}.png')
+
+                    # Create the receipt details
+                    data = [
+                        ['Payment Receipt - ' + selected_item['company_name'], ''],
+                        ['Receipt for:', selected_item['client_name']],
+                        ['Tel:', selected_item['telephone']],
+                        ['Email:', selected_item['email']],
+                        ['Project Name:', selected_item['project_name']],
+                        ['Measure:', f"{selected_item['measure']} {selected_item['unit_of_measurement']}"],
+                        ['Value:', f"UGX {selected_item['value_amount']}"],
+                        ['Amount Paid:', f"UGX {amount_paid}"],
+                        ['Payment Mode:', selected_item['payment_mode']],
+                        ['Date Paid:', (selected_item['date_of_payment']).strftime('%Y-%m-%d')],
+                        ['Balance:', f"UGX {amount_demanded}"],
+                        ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
+                    ]
+
+                    # Create a table with the receipt details
+                    table = Table(data)
+
+                    # Add a table style
+                    table.setStyle(TableStyle([
+                        ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 14),
+
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0,0), (-1,-1), 1, colors.black),
+                        ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+                    ]))
+
+                    # Load your QR code image
+                    qr_code_img = f'payment_receipt_qr_{item_id}.png'
+                    qr_code = Image(qr_code_img)
+                    qr_code.hAlign = 'CENTER'
+
+                    # Add the QR code image to the elements list before building the PDF
+                    elements = [table, qr_code]
+                    doc.build(elements)
+
+                    # Get the PDF data and encode it as base64
+                    pdf_data = buffer.getvalue()
+                    buffer.close()
+                    payment_receipt_base64 = base64.b64encode(pdf_data).decode()
+
+                    # Delete the QR code image file
+                    os.remove(f'payment_receipt_qr_{item_id}.png')
+
+                    ###send payment receipt
+                    email = selected_item.get('email')
+                    if email and email.strip():
+                        if send_emails is not None:
+                            msg = Message(f"Payment Receipt From {selected_item['company_name']}", 
+                                        sender='michpmts@gmail.com', 
+                                        recipients=[selected_item['email']])
+                            msg.html = f"""
+                            <html>
+                            <body>
+                            <p>Dear {selected_item['client_name']},</p>
+                            <p>Please find attached your payment receipt on the {selected_item['project_name']} project at {selected_item['company_name']}.</p>
+                            <p>Best Regards,</p>
+                            <p>Mich Manage</p>
+                            </body>
+                            </html>
+                            """
+
+                            # Attach the PDF receipt to the email
+                            msg.attach("Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                            # Send the email
+                            thread = threading.Thread(target=send_async_email, args=[app, msg])
+                            thread.start()
+                            
+                    db.transaction_finance_accounts.update_one({'_id': ObjectId(item_id)},{'$set': {'amount_paid': amount_paid, 'amount': new_amount, 'amount_demanded': amount_demanded, 'payment_receipt':payment_receipt_base64}})
                 else:
                     flash('Please enter another amount', 'error')
             if date_of_payment:
@@ -8007,6 +8400,57 @@ def accounts_overview():
                                count_clients_by_project_chart=count_clients_by_project_chart,trended_chart=trended_chart,
                                start_of_previous_month=start_of_previous_month,
                                first_day_of_current_month=first_day_of_current_month, dp=dp_str)
+    
+@app.route('/view-finance-receipt/<id>', methods=["GET"])
+def view_finance_receipt(id):
+    db, fs = get_db_and_fs()
+    # Retrieve the tenant document using tenant_id
+    account = db.transaction_finance_accounts.find_one({'_id': ObjectId(id)})
+    if account:
+        if 'payment_receipt' in account:
+            # Convert the base64 string back to bytes
+            payment_receipt = base64.b64decode(account['payment_receipt'])
+
+            # Create a BytesIO object from the PDF data
+            pdf_io = io.BytesIO(payment_receipt)
+
+            # Create the file name
+            file_name = f"{id}.pdf"
+
+            # Create a custom response
+            response = make_response(pdf_io.getvalue())
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
+
+            return response
+        else:
+            flash("No receipt found for this transaction", 'error')
+            return redirect('/current-accounts')
+    else:
+        old_account = db.old_transaction_finance_accounts.find_one({'client_id': ObjectId(id)})
+        if old_account:
+            if 'payment_receipt' in old_account:
+                # Convert the base64 string back to bytes
+                payment_receipt = base64.b64decode(old_account['payment_receipt'])
+
+                # Create a BytesIO object from the PDF data
+                pdf_io = io.BytesIO(payment_receipt)
+
+                # Create the file name
+                file_name = f"{id}.pdf"
+
+                # Create a custom response
+                response = make_response(pdf_io.getvalue())
+                response.headers['Content-Type'] = 'application/pdf'
+                response.headers['Content-Disposition'] = f'attachment; filename={file_name}'
+
+                return response
+            else:
+                flash("No receipt found for this transaction", 'error')
+                return redirect('/accounts-history')
+        else:
+            flash("No receipt found for this transaction", 'error')
+            return redirect('/accounts-history')
 
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_financial_reminders():

@@ -369,134 +369,244 @@
         </div>
         <div class="content-wrapper">
           {% if session['account_type'] == 'Property Management' %}
-          <form id="myForm" class="property_forn" action="{{url_for('user_rights_initiated')}}" method="POST">
-            <input type="hidden" name="email" value="{{email}}">
-            <input type="hidden" name="company_name" value="{{company_name}}">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add properties</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch1" onclick="updateHiddenInput1()"><br>
-            <input type="hidden" id="hiddenInput1" name="add_properties" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add tenants</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch2" onclick="updateHiddenInput2()"><br>
-            <input type="hidden" id="hiddenInput2" name="add_tenants" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update tenant data</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch3" onclick="updateHiddenInput3()"><br>
-            <input type="hidden" id="hiddenInput3" name="update_tenant" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Edit tenant data</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch4" onclick="updateHiddenInput4()"><br>
-            <input type="hidden" id="hiddenInput4" name="edit_tenant" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Manage contracts</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch5" onclick="updateHiddenInput5()"><br>
-            <input type="hidden" id="hiddenInput5" name="manage_contracts" value="no">
+          <form id="permissionForm1" class="property_forn" action="{{ url_for('user_rights_initiated') }}" method="POST">
+            <input type="hidden" name="email" value="{{ email }}">
+            <input type="hidden" name="company_name" value="{{ company_name }}">
+            <div>
+              <label for="mySwitch1">Add Properties</label>
+              <input type="checkbox" id="mySwitch1" name="permissions" data-input-id="hiddenInput1">
+              <input type="hidden" id="hiddenInput1" name="add_properties" value="{{ add_properties }}">
+            </div>
+            <div>
+              <label for="mySwitch2">Add Tenants</label>
+              <input type="checkbox" id="mySwitch2" name="permissions" data-input-id="hiddenInput2">
+              <input type="hidden" id="hiddenInput2" name="add_tenants" value="{{ add_tenants }}">
+            </div>
+            <div>
+              <label for="mySwitch3">Update Tenant</label>
+              <input type="checkbox" id="mySwitch3" name="permissions" data-input-id="hiddenInput3">
+              <input type="hidden" id="hiddenInput3" name="update_tenant" value="{{ update_tenant }}">
+            </div>
+            <div>
+              <label for="mySwitch4">Edit Tenant</label>
+              <input type="checkbox" id="mySwitch4" name="permissions" data-input-id="hiddenInput4">
+              <input type="hidden" id="hiddenInput4" name="edit_tenant" value="{{ edit_tenant }}">
+            </div>
+            <div>
+              <label for="mySwitch5">Manage Contracts</label>
+              <input type="checkbox" id="mySwitch5" name="permissions" data-input-id="hiddenInput5">
+              <input type="hidden" id="hiddenInput5" name="manage_contracts" value="{{ manage_contracts }}">
+            </div>
             <input required type="submit" class="btn" value="Save">
           </form>
           {% endif %}
+
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
-          <form id="myForm" class="property_forn" action="{{url_for('user_rights_initiated')}}" method="POST">
-            <input type="hidden" name="email" value="{{email}}">
-            <input type="hidden" name="company_name" value="{{company_name}}">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add New Stock</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch6" onclick="updateHiddenInput6()"><br>
-            <input type="hidden" id="hiddenInput6" name="add_stock" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update Stock</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch7" onclick="updateHiddenInput7()"><br>
-            <input type="hidden" id="hiddenInput7" name="update_stock" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update Sales</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch8" onclick="updateHiddenInput8()"><br>
-            <input type="hidden" id="hiddenInput8" name="update_sales" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Inhouse Updates</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch9" onclick="updateHiddenInput9()"><br>
-            <input type="hidden" id="hiddenInput9" name="inhouse" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Stock Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch10" onclick="updateHiddenInput10()"><br>
-            <input type="hidden" id="hiddenInput10" name="view_stock_info" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Profits</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch11" onclick="updateHiddenInput11()"><br>
-            <input type="hidden" id="hiddenInput11" name="view_revenue" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Sales</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch12" onclick="updateHiddenInput12()"><br>
-            <input type="hidden" id="hiddenInput12" name="view_sales" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Finance Dashboard</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch25" onclick="updateHiddenInput25()"><br>
-            <input type="hidden" id="hiddenInput25" name="view_finance_dashboard" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add Finance Accounts</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch26" onclick="updateHiddenInput26()"><br>
-            <input type="hidden" id="hiddenInput26" name="add_new_finance_account" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update Finance Accounts</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch27" onclick="updateHiddenInput27()"><br>
-            <input type="hidden" id="hiddenInput27" name="update_finance_account" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Finance Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch28" onclick="updateHiddenInput28()"><br>
-            <input type="hidden" id="hiddenInput28" name="view_finance" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Edit Finance Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch29" onclick="updateHiddenInput29()"><br>
-            <input type="hidden" id="hiddenInput29" name="edit_finance" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Delete Finance Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch30" onclick="updateHiddenInput30()"><br>
-            <input type="hidden" id="hiddenInput30" name="delete_finance" value="no">
+          <form id="permissionForm2" class="property_forn" action="{{ url_for('user_rights_initiated') }}" method="POST">
+            <input type="hidden" name="email" value="{{ email }}">
+            <input type="hidden" name="company_name" value="{{ company_name }}">
+            <div>
+              <label for="mySwitch6">Add Stock</label>
+              <input type="checkbox" id="mySwitch6" name="permissions" data-input-id="hiddenInput6">
+              <input type="hidden" id="hiddenInput6" name="add_stock" value="{{ add_stock }}">
+            </div>
+            <div>
+              <label for="mySwitch7">Update Stock</label>
+              <input type="checkbox" id="mySwitch7" name="permissions" data-input-id="hiddenInput7">
+              <input type="hidden" id="hiddenInput7" name="update_stock" value="{{ update_stock }}">
+            </div>
+            <div>
+              <label for="mySwitch8">Update Sales</label>
+              <input type="checkbox" id="mySwitch8" name="permissions" data-input-id="hiddenInput8">
+              <input type="hidden" id="hiddenInput8" name="update_sales" value="{{ update_sales }}">
+            </div>
+            <div>
+              <label for="mySwitch9">In-House</label>
+              <input type="checkbox" id="mySwitch9" name="permissions" data-input-id="hiddenInput9">
+              <input type="hidden" id="hiddenInput9" name="inhouse" value="{{ inhouse }}">
+            </div>
+            <div>
+              <label for="mySwitch10">View Stock Info</label>
+              <input type="checkbox" id="mySwitch10" name="permissions" data-input-id="hiddenInput10">
+              <input type="hidden" id="hiddenInput10" name="view_stock_info" value="{{ view_stock_info }}">
+            </div>
+            <div>
+              <label for="mySwitch11">View Revenue</label>
+              <input type="checkbox" id="mySwitch11" name="permissions" data-input-id="hiddenInput11">
+              <input type="hidden" id="hiddenInput11" name="view_revenue" value="{{ view_revenue }}">
+            </div>
+            <div>
+              <label for="mySwitch12">View Sales</label>
+              <input type="checkbox" id="mySwitch12" name="permissions" data-input-id="hiddenInput12">
+              <input type="hidden" id="hiddenInput12" name="view_sales" value="{{ view_sales }}">
+            </div>
+            <div>
+              <label for="mySwitch25">View Finance Dashboard</label>
+              <input type="checkbox" id="mySwitch25" name="permissions" data-input-id="hiddenInput25">
+              <input type="hidden" id="hiddenInput25" name="view_finance_dashboard" value="{{ view_finance_dashboard }}">
+            </div>
+            <div>
+              <label for="mySwitch26">Add New Finance Account</label>
+              <input type="checkbox" id="mySwitch26" name="permissions" data-input-id="hiddenInput26">
+              <input type="hidden" id="hiddenInput26" name="add_new_finance_account" value="{{ add_new_finance_account }}">
+            </div>
+            <div>
+              <label for="mySwitch27">Update Finance Account</label>
+              <input type="checkbox" id="mySwitch27" name="permissions" data-input-id="hiddenInput27">
+              <input type="hidden" id="hiddenInput27" name="update_finance_account" value="{{ update_finance_account }}">
+            </div>
+            <div>
+              <label for="mySwitch28">View Finance</label>
+              <input type="checkbox" id="mySwitch28" name="permissions" data-input-id="hiddenInput28">
+              <input type="hidden" id="hiddenInput28" name="view_finance" value="{{ view_finance }}">
+            </div>
+            <div>
+              <label for="mySwitch29">Edit Finance</label>
+              <input type="checkbox" id="mySwitch29" name="permissions" data-input-id="hiddenInput29">
+              <input type="hidden" id="hiddenInput29" name="edit_finance" value="{{ edit_finance }}">
+            </div>
+            <div>
+              <label for="mySwitch30">Delete Finance</label>
+              <input type="checkbox" id="mySwitch30" name="permissions" data-input-id="hiddenInput30">
+              <input type="hidden" id="hiddenInput30" name="delete_finance" value="{{ delete_finance }}">
+            </div>
             <input required type="submit" class="btn" value="Save">
           </form>
           {% endif %}
+
           {% if session['account_type'] == 'all_accounts' %}
-          <form id="myForm" class="property_forn" action="{{url_for('user_rights_initiated')}}" method="POST">
-            <input type="hidden" name="email" value="{{email}}">
-            <input type="hidden" name="company_name" value="{{company_name}}">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add properties</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch13" onclick="updateHiddenInput1()"><br>
-            <input type="hidden" id="hiddenInput13" name="add_properties" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add tenants</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch14" onclick="updateHiddenInput2()"><br>
-            <input type="hidden" id="hiddenInput14" name="add_tenants" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update tenant data</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch15" onclick="updateHiddenInput3()"><br>
-            <input type="hidden" id="hiddenInput15" name="update_tenant" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Edit tenant data</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch16" onclick="updateHiddenInput4()"><br>
-            <input type="hidden" id="hiddenInput16" name="edit_tenant" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Manage contracts</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch17" onclick="updateHiddenInput5()"><br>
-            <input type="hidden" id="hiddenInput17" name="manage_contracts" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add New Stock</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch18" onclick="updateHiddenInput6()"><br>
-            <input type="hidden" id="hiddenInput18" name="add_stock" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update Stock</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch19" onclick="updateHiddenInput7()"><br>
-            <input type="hidden" id="hiddenInput19" name="update_stock" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update Sales</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch20" onclick="updateHiddenInput8()"><br>
-            <input type="hidden" id="hiddenInput20" name="update_sales" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Inhouse Updates</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch21" onclick="updateHiddenInput9()"><br>
-            <input type="hidden" id="hiddenInput21" name="inhouse" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Stock Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch22" onclick="updateHiddenInput10()"><br>
-            <input type="hidden" id="hiddenInput22" name="view_stock_info" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Profits</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch23" onclick="updateHiddenInput11()"><br>
-            <input type="hidden" id="hiddenInput23" name="view_revenue" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Sales</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch24" onclick="updateHiddenInput24()"><br>
-            <input type="hidden" id="hiddenInput24" name="view_sales" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Finance Dashboard</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch31" onclick="updateHiddenInput31()"><br>
-            <input type="hidden" id="hiddenInput31" name="view_finance_dashboard" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Add Finance Accounts</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch32" onclick="updateHiddenInput32()"><br>
-            <input type="hidden" id="hiddenInput32" name="add_new_finance_account" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Update Finance Accounts</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch33" onclick="updateHiddenInput33()"><br>
-            <input type="hidden" id="hiddenInput33" name="update_finance_account" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">View Finance Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch34" onclick="updateHiddenInput34()"><br>
-            <input type="hidden" id="hiddenInput34" name="view_finance" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Edit Finance Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch35" onclick="updateHiddenInput35()"><br>
-            <input type="hidden" id="hiddenInput35" name="edit_finance" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Delete Finance Info</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch36" onclick="updateHiddenInput36()"><br>
-            <input type="hidden" id="hiddenInput36" name="delete_finance" value="no">
+          <form id="permissionForm3" class="property_forn" action="{{ url_for('user_rights_initiated') }}" method="POST">
+            <input type="hidden" name="email" value="{{ email }}">
+            <input type="hidden" name="company_name" value="{{ company_name }}">
+            <div>
+              <label for="mySwitch13">Add Properties</label>
+              <input type="checkbox" id="mySwitch13" name="permissions" data-input-id="hiddenInput13">
+              <input type="hidden" id="hiddenInput13" name="add_properties" value="{{ add_properties }}">
+            </div>
+            <div>
+              <label for="mySwitch14">Add Tenants</label>
+              <input type="checkbox" id="mySwitch14" name="permissions" data-input-id="hiddenInput14">
+              <input type="hidden" id="hiddenInput14" name="add_tenants" value="{{ add_tenants }}">
+            </div>
+            <div>
+              <label for="mySwitch15">Update Tenant</label>
+              <input type="checkbox" id="mySwitch15" name="permissions" data-input-id="hiddenInput15">
+              <input type="hidden" id="hiddenInput15" name="update_tenant" value="{{ update_tenant }}">
+            </div>
+            <div>
+              <label for="mySwitch16">Edit Tenant</label>
+              <input type="checkbox" id="mySwitch16" name="permissions" data-input-id="hiddenInput16">
+              <input type="hidden" id="hiddenInput16" name="edit_tenant" value="{{ edit_tenant }}">
+            </div>
+            <div>
+              <label for="mySwitch17">Manage Contracts</label>
+              <input type="checkbox" id="mySwitch17" name="permissions" data-input-id="hiddenInput17">
+              <input type="hidden" id="hiddenInput17" name="manage_contracts" value="{{ manage_contracts }}">
+            </div>
+            <div>
+              <label for="mySwitch18">Add Stock</label>
+              <input type="checkbox" id="mySwitch18" name="permissions" data-input-id="hiddenInput18">
+              <input type="hidden" id="hiddenInput18" name="add_stock" value="{{ add_stock }}">
+            </div>
+            <div>
+              <label for="mySwitch19">Update Stock</label>
+              <input type="checkbox" id="mySwitch19" name="permissions" data-input-id="hiddenInput19">
+              <input type="hidden" id="hiddenInput19" name="update_stock" value="{{ update_stock }}">
+            </div>
+            <div>
+              <label for="mySwitch20">Update Sales</label>
+              <input type="checkbox" id="mySwitch20" name="permissions" data-input-id="hiddenInput20">
+              <input type="hidden" id="hiddenInput20" name="update_sales" value="{{ update_sales }}">
+            </div>
+            <div>
+              <label for="mySwitch21">In-House</label>
+              <input type="checkbox" id="mySwitch21" name="permissions" data-input-id="hiddenInput21">
+              <input type="hidden" id="hiddenInput21" name="inhouse" value="{{ inhouse }}">
+            </div>
+            <div>
+              <label for="mySwitch22">View Stock Info</label>
+              <input type="checkbox" id="mySwitch22" name="permissions" data-input-id="hiddenInput22">
+              <input type="hidden" id="hiddenInput22" name="view_stock_info" value="{{ view_stock_info }}">
+            </div>
+            <div>
+              <label for="mySwitch23">View Revenue</label>
+              <input type="checkbox" id="mySwitch23" name="permissions" data-input-id="hiddenInput23">
+              <input type="hidden" id="hiddenInput23" name="view_revenue" value="{{ view_revenue }}">
+            </div>
+            <div>
+              <label for="mySwitch24">View Sales</label>
+              <input type="checkbox" id="mySwitch24" name="permissions" data-input-id="hiddenInput24">
+              <input type="hidden" id="hiddenInput24" name="view_sales" value="{{ view_sales }}">
+            </div>
+            <div>
+              <label for="mySwitch25">View Finance Dashboard</label>
+              <input type="checkbox" id="mySwitch25" name="permissions" data-input-id="hiddenInput25">
+              <input type="hidden" id="hiddenInput25" name="view_finance_dashboard" value="{{ view_finance_dashboard }}">
+            </div>
+            <div>
+              <label for="mySwitch26">Add New Finance Account</label>
+              <input type="checkbox" id="mySwitch26" name="permissions" data-input-id="hiddenInput26">
+              <input type="hidden" id="hiddenInput26" name="add_new_finance_account" value="{{ add_new_finance_account }}">
+            </div>
+            <div>
+              <label for="mySwitch27">Update Finance Account</label>
+              <input type="checkbox" id="mySwitch27" name="permissions" data-input-id="hiddenInput27">
+              <input type="hidden" id="hiddenInput27" name="update_finance_account" value="{{ update_finance_account }}">
+            </div>
+            <div>
+              <label for="mySwitch28">View Finance</label>
+              <input type="checkbox" id="mySwitch28" name="permissions" data-input-id="hiddenInput28">
+              <input type="hidden" id="hiddenInput28" name="view_finance" value="{{ view_finance }}">
+            </div>
+            <div>
+              <label for="mySwitch29">Edit Finance</label>
+              <input type="checkbox" id="mySwitch29" name="permissions" data-input-id="hiddenInput29">
+              <input type="hidden" id="hiddenInput29" name="edit_finance" value="{{ edit_finance }}">
+            </div>
+            <div>
+              <label for="mySwitch30">Delete Finance</label>
+              <input type="checkbox" id="mySwitch30" name="permissions" data-input-id="hiddenInput30">
+              <input type="hidden" id="hiddenInput30" name="delete_finance" value="{{ delete_finance }}">
+            </div>
             <input required type="submit" class="btn" value="Save">
           </form>
           {% endif %}
+          <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              // Function to update checkbox state based on hidden input values
+              function updateCheckboxes() {
+                var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(function (checkbox) {
+                  var hiddenInput = document.getElementById(checkbox.dataset.inputId);
+                  if (hiddenInput) {
+                    checkbox.checked = hiddenInput.value === 'yes';
+                  }
+                });
+              }
+
+              // Set hidden input values based on checkbox state
+              function setHiddenInputs() {
+                var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(function (checkbox) {
+                  var hiddenInput = document.getElementById(checkbox.dataset.inputId);
+                  if (hiddenInput) {
+                    hiddenInput.value = checkbox.checked ? 'yes' : 'no';
+                  }
+                });
+              }
+
+              // Update checkboxes on page load
+              updateCheckboxes();
+
+              // Update hidden inputs before form submission
+              var forms = document.querySelectorAll('form');
+              forms.forEach(function (form) {
+                form.addEventListener('submit', function () {
+                  setHiddenInputs();
+                });
+              });
+            });
+          </script>
         </div>
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
@@ -546,255 +656,6 @@
                 event.preventDefault();
             }
         }
-    });
-  </script>
-
-  <script>
-    var data1 = [
-      {
-        checkbox: document.getElementById("mySwitch1"),
-        hiddenInput: document.getElementById("hiddenInput1"),
-        value: "{{ add_properties }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch2"),
-        hiddenInput: document.getElementById("hiddenInput2"),
-        value: "{{ add_tenants }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch3"),
-        hiddenInput: document.getElementById("hiddenInput3"),
-        value: "{{ update_tenant }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch4"),
-        hiddenInput: document.getElementById("hiddenInput4"),
-        value: "{{ edit_tenant }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch5"),
-        hiddenInput: document.getElementById("hiddenInput5"),
-        value: "{{ manage_contracts }}"
-      }
-    ];
-
-    data1.forEach(function(item) {
-      if (item.value === "yes") {
-        item.checkbox.checked = true;
-        item.hiddenInput.value = "yes";
-      } else {
-        item.checkbox.checked = false;
-        item.hiddenInput.value = "no";
-      }
-
-      item.checkbox.addEventListener('change', function() {
-        if (item.checkbox.checked) {
-          item.hiddenInput.value = "yes";
-        } else {
-          item.hiddenInput.value = "no";
-        }
-      });
-    });
-  </script>
-
-  <script>
-    var data2 = [
-      {
-        checkbox: document.getElementById("mySwitch6"),
-        hiddenInput: document.getElementById("hiddenInput6"),
-        value: "{{ add_stock }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch7"),
-        hiddenInput: document.getElementById("hiddenInput7"),
-        value: "{{ update_stock }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch8"),
-        hiddenInput: document.getElementById("hiddenInput8"),
-        value: "{{ update_sales }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch9"),
-        hiddenInput: document.getElementById("hiddenInput9"),
-        value: "{{ inhouse }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch10"),
-        hiddenInput: document.getElementById("hiddenInput10"),
-        value: "{{ view_stock_info }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch11"),
-        hiddenInput: document.getElementById("hiddenInput11"),
-        value: "{{ view_revenue }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch12"),
-        hiddenInput: document.getElementById("hiddenInput12"),
-        value: "{{ view_sales }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch25"),
-        hiddenInput: document.getElementById("hiddenInput25"),
-        value: "{{ view_finance_dashboard }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch26"),
-        hiddenInput: document.getElementById("hiddenInput26"),
-        value: "{{ add_new_finance_account }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch27"),
-        hiddenInput: document.getElementById("hiddenInput27"),
-        value: "{{ update_finance_account }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch28"),
-        hiddenInput: document.getElementById("hiddenInput28"),
-        value: "{{ view_finance }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch29"),
-        hiddenInput: document.getElementById("hiddenInput29"),
-        value: "{{ edit_finance }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch30"),
-        hiddenInput: document.getElementById("hiddenInput30"),
-        value: "{{ delete_finance }}"
-      }
-    ];
-
-    data2.forEach(function(item) {
-      if (item.value === "yes") {
-        item.checkbox.checked = true;
-        item.hiddenInput.value = "yes";
-      } else {
-        item.checkbox.checked = false;
-        item.hiddenInput.value = "no";
-      }
-
-      item.checkbox.addEventListener('change', function() {
-        if (item.checkbox.checked) {
-          item.hiddenInput.value = "yes";
-        } else {
-          item.hiddenInput.value = "no";
-        }
-      });
-    });
-  </script>
-
-  <script>
-    var data3 = [
-      {
-        checkbox: document.getElementById("mySwitch13"),
-        hiddenInput: document.getElementById("hiddenInput13"),
-        value: "{{ add_properties }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch14"),
-        hiddenInput: document.getElementById("hiddenInput14"),
-        value: "{{ add_tenants }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch15"),
-        hiddenInput: document.getElementById("hiddenInput15"),
-        value: "{{ update_tenant }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch16"),
-        hiddenInput: document.getElementById("hiddenInput16"),
-        value: "{{ edit_tenant }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch17"),
-        hiddenInput: document.getElementById("hiddenInput17"),
-        value: "{{ manage_contracts }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch18"),
-        hiddenInput: document.getElementById("hiddenInput18"),
-        value: "{{ add_stock }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch19"),
-        hiddenInput: document.getElementById("hiddenInput19"),
-        value: "{{ update_stock }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch20"),
-        hiddenInput: document.getElementById("hiddenInput20"),
-        value: "{{ update_sales }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch21"),
-        hiddenInput: document.getElementById("hiddenInput21"),
-        value: "{{ inhouse }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch22"),
-        hiddenInput: document.getElementById("hiddenInput22"),
-        value: "{{ view_stock_info }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch23"),
-        hiddenInput: document.getElementById("hiddenInput23"),
-        value: "{{ view_revenue }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch24"),
-        hiddenInput: document.getElementById("hiddenInput24"),
-        value: "{{ view_sales }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch31"),
-        hiddenInput: document.getElementById("hiddenInput31"),
-        value: "{{ view_finance_dashboard }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch32"),
-        hiddenInput: document.getElementById("hiddenInput32"),
-        value: "{{ add_new_finance_account }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch33"),
-        hiddenInput: document.getElementById("hiddenInput33"),
-        value: "{{ update_finance_account }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch34"),
-        hiddenInput: document.getElementById("hiddenInput34"),
-        value: "{{ view_finance }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch35"),
-        hiddenInput: document.getElementById("hiddenInput35"),
-        value: "{{ edit_finance }}"
-      },
-      {
-        checkbox: document.getElementById("mySwitch36"),
-        hiddenInput: document.getElementById("hiddenInput36"),
-        value: "{{ delete_finance }}"
-      }
-    ];
-
-    data3.forEach(function(item) {
-      if (item.value === "yes") {
-        item.checkbox.checked = true;
-        item.hiddenInput.value = "yes";
-      } else {
-        item.checkbox.checked = false;
-        item.hiddenInput.value = "no";
-      }
-
-      item.checkbox.addEventListener('change', function() {
-        if (item.checkbox.checked) {
-          item.hiddenInput.value = "yes";
-        } else {
-          item.hiddenInput.value = "no";
-        }
-      });
     });
   </script>
 
