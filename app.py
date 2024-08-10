@@ -8362,13 +8362,14 @@ def accounts_overview():
             columns=['Month', 'Total Amount']
         )
 
-        # Sort DataFrame by Month (year and month)
+        # Convert 'Month' column to datetime format
         df_trended['Month'] = pd.to_datetime(df_trended['Month'], format='%Y-%m')
+        # Create a new column for the month and year in the desired format
         df_trended['Month_Name'] = df_trended['Month'].dt.strftime('%B %Y')
-
-        # Drop the original 'Month' column if needed and sort by 'Month'
-        df_trended = df_trended[['Month_Name', 'Total Amount']]
-        df_trended = df_trended.sort_values(by='Month_Name').reset_index(drop=True)
+        # Sort by the 'Month' column to ensure the data is ordered from oldest to newest
+        df_trended = df_trended.sort_values(by='Month')
+        # Drop the original 'Month' column if needed and keep 'Month_Name' and 'Total Amount'
+        df_trended = df_trended[['Month_Name', 'Total Amount']].reset_index(drop=True)
 
         #####PLOTS
         current_total_amount_paid_chart = {
