@@ -750,7 +750,8 @@ def before_request():
                                                                'google_verification', 'contact', 'sitemap', 'about', 'tenant_login_page', 'tenant_login', 'tenant_register', 'register', 'login', 'userlogin', 'index', 'static', 'verify_username', 'send_verification_code', 'password_reset_verifying_user', 'add_property_manager_page',
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
-                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account'):
+                                                               'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
+                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','accounting_dashboard'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -7398,7 +7399,7 @@ def delete_expense(item_id):
         else:
             flash('You do not have rights to delete', 'error')
         return redirect('/view-expenses')
-    
+
 ####ACCOUNTING
 @app.route('/accounting-dashboard')
 def accounting_dashboard():
@@ -7429,7 +7430,7 @@ def new_accounts_page():
         else:
             dp_str = None
         return render_template('add new account.html',dp=dp_str)
-    
+
 @app.route('/add-new-account', methods=['POST'])
 def add_new_account():
     db, fs = get_db_and_fs()
@@ -7875,7 +7876,7 @@ def accounts_history():
 
 ####edit finances
 @app.route('/edit-finance-accounts/<item_id>', methods=['GET', 'POST'])
-def edit_finance_accounts(item_id):
+def (item_id):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
@@ -7892,7 +7893,7 @@ def edit_finance_accounts(item_id):
         else:
             flash('You do not have rights to make edits', 'error')
             return redirect('/current-accounts')
-    
+ 
 @app.route('/apply-finance-edits', methods=['POST'])
 def apply_finance_edits():
     db, fs = get_db_and_fs()
