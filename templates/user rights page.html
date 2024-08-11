@@ -310,20 +310,7 @@
           </li>
           {% endif %}
           {% endif %}
-          {% if session['account_type'] == 'all_accounts' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Property Management</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_overview') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Stock Management</span>
-            </a>
-          </li>
-          {% endif %}
+          
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stock_overview') }}">
@@ -349,6 +336,44 @@
               <span class="menu-title">Sales</span>
             </a>
           </li>
+          {% endif %}
+          {% if session['account_type'] == 'Accounting' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
+              <i class="typcn typcn-credit-card menu-icon"></i>
+              <span class="menu-title">Dashboard</span>
+            </a>
+          </li>
+          {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('new_accounts_page') }}" id="new-stock">
+              <i class="typcn typcn-document-add menu-icon"></i>
+              <span class="menu-title">New Accounts</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('update_existing_account') }}" id="update-new-stock">
+              <i class="typcn typcn-briefcase menu-icon"></i>
+              <span class="menu-title">Update Accounts</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('current_accounts') }}" id="update-new-stock">
+              <i class="typcn typcn-briefcase menu-icon"></i>
+              <span class="menu-title">Current Accounts</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('accounts_history') }}" id="update-new-stock">
+              <i class="typcn typcn-briefcase menu-icon"></i>
+              <span class="menu-title">Accounts History</span>
+            </a>
+          </li>
+          {% endif %}
           {% endif %}
         </ul>
       </nav>
@@ -440,104 +465,14 @@
               <input type="checkbox" id="mySwitch12" name="permissions" data-input-id="hiddenInput12">
               <input type="hidden" id="hiddenInput12" name="view_sales" value="{{ view_sales }}">
             </div>
-            <div>
-              <label for="mySwitch25">View Finance Dashboard</label>
-              <input type="checkbox" id="mySwitch25" name="permissions" data-input-id="hiddenInput25">
-              <input type="hidden" id="hiddenInput25" name="view_finance_dashboard" value="{{ view_finance_dashboard }}">
-            </div>
-            <div>
-              <label for="mySwitch26">Add New Finance Account</label>
-              <input type="checkbox" id="mySwitch26" name="permissions" data-input-id="hiddenInput26">
-              <input type="hidden" id="hiddenInput26" name="add_new_finance_account" value="{{ add_new_finance_account }}">
-            </div>
-            <div>
-              <label for="mySwitch27">Update Finance Account</label>
-              <input type="checkbox" id="mySwitch27" name="permissions" data-input-id="hiddenInput27">
-              <input type="hidden" id="hiddenInput27" name="update_finance_account" value="{{ update_finance_account }}">
-            </div>
-            <div>
-              <label for="mySwitch28">View Finance</label>
-              <input type="checkbox" id="mySwitch28" name="permissions" data-input-id="hiddenInput28">
-              <input type="hidden" id="hiddenInput28" name="view_finance" value="{{ view_finance }}">
-            </div>
-            <div>
-              <label for="mySwitch29">Edit Finance</label>
-              <input type="checkbox" id="mySwitch29" name="permissions" data-input-id="hiddenInput29">
-              <input type="hidden" id="hiddenInput29" name="edit_finance" value="{{ edit_finance }}">
-            </div>
-            <div>
-              <label for="mySwitch30">Delete Finance</label>
-              <input type="checkbox" id="mySwitch30" name="permissions" data-input-id="hiddenInput30">
-              <input type="hidden" id="hiddenInput30" name="delete_finance" value="{{ delete_finance }}">
-            </div>
             <input required type="submit" class="btn" value="Save">
           </form>
           {% endif %}
 
-          {% if session['account_type'] == 'all_accounts' %}
+          {% if session['account_type'] == 'Accounting' %}
           <form id="permissionForm3" class="property_forn" action="{{ url_for('user_rights_initiated') }}" method="POST">
             <input type="hidden" name="email" value="{{ email }}">
             <input type="hidden" name="company_name" value="{{ company_name }}">
-            <div>
-              <label for="mySwitch13">Add Properties</label>
-              <input type="checkbox" id="mySwitch13" name="permissions" data-input-id="hiddenInput13">
-              <input type="hidden" id="hiddenInput13" name="add_properties" value="{{ add_properties }}">
-            </div>
-            <div>
-              <label for="mySwitch14">Add Tenants</label>
-              <input type="checkbox" id="mySwitch14" name="permissions" data-input-id="hiddenInput14">
-              <input type="hidden" id="hiddenInput14" name="add_tenants" value="{{ add_tenants }}">
-            </div>
-            <div>
-              <label for="mySwitch15">Update Tenant</label>
-              <input type="checkbox" id="mySwitch15" name="permissions" data-input-id="hiddenInput15">
-              <input type="hidden" id="hiddenInput15" name="update_tenant" value="{{ update_tenant }}">
-            </div>
-            <div>
-              <label for="mySwitch16">Edit Tenant</label>
-              <input type="checkbox" id="mySwitch16" name="permissions" data-input-id="hiddenInput16">
-              <input type="hidden" id="hiddenInput16" name="edit_tenant" value="{{ edit_tenant }}">
-            </div>
-            <div>
-              <label for="mySwitch17">Manage Contracts</label>
-              <input type="checkbox" id="mySwitch17" name="permissions" data-input-id="hiddenInput17">
-              <input type="hidden" id="hiddenInput17" name="manage_contracts" value="{{ manage_contracts }}">
-            </div>
-            <div>
-              <label for="mySwitch18">Add Stock</label>
-              <input type="checkbox" id="mySwitch18" name="permissions" data-input-id="hiddenInput18">
-              <input type="hidden" id="hiddenInput18" name="add_stock" value="{{ add_stock }}">
-            </div>
-            <div>
-              <label for="mySwitch19">Update Stock</label>
-              <input type="checkbox" id="mySwitch19" name="permissions" data-input-id="hiddenInput19">
-              <input type="hidden" id="hiddenInput19" name="update_stock" value="{{ update_stock }}">
-            </div>
-            <div>
-              <label for="mySwitch20">Update Sales</label>
-              <input type="checkbox" id="mySwitch20" name="permissions" data-input-id="hiddenInput20">
-              <input type="hidden" id="hiddenInput20" name="update_sales" value="{{ update_sales }}">
-            </div>
-            <div>
-              <label for="mySwitch21">In-House</label>
-              <input type="checkbox" id="mySwitch21" name="permissions" data-input-id="hiddenInput21">
-              <input type="hidden" id="hiddenInput21" name="inhouse" value="{{ inhouse }}">
-            </div>
-            <div>
-              <label for="mySwitch22">View Stock Info</label>
-              <input type="checkbox" id="mySwitch22" name="permissions" data-input-id="hiddenInput22">
-              <input type="hidden" id="hiddenInput22" name="view_stock_info" value="{{ view_stock_info }}">
-            </div>
-            <div>
-              <label for="mySwitch23">View Revenue</label>
-              <input type="checkbox" id="mySwitch23" name="permissions" data-input-id="hiddenInput23">
-              <input type="hidden" id="hiddenInput23" name="view_revenue" value="{{ view_revenue }}">
-            </div>
-            <div>
-              <label for="mySwitch24">View Sales</label>
-              <input type="checkbox" id="mySwitch24" name="permissions" data-input-id="hiddenInput24">
-              <input type="hidden" id="hiddenInput24" name="view_sales" value="{{ view_sales }}">
-            </div>
             <div>
               <label for="mySwitch25">View Finance Dashboard</label>
               <input type="checkbox" id="mySwitch25" name="permissions" data-input-id="hiddenInput25">

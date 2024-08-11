@@ -235,22 +235,6 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
-          {% if session['account_type'] == 'all_accounts' %}
-          {% if session['is_manager'] == 'is_manager' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Property Management</span>
-            </a>
-          </li>
-          {% endif %}
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_overview') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Stock Management</span>
-            </a>
-          </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
               <i class="typcn typcn-credit-card menu-icon"></i>
@@ -338,6 +322,7 @@
                   <th>Telephone</th>
                   <th>Email</th>
                   <th>Project</th>
+                  <th>Account Type</th>
                   <th>Measure (Quantity)</th>
                   <th>Unit</th>
                   <th>Value</th>
@@ -347,7 +332,7 @@
                   <th>
                     Date Of Payment
                     <br>
-                    <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 11)"
+                    <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 12)"
                       placeholder="YYYY-MM-DD">
                   </th>
                   <th>Balance</th>
@@ -362,6 +347,7 @@
                   <td>{{ account['telephone'] }}</td>
                   <td>{{ account['email'] }}</td>
                   <td>{{ account['project_name'] }}</td>
+                  <td>{{ account['account_type'] }}</td>
                   <td>{{ account['measure'] }}</td>
                   <td>{{ account['unit_of_measurement'] }}</td>
                   <td class="value-amount">{{ '{:,.0f}'.format(account['value_amount']) }}</td>
@@ -376,7 +362,7 @@
                 </tr>
                 {% endfor %}
                 <tr id="totalRow">
-                  <td style="font-weight: bold;" colspan="7">Total</td>
+                  <td style="font-weight: bold;" colspan="8">Total</td>
                   <td style="font-weight: bold;" id="totalValueAmount">0</td>
                   <td></td>
                   <td></td>

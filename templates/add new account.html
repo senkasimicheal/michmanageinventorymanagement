@@ -234,22 +234,6 @@
             <!-- partial:partials/_sidebar.html -->
             <nav class="sidebar sidebar-offcanvas" id="sidebar">
                 <ul class="nav">
-                {% if session['account_type'] == 'all_accounts' %}
-                {% if session['is_manager'] == 'is_manager' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-                        <i class="typcn typcn-device-desktop menu-icon"></i>
-                        <span class="menu-title">Property Management</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_overview') }}">
-                        <i class="typcn typcn-book menu-icon"></i>
-                        <span class="menu-title">Stock Management</span>
-                    </a>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
                         <i class="typcn typcn-credit-card menu-icon"></i>
@@ -304,7 +288,6 @@
                     {% endif %}
                     {% endwith %}
                 </div>
-
                 <div class="new-stock-form content-wrapper" id="stock-form">
                     <form id="myForm" class="property_forn content-pannel" action="{{url_for('add_new_account')}}"
                         method="POST">
@@ -315,7 +298,20 @@
                         <label class="input_labels" for="">Email (Optional)</label>
                         <input class="property_inputs" type="email" name="email">
                         <label class="input_labels" for="">Project Name</label>
-                        <input class="property_inputs" type="text" name="project_name">
+                        <input class="property_inputs" type="text" name="project_name" id="project_name" list="projectList" autocomplete="off">
+                        <datalist id="projectList">
+                            {% for project in some_projects %}
+                                <option value="{{ project['project_name'] }}">
+                            {% endfor %}
+                        </datalist>
+                        <label class="input_labels" for="">Account Type</label>
+                        <select name="account_type" id="">
+                            <option value="" disabled selected>Select one</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Joint">Joint</option>
+                            <option value="Group">Group</option>
+                            <option value="Planned Kid">Planned Kid</option>
+                        </select>
                         <label class="input_labels" for="">Measure (Quantity)</label>
                         <input class="property_inputs" type="number" name="measure" min="1">
                         <label class="input_labels" for="">Unit Of Measurement</label>
@@ -330,6 +326,7 @@
                             <option value="Litre">Litre</option>
                             <option value="Head">Head</option>
                             <option value="Bee Hive">Bee Hive</option>
+                            <option value="Year">Year</option>
                         </select>
                         <label class="input_labels" for="">Value</label>
                         <input class="property_inputs" type="number" name="value_amount" id="value_amount" min="5000">
@@ -337,7 +334,8 @@
                         <select name="payment_mode" id="">
                             <option value="" disabled selected>Select payment mode</option>
                             <option value="Cash">Cash</option>
-                            <option value="Mobile Money">Mobile Money</option>
+                            <option value="Mobile Money">MTN Mobile Money</option>
+                            <option value="Mobile Money">Airtel Money</option>
                             <option value="Bank">Bank</option>
                             <option value="PayPal">PayPal</option>
                             <option value="MasterCard">MasterCard</option>
@@ -375,7 +373,6 @@
         <!-- page-body-wrapper ends -->
     </div>
     <!-- container-scroller -->
-
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // Hide all alerts after 5 seconds
@@ -401,7 +398,7 @@
             }
         }, 100); // Adjust this value to control the speed of the counter
     </script>
-
+    
     <script>
         const amountPaidInput = document.getElementById('amount_paid');
         const valueAmountInput = document.getElementById('value_amount');
@@ -438,6 +435,7 @@
                 const telephone = document.querySelector('input[name="telephone"]').value;
                 const email = document.querySelector('input[name="email"]').value || '';
                 const project_name = document.querySelector('input[name="project_name"]').value;
+                const account_type = document.querySelector('select[name="account_type"]').value;
                 const measure = document.querySelector('input[name="measure"]').value;
                 const unit_of_measurement = document.querySelector('select[name="unit_of_measurement"]').value;
                 const value_amount = document.querySelector('input[name="value_amount"]').value;
@@ -446,7 +444,7 @@
                 const date_of_payment = document.querySelector('input[name="date_of_payment"]').value;
 
                 // Check if any of the fields are empty
-                if (!client_name || !telephone || !project_name || !measure || !unit_of_measurement || !value_amount || !payment_mode || !amount_paid || !date_of_payment) {
+                if (!client_name || !telephone || !project_name || !account_type || !measure || !unit_of_measurement || !value_amount || !payment_mode || !amount_paid || !date_of_payment) {
                     alert("Please fill in all the mandatory fields before adding an account.");
                     return; // Stop here if any field is empty
                 }
@@ -462,6 +460,7 @@
                     telephone,
                     email,
                     project_name,
+                    account_type,
                     measure,
                     unit_of_measurement,
                     value_amount,
@@ -538,7 +537,6 @@
 
         }
     </script>
-
     <!-- base:js -->
     <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
     <!-- endinject -->
@@ -556,5 +554,4 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
     <!-- End custom js for this page-->
 </body>
-
 </html>

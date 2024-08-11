@@ -234,22 +234,6 @@
             <!-- partial:partials/_sidebar.html -->
             <nav class="sidebar sidebar-offcanvas" id="sidebar">
                 <ul class="nav">
-                {% if session['account_type'] == 'all_accounts' %}
-                {% if session['is_manager'] == 'is_manager' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-                        <i class="typcn typcn-device-desktop menu-icon"></i>
-                        <span class="menu-title">Property Management</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('stock_overview') }}">
-                        <i class="typcn typcn-book menu-icon"></i>
-                        <span class="menu-title">Stock Management</span>
-                    </a>
-                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
                         <i class="typcn typcn-credit-card menu-icon"></i>

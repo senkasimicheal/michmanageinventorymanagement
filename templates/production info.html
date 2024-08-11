@@ -231,16 +231,7 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
-          {% if session['account_type'] == 'all_accounts' %}
-          {% if session['is_manager'] == 'is_manager' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Property Management</span>
-            </a>
-          </li>
-          {% endif %}
-          {% endif %}
+          
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stock_overview') }}">
@@ -429,22 +420,10 @@
                           {{ stock_date.strftime('%Y-%m-%d') if stock_date else '' }}{% if not loop.last %}, {% endif %}
                           {% endfor %}
                       </td>
-                      <td class="total-production-cost">{{ '{:,.0f}'.format(product['Total Production Cost']) }}</td>
+                      <td>{{ product['Total Production Cost'] }}</td>
                   </tr>
                   {% endfor %}
-                  <tr id="totalRow">
-                      <td style="font-weight: bold;" colspan="3">Total</td>
-                      <td style="font-weight: bold;" id="totalProductPrice">0</td>
-                      <td colspan="4"></td> <!-- Adjust colspan to match number of columns -->
-                      <td style="font-weight: bold;" id="totalProductionCost">0</td>
-                  </tr>
                 {% else %}
-                <tr id="totalRow">
-                  <td style="font-weight: bold;" colspan="3">Total</td>
-                  <td style="font-weight: bold;" id="totalProductPrice">0</td>
-                  <td colspan="4"></td> <!-- Adjust colspan to match number of columns -->
-                  <td style="font-weight: bold;" id="totalProductionCost">0</td>
-                </tr>
                 {% endif %}
               </tbody>
             </table>
@@ -471,71 +450,6 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
-
-  <script>
-    function calculateTotals() {
-        let table = document.getElementById("tenantTable");
-        let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
-        let totalProductPrice = 0;
-        let totalProductionCost = 0;
-
-        for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
-            let productPriceCell = rows[i].getElementsByClassName("product-price")[0];
-            let productionCostCell = rows[i].getElementsByClassName("total-production-cost")[0];
-
-            if (productPriceCell && productionCostCell && rows[i].style.display !== "none") {
-                let productPrice = parseFloat(productPriceCell.textContent.replace(/,/g, '')) || 0;
-                let productionCost = parseFloat(productionCostCell.textContent.replace(/,/g, '')) || 0;
-
-                totalProductPrice += productPrice;
-                totalProductionCost += productionCost;
-            }
-        }
-
-        document.getElementById("totalProductPrice").textContent = totalProductPrice.toLocaleString();
-        document.getElementById("totalProductionCost").textContent = totalProductionCost.toLocaleString();
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        calculateTotals();
-    });
-
-    function filterTable(inputId, columnIndex) {
-        // Get the input field and its value
-        var input = document.getElementById(inputId);
-        var filter = input.value.toLowerCase();
-        
-        // Get the table and its rows
-        var table = document.querySelector(".tenant_table tbody");
-        var rows = table.getElementsByTagName("tr");
-
-        // Loop through the rows and hide those that don't match the filter
-        for (var i = 0; i < rows.length - 1; i++) { // Exclude the last row
-            var cell = rows[i].getElementsByTagName("td")[columnIndex];
-            if (cell) {
-                var cellText = cell.textContent || cell.innerText;
-
-                // Special handling for date column (columnIndex === 1)
-                if (columnIndex === 1) {
-                    var dateText = cellText.trim();
-                    if (dateText.indexOf(filter) > -1) {
-                        rows[i].style.display = "";
-                    } else {
-                        rows[i].style.display = "none";
-                    }
-                } else {
-                    if (cellText.toLowerCase().indexOf(filter) > -1) {
-                        rows[i].style.display = "";
-                    } else {
-                        rows[i].style.display = "none";
-                    }
-                }
-            }
-        }
-
-        calculateTotals(); // Recalculate totals after filtering
-    }
-  </script>
 
   <script>
     function confirmDelete() {
