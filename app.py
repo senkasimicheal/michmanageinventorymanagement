@@ -7876,7 +7876,7 @@ def accounts_history():
 
 ####edit finances
 @app.route('/edit-finance-accounts/<item_id>', methods=['GET', 'POST'])
-def (item_id):
+def edit_finance_accounts(item_id):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
