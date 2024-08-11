@@ -751,7 +751,7 @@ def before_request():
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
                                                                'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
-                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','accounting_dashboard'):
+                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page'):
         return redirect('/')
     
 @app.route('/privacy-policy')
@@ -7401,20 +7401,20 @@ def delete_expense(item_id):
         return redirect('/view-expenses')
 
 ####ACCOUNTING
-@app.route('/accounting-dashboard')
-def accounting_dashboard():
-    db, fs = get_db_and_fs()
-    login_data = session.get('login_username')
-    if login_data is None:
-        flash('Login first', 'error') 
-        return redirect('/')
-    else:
-        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-        if 'dp' in company:
-            dp_str = company['dp']
-        else:
-            dp_str = None
-        return render_template('accounting dashboard.html',dp=dp_str)
+# @app.route('/accounting-dashboard')
+# def accounting_dashboard():
+#     db, fs = get_db_and_fs()
+#     login_data = session.get('login_username')
+#     if login_data is None:
+#         flash('Login first', 'error') 
+#         return redirect('/')
+#     else:
+#         company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+#         if 'dp' in company:
+#             dp_str = company['dp']
+#         else:
+#             dp_str = None
+#         return render_template('accounting dashboard.html',dp=dp_str)
 
 @app.route('/new-accounts-page')
 def new_accounts_page():
