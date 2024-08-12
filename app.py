@@ -838,21 +838,21 @@ def register_account():
     # Check if passwords match
     if password != confirm_password:
         flash('Passwords do not match', 'error')
-        return redirect('/manager register')
+        return redirect('/manager_register')
 
     # Check if user is a manager
     company = db.managers.find_one({'name': company_name})
-    if email not in company.get('managers', []):
+    if company and email not in company.get('managers', []):  # Check if the user is a manager
         flash('Not a manager in the registered companies', 'error')
-        return redirect('/manager register')
+        return redirect('/manager_register')
 
     # Check if username or email already exists
     if db.registered_managers.find_one({'username': username}):
         flash('Username already taken', 'error')
-        return redirect('/manager register')
+        return redirect('/manager_register')
     if db.registered_managers.find_one({'email': email, 'company_name': company_name}):
         flash('User already registered', 'error')
-        return redirect('/manager register')
+        return redirect('/manager_register')
 
     # Generate verification code
     code = generate_code()
