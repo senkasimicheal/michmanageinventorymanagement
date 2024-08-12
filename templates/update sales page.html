@@ -375,9 +375,28 @@
             <input class="property_inputs" type="date" name="update_sale_date" id="update_sale_date"
               placeholder="enter start date"><br>
             <button type="button" id="update-sale-button">Add Item</button>
-            <input type="submit" id="submit-button" class="btn" value="Submit">
+            <input type="submit" class="btn" id="submit-button" value="Submit">
+            <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
           </form>
         </div>
+
+        <script>
+          document.getElementById("myForm").addEventListener("submit", function (event) {
+              // Disable the submit button
+              var submitButton = document.getElementById("submit-button");
+              submitButton.disabled = true;
+  
+              // Show the wait message
+              var waitMessage = document.getElementById("wait-message");
+              waitMessage.style.display = "inline";
+  
+              // Optionally, you can also change the text of the submit button
+              submitButton.value = "Submitting...";
+  
+              // Proceed with form submission
+              event.currentTarget.submit();
+          });
+        </script>
 
         <script>
           // Convert the items_to_update list from Jinja to a JavaScript array

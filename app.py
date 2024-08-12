@@ -569,6 +569,9 @@ def add_properties():
             else:
                 dp_str = None
             return render_template('add property page.html', dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/add tenants')
 def add_tenants():
@@ -607,6 +610,9 @@ def add_tenants():
                     if not property_data_dict[tenant_property_name]:
                         del property_data_dict[tenant_property_name]
             return render_template('add tenants page.html', dp=dp_str, property_data=property_data_dict)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/export tenant data')
 def export_tenant_data():
@@ -624,6 +630,9 @@ def export_tenant_data():
             else:
                 dp_str = None
             return render_template('export tenant data.html', dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/add new stock page')
 def add_new_stock_page():
@@ -641,6 +650,9 @@ def add_new_stock_page():
             else:
                 dp_str = None
             return render_template('add new stock.html', dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/update existing stock')
 def update_existing_stock():
@@ -671,6 +683,9 @@ def update_existing_stock():
             items_to_update = sorted(items_to_update, key=lambda x: x['itemName'])
 
             return render_template('update existing stock.html', dp=dp_str, items_to_update=items_to_update)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/update sales page')
 def update_sales_page():
@@ -702,6 +717,9 @@ def update_sales_page():
             available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
             return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/update production activity')
 def update_production_activity():
@@ -729,9 +747,11 @@ def update_production_activity():
                         'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
                     })
                 
-        available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
-
-        return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
+            available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+            return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/update inhouse use page')
 def update_inhouse_use_page():
@@ -759,9 +779,11 @@ def update_inhouse_use_page():
                         'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
                     })
 
-        available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
-
-        return render_template('update inhouse use.html', dp=dp_str, available_itemNames=available_itemNames)
+            available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+            return render_template('update inhouse use.html', dp=dp_str, available_itemNames=available_itemNames)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/logout-admin')
 def logout_admin():
@@ -1380,10 +1402,10 @@ def authentication():
                 # If only 'Property Management' is present
                 session['account_type'] = 'Property Management'
                 return redirect("/load-dashboard-page")
-            elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
-                # If both are present
-                session['account_type'] = 'all_accounts'
-                return redirect('/all-accounts-overview')
+            elif 'Accounting' in account_type and len(account_type) == 1:
+                # If only 'Accounting' is present
+                session['account_type'] = 'Accounting'
+                return redirect("/accounts-overview")
         else:
             other_manager = db.other_managers.find_one({'company_name': manager['company_name'], 'manager_email': manager['email']})
             if other_manager:
@@ -1396,6 +1418,10 @@ def authentication():
                     # If only 'Property Management' is present
                     session['account_type'] = 'Property Management'
                     return redirect("/load-dashboard-page")
+                elif account_type == 'Accounting':
+                    # If only 'Accounting' is present
+                    session['account_type'] = 'Accounting'
+                    return redirect("/accounts-overview")
             else:
                 account_type = subscription['account_type']
                 # Remove any empty strings from the list
@@ -1409,10 +1435,10 @@ def authentication():
                     # If only 'Property Management' is present
                     session['account_type'] = 'Property Management'
                     return redirect("/load-dashboard-page")
-                elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
-                    # If both are present
-                    session['account_type'] = 'all_accounts'
-                    return redirect('/all-accounts-overview')
+                elif 'Accounting' in account_type and len(account_type) == 1:
+                    # If only 'Accounting' is present
+                    session['account_type'] = 'Accounting'
+                    return redirect("/accounts-overview")
         
 ##ACCOUNT SETTING
 @app.route('/account-setup-page')
@@ -1748,6 +1774,9 @@ def tenant_data():
                             })
             
                 return render_template('tenant monitor account.html',tenant_data=tenant_data, dp=dp_str, auth=auth)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 #############LOADING COMPLAINTS PAGE##########
 @app.route('/complaint-form')
@@ -2027,6 +2056,9 @@ def resolve_complaints():
             # Remove duplicates
             complaints = list({v['_id']: v for v in complaints}.values())
             return render_template('resolve complaints.html',complaints=complaints,resolved_complaints=resolved_complaints, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
             
 ############RESOLVE COMPLAINTS BY MANAGER###########
 @app.route('/update-complaint', methods=['POST'])
@@ -2092,6 +2124,9 @@ def update_complaint():
                 thread.start()
 
             return redirect('/resolve-complaints')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 ##########RESOLVING COMPLAINTS AFTER SOLVING THEM#########
 @app.route('/resolved-complaints/<complaint_id>', methods=["GET", "POST"])
@@ -2160,6 +2195,9 @@ def resolved_complaints(complaint_id):
 
             flash('Complaint was resolved', 'success')
             return redirect('/resolve-complaints')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
        
 #############ADD PROPERTY####################
 @app.route('/add-property', methods=["POST"])
@@ -2225,6 +2263,9 @@ def add_property():
                 else:
                     flash('This Property is in the database', 'error')
                     return redirect('/load-dashboard-page')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ########LOAD TENANT INFO################
 @app.route('/update-tenant-info')
@@ -2320,6 +2361,9 @@ def update_tenant_info():
                 dp_str = base64.b64encode(dp).decode()
             
             return render_template('tenant information.html', tenant_data=tenant_data, dp=dp_str, current_year=current_year)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/get_receipt', methods=['GET'])
 def get_receipt():
@@ -3229,6 +3273,9 @@ def update():
                             flash(f"Updates for {old_data['tenantName']} were successful", 'success')
                     
             return redirect('/update-tenant-info')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ########LOAD PROPERTY DATA ################
 def get_property_data(properties):
@@ -3271,6 +3318,9 @@ def view_property_info():
                 
                 property_data = get_property_data(properties)
                 return render_template('property information.html', property_data=property_data, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 #####UPDATE PROPERTY INFO#############
 @app.route('/update-property/<propertyName>')
@@ -3289,6 +3339,9 @@ def selected_property(propertyName):
             else:
                 dp_str = None
             return render_template('update property information.html',propertyName=propertyName, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ##POSTING NEW PROPERTY INFORMATION
 @app.route('/update-property', methods=["POST"])
@@ -3326,6 +3379,9 @@ def update_property():
             db.property_managed.update_one({'propertyName': propertyName}, {'$set': update_fields})
             flash(f"{propertyName} was successfully updated", 'success')
             return redirect('/view-property-info')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ##VIEW MANAGER ACCOUNTS
 def get_managers_data(registered_managers):
@@ -3448,6 +3504,9 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
                 dp_str = None
             date_last_paid = datetime.strptime(date_last_paid, '%Y-%m-%d')
             return render_template('update tenant information.html',tenantName=tenantName,tenantEmail=tenantEmail,propertyName=propertyName,selected_section=selected_section,payment_type=payment_type,amount=amount,months_paid=months_paid,year=date_last_paid.year,dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 ##########EDIT TENANT INFO###################
 @app.route('/edit/<tenantName>/<email>/<property_name>/<selected_section>/<payment_type>')
@@ -3471,6 +3530,9 @@ def edit(tenantName, email, property_name, selected_section, payment_type):
                 return "Tenant not found", 404
             # Pass the tenant's info to the template
             return render_template('edit.html',tenantName=tenantName, tenant=tenant, payment_type=payment_type, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ############APPLY EDITS##############
 @app.route('/make-edits', methods=["POST"])
@@ -3638,6 +3700,9 @@ def make_edits():
                 })
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Edit tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
             return redirect('/update-tenant-info')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 ###########VIEW TENANT RECEIPT###############
 @app.route('/view-receipt/<tenant_email>/<property_name>/<selected_section>', methods=["GET"])
@@ -3977,6 +4042,9 @@ def add_tenant():
                 else:
                     flash('Section is already assigned', 'error')
                     return redirect('/load-dashboard-page')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ########DELETE TENANT################
 @app.route('/delete_tenant/<tenantEmail>/<propertyName>/<selected_section>')
@@ -3999,6 +4067,9 @@ def delete_tenant(tenantEmail, propertyName, selected_section):
             db.tenants.delete_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section})
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete tenant', 'tenantName': tenants['tenantName'], 'timestamp': datetime.now()})
             return redirect('/update-tenant-info')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/admin')
 def admin():
@@ -4441,6 +4512,9 @@ def load_dashboard_page():
                 else:
                     flash('No tenant data found', 'error')
                     return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 #############MANAGER DOWNLOAD DATA######################
 @app.route('/download', methods=["POST"])
@@ -4554,6 +4628,9 @@ def download():
             db.file_passwords.insert_one({'username': login_data, 'password': file_password, 'detail': 'Tenant data file'})
 
             return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 #####FILE PASSWORDS
 @app.route('/view-file-passwords')
@@ -4578,6 +4655,9 @@ def view_file_passwords():
                 for password in file_passwords:
                     found_passwords.append(password)
             return render_template('file passwords.html', found_passwords=found_passwords, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ####MANAGE CONTRACTS
 @app.route('/manage-contracts')
@@ -4633,6 +4713,9 @@ def manage_contracts():
                         contract['remaining'] = f"In {years} years, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
                     tenant_contracts.append(contract)
                 return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 @app.route('/upload-contract-page')
 def upload_contract_page():
@@ -4666,6 +4749,9 @@ def upload_contract_page():
                 for tenant in tenants:
                     tenant_names.append(tenant['tenantName'])
             return render_template('add contracts.html',tenant_names=tenant_names, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/upload-contract', methods=['POST'])
 def upload_contract():
@@ -4707,6 +4793,9 @@ def upload_contract():
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new contract', 'file_id': file_id, 'timestamp': datetime.now()})
                 flash("Contract was uploaded successfully", 'success')
                 return redirect('/upload-contract-page')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ########DELETE CONTRACTS################
 @app.route('/delete-contract/<contractID>')
@@ -4727,6 +4816,9 @@ def delete_contract(contractID):
             db.contracts.delete_one({'_id': ObjectId(contractID)})
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete contract', 'contractID':contractID, 'timestamp': datetime.now()})
             return redirect('/manage-contracts')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ##UPDATE CONTRACTS
 @app.route('/update-contract/<contractID>/<company_name>/<receiver>')
@@ -4745,6 +4837,9 @@ def selected_contract(contractID, company_name, receiver):
             else:
                 dp_str = None
             return render_template('update contract.html',contractID=contractID,company_name=company_name,receiver=receiver,dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/updated-contract', methods=['POST'])
 def updated_contract():
@@ -4784,6 +4879,9 @@ def updated_contract():
                 else:
                     flash("Contract was not found", 'error')
                     return redirect('/manage-contracts')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
             
 @app.route('/download-contract/<fileID>')
 def download_contract(fileID):
@@ -4975,6 +5073,9 @@ def assign_properties():
             managers = get_managers_data(registered_managers)
 
             return render_template('assign properties.html',managers=managers,dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/assign-properties-page/<name>/<email>/<company_name>')
 def assign_properties_page(name,email,company_name):
@@ -4995,6 +5096,9 @@ def assign_properties_page(name,email,company_name):
             property_names = [property['propertyName'] for property in properties]
             
             return render_template('assign properties page.html', property_names=property_names,name=name,email=email,company_name=company_name,dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/assign-properties-initiated', methods=["POST"])
 def assign_properties_initiated():
@@ -5019,6 +5123,9 @@ def assign_properties_initiated():
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Assign property', 'email':email, 'timestamp': datetime.now()})
             flash(f"{propertyName} was assigned to {name}", 'success')
             return redirect('/assign-properties')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ####UNASSIGN PROPERTIES FROM MANAGERS
 @app.route('/unassign-properties')
@@ -5047,6 +5154,9 @@ def unassign_properties():
             managers = get_managers_data(registered_managers)
 
             return render_template('unassign properties.html',managers=managers,dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/unassign-properties-page/<name>/<email>/<company_name>')
 def unassign_properties_page(name,email,company_name):
@@ -5067,6 +5177,9 @@ def unassign_properties_page(name,email,company_name):
             property_assigned_dict = {property for doc in property_assigned if 'properties' in doc for property in doc['properties']}
             
             return render_template('unassign properties page.html', property_names=property_assigned_dict,name=name,email=email,company_name=company_name,dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/unassign-properties-initiated', methods=["POST"])
 def unassign_properties_initiated():
@@ -5090,6 +5203,9 @@ def unassign_properties_initiated():
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Unassign property', 'email':email, 'timestamp': datetime.now()})
             flash(f"{propertyName} was unassigned from {name}", 'success')
             return redirect('/unassign-properties')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 # Function to rename the fourth field to 'details'
 def rename_fourth_field(doc):
@@ -5406,6 +5522,9 @@ def add_new_stock():
                 flash(message_skipped, 'error')
 
             return jsonify({'redirect': url_for('add_new_stock_page')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/update-new-stock', methods=['POST'])
 def update_new_stock():
@@ -5480,6 +5599,9 @@ def update_new_stock():
 
             flash('Stock updated successfully', 'success')
             return jsonify({'redirect': url_for('update_existing_stock')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/update-sale', methods=['POST'])
 def update_sale():
@@ -5558,6 +5680,9 @@ def update_sale():
                 flash(f'Enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
 
             return jsonify({'redirect': url_for('update_sales_page')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/in-house-use', methods=['POST'])
 def inhouse():
@@ -5668,6 +5793,9 @@ def inhouse():
                     })
 
             return jsonify({'redirect': url_for('update_production_activity')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/in-house-used-items', methods=['POST'])
 def inhouse_used_items():
@@ -5773,6 +5901,9 @@ def inhouse_used_items():
                 })
 
             return jsonify({'redirect': url_for('update_inhouse_use_page')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/revenue-details')
 def revenue_details():
@@ -5855,6 +5986,9 @@ def revenue_details():
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/sales-details')
 def sales_details():
@@ -5884,6 +6018,9 @@ def sales_details():
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('sales info.html', sales_info = sales_info, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/stock-details')
 def stock_details():
@@ -5912,6 +6049,9 @@ def stock_details():
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 @app.route('/stock-history-details')
 def stock_history_details():
@@ -5941,6 +6081,9 @@ def stock_history_details():
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('stock history.html', stock_info = stock_info, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/inhouse-item-use-details')
 def inhouse_items_use_details():
@@ -5975,6 +6118,9 @@ def inhouse_items_use_details():
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('inhouse item use info.html', inhouse_item_use = inhouse_item_use, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/stock-overview', methods=["GET", "POST"])
 def stock_overview():
@@ -6262,6 +6408,9 @@ def stock_overview():
                                 quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit,
                                 start_of_previous_month=start_of_previous_month,
                                 first_day_of_current_month=first_day_of_current_month, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ###DOANLOAD STOCK DATA   
 @app.route('/download-stock-data', methods=["POST"])
@@ -6331,6 +6480,9 @@ def download_stock_data():
             gc.collect()
 
             return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 ###DOANLOAD REVENUE DATA   
 @app.route('/download-revenue-data', methods=["POST"])
@@ -6458,6 +6610,9 @@ def download_revenue_data():
             response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
             return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 ###DOANLOAD SALES DATA   
 @app.route('/download-sales-data', methods=["POST"])
@@ -6526,6 +6681,9 @@ def download_sales_data():
             gc.collect()
 
             return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 # Function to calculate total production cost
 def calculate_total_cost(row):
@@ -6610,6 +6768,9 @@ def view_production_info():
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('production info.html', inhouse_df=inhouse_df_sorted, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
        
 ###DOANLOAD SALES DATA   
 @app.route('/download-inhouse-data', methods=["POST"])
@@ -6707,6 +6868,9 @@ def download_inhouse():
             response.headers['Content-Type'] = 'application/zip'
 
             return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/download-inhouse-item-data', methods=["POST"])
 def download_inhouse_item_use():
@@ -6796,6 +6960,9 @@ def download_inhouse_item_use():
             response.headers['Content-Type'] = 'application/zip'
 
             return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 #Manager notifications
 @app.route('/manager notifications')
@@ -6949,15 +7116,15 @@ def notifications():
                 session['account_type'] = 'Enterprise Resource Planning'
             elif 'Property Management' in account_type and len(account_type) == 1:
                 session['account_type'] = 'Property Management'
-            elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
-                session['account_type'] = 'all_accounts'
+            elif 'Accounting' in account_type and len(account_type) == 1:
+                session['account_type'] = 'Accounting'
         else:
             if account_type == 'Property Management':
                 session['account_type'] = 'Property Management'
             elif account_type == 'Enterprise Resource Planning':
                 session['account_type'] = 'Enterprise Resource Planning'
-            elif account_type == 'all_accounts':
-                session['account_type'] = 'all_accounts'
+            elif 'Accounting' in account_type and len(account_type) == 1:
+                session['account_type'] = 'Accounting'
             session['is_manager'] = 'is_manager'
 
     # Get the last seen timestamp from the session
@@ -7067,6 +7234,9 @@ def edit_item(item_id):
             else:
                 flash('You do not have rights to edit', 'error')
                 return redirect('/stock-details')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/apply-item-edits', methods=['POST'])
 def apply_item_edits():
@@ -7131,6 +7301,9 @@ def apply_item_edits():
             else:
                 flash('Please select an up-to-date item', 'error')
                 return redirect('/stock-details')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 ####delete items
 @app.route('/delete-item/<item_id>', methods=['POST'])
@@ -7155,6 +7328,9 @@ def delete_item(item_id):
             else:
                 flash('You do not have rights to delete', 'error')
             return redirect('/stock-details')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 ####delete sale
 @app.route('/delete-sale/<item_id>', methods=['POST'])
@@ -7196,6 +7372,9 @@ def delete_sale(item_id):
             else:
                 flash('You do not have rights to delete', 'error')
             return redirect('/sales-details')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ######add expenses
 @app.route('/expenses-page')
@@ -7220,6 +7399,9 @@ def expenses_page():
             else:
                 flash('You do not have rights to add expenses', 'error')
                 return redirect('/stock-details')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/add-new-expense', methods=['POST'])
 def add_new_expense():
@@ -7263,6 +7445,9 @@ def add_new_expense():
                     flash(f"Error processing expense {expense.get('expenseName', 'unknown')}: {e}", 'error')
 
             return jsonify({'redirect': url_for('expenses_page')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ###viewing stock history
 @app.route('/view-expenses')
@@ -7295,6 +7480,9 @@ def view_expenses():
             else:
                 flash('You do not have rights to view expenses', 'error')
                 return redirect('/stock-details')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ###DOANLOAD EXPENSE DATA   
 @app.route('/download-expense-data', methods=["POST"])
@@ -7356,6 +7544,9 @@ def download_expense_data():
             gc.collect()
 
             return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 ####edit expense
 @app.route('/edit-expense/<item_id>', methods=['GET', 'POST'])
@@ -7379,6 +7570,9 @@ def edit_expense(item_id):
             else:
                 flash('You do not have rights to edit', 'error')
                 return redirect('/stock-details')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/apply-expense-edits', methods=['POST'])
 def apply_expense_edits():
@@ -7417,6 +7611,9 @@ def apply_expense_edits():
                 db.audit_logs.insert_one({'user': login_data,'Activity': 'Edit expense','Item': item_id,'timestamp': datetime.now()})
                 flash('Expense updates were applied', 'success')
             return redirect('/view-expenses')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ####delete expense
 @app.route('/delete-expense/<item_id>', methods=['POST'])
@@ -7441,6 +7638,9 @@ def delete_expense(item_id):
             else:
                 flash('You do not have rights to delete', 'error')
             return redirect('/view-expenses')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/new-accounts-page')
 def new_accounts_page():
@@ -7503,6 +7703,9 @@ def new_accounts_page():
                 some_projects = sorted(items_to_update, key=lambda x: x['project_name'])
 
             return render_template('add new account.html',some_projects=some_projects,dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/add-new-account', methods=['POST'])
 def add_new_account():
@@ -7762,6 +7965,9 @@ def add_new_account():
             if added == 1:
                 flash('Accounts were added','success')
             return jsonify({'redirect': url_for('new_accounts_page')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/update existing account')
 def update_existing_account():
@@ -7793,6 +7999,9 @@ def update_existing_account():
                 items_to_update = sorted(items_to_update, key=lambda x: x['client_name'])
 
             return render_template('update accounts.html', dp=dp_str, items_to_update=items_to_update)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/update-accounts', methods=['POST'])
 def update_accounts():
@@ -7963,6 +8172,9 @@ def update_accounts():
             if updated == 1:
                 flash('Client updated successfully', 'success')
             return jsonify({'redirect': url_for('update_existing_account')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/current-accounts')
 def current_accounts():
@@ -7977,18 +8189,19 @@ def current_accounts():
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                 'password': 0, 'auth': 0, 'dark_mode': 0})
             
-            account_type = session.get('account_type')
-            if account_type == 'Accounting':
-                company_name = company['company_name']
-                current_accounts = list(db.transaction_finance_accounts.find({'company_name': company_name}))
-                current_accounts.sort(key=lambda x: x.get('timestamp', x['date_of_payment']), reverse=True)
-                current_accounts.sort(key=lambda x: x['client_name'])
+            company_name = company['company_name']
+            current_accounts = list(db.transaction_finance_accounts.find({'company_name': company_name}))
+            current_accounts.sort(key=lambda x: x.get('timestamp', x['date_of_payment']), reverse=True)
+            current_accounts.sort(key=lambda x: x['client_name'])
 
-                if 'dp' in company:
-                    dp_str = company['dp']
-                else:
-                    dp_str = None
-                return render_template('current accounts.html', current_accounts = current_accounts, dp=dp_str)
+            if 'dp' in company:
+                dp_str = company['dp']
+            else:
+                dp_str = None
+            return render_template('current accounts.html', current_accounts = current_accounts, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 @app.route('/accounts-history')
 def accounts_history():
@@ -8020,6 +8233,9 @@ def accounts_history():
                 else:
                     dp_str = None
                 return render_template('old accounts.html', old_accounts = old_accounts, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ####edit finances
 @app.route('/edit-finance-accounts/<item_id>', methods=['GET', 'POST'])
@@ -8042,6 +8258,9 @@ def edit_finance_accounts(item_id):
             else:
                 flash('You do not have rights to make edits', 'error')
                 return redirect('/current-accounts')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
  
 @app.route('/apply-finance-edits', methods=['POST'])
 def apply_finance_edits():
@@ -8207,6 +8426,9 @@ def apply_finance_edits():
             else:
                 flash('Please select an up-to-date expense', 'error')
             return redirect('/current-accounts')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 ####delete expense
 @app.route('/delete-finance-account/<item_id>', methods=['POST'])
@@ -8233,6 +8455,9 @@ def delete_finance_account(item_id):
             else:
                 flash('You do not have rights to delete', 'error')
                 return redirect('/current-accounts')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 ###DOANLOAD FINANCE DATA   
 @app.route('/download-financial-data', methods=["POST"])
@@ -8315,6 +8540,9 @@ def download_financial_data():
             else:
                 flash('No data was found', 'error')
                 return redirect('/current-accounts')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
         
 @app.route('/accounts-overview', methods=["GET", "POST"])
 def accounts_overview():
@@ -8559,6 +8787,9 @@ def accounts_overview():
                                 count_clients_by_project_chart=count_clients_by_project_chart,trended_chart=trended_chart,
                                 start_of_previous_month=start_of_previous_month,
                                 first_day_of_current_month=first_day_of_current_month, dp=dp_str)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/view-finance-receipt/<id>', methods=["GET"])
 def view_finance_receipt(id):
