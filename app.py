@@ -3377,6 +3377,7 @@ def delete_manager(company_name,email):
         for manager in managers:
             if email == manager:
                 db.managers.update_one({'name': company_name}, {'$pull': {'managers': email}})
+                db.other_managers.delete_one({'company_name': company_name, 'manager_email': email})
                 db.registered_managers.delete_one({'company_name': company_name, 'email': email})
                 db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete manager', 'email':email, 'timestamp': datetime.now()})
         return redirect('/view-user-accounts')
