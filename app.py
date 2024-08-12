@@ -1262,7 +1262,7 @@ def userlogin():
                         # If only 'Property Management' is present
                         session['account_type'] = 'Property Management'
                         return redirect("/load-dashboard-page")
-                    elif 'Accounting' in account_type and len(account_type) == 1:
+                    elif account_type == 'Accounting':
                         # If only 'Accounting' is present
                         session['account_type'] = 'Accounting'
                         return redirect("/accounts-overview")
