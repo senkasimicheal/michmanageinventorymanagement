@@ -7517,7 +7517,32 @@ def add_new_account():
         if account_type == 'Accounting':
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                     'password': 0, 'auth': 0, 'dark_mode': 0})
-                
+            last_receipt_cursor = db.transaction_finance_accounts.find(
+                {'company_name': company['company_name']},
+                {'receipt_number': 1, '_id': 0}
+            ).sort('receipt_number', -1).limit(1)
+
+            old_receipt_cursor = db.old_transaction_finance_accounts.find(
+                {'company_name': company['company_name']},
+                {'receipt_number': 1, '_id': 0}
+            ).sort('receipt_number', -1).limit(1)
+
+            last_receipt_number = next(last_receipt_cursor, None)
+            old_receipt_number = next(old_receipt_cursor, None)
+
+            if last_receipt_number:
+                if old_receipt_number:
+                    if last_receipt_number['receipt_number']>old_receipt_number['receipt_number']:
+                        receipt_number = last_receipt_number['receipt_number'] + 1
+                    else:
+                        receipt_number = old_receipt_number['receipt_number'] + 1
+                else:
+                    receipt_number = last_receipt_number['receipt_number'] + 1
+            elif old_receipt_number:
+                receipt_number = old_receipt_number['receipt_number'] + 1
+            else:
+                receipt_number = 1
+
             all_items = request.json.get('items', [])  # Access the JSON data sent from the client
             timestamp = datetime.now()
             added = 0
@@ -7534,6 +7559,7 @@ def add_new_account():
                     item['amount_demanded'] = item['value_amount'] - item['amount_paid']
                     item['company_name'] = company.get('company_name', '')
                     item['timestamp'] = timestamp
+                    item['receipt_number'] = receipt_number
 
                     if item['amount_demanded'] == 0:                
                         result = db.old_transaction_finance_accounts.insert_one(item)
@@ -7560,6 +7586,7 @@ def add_new_account():
                         # Create the receipt details
                         data = [
                             ['Payment Receipt - ' + company['company_name'], ''],
+                            ['Receipt No:', receipt_number],
                             ['Receipt for:', item['client_name']],
                             ['Tel:', item['telephone']],
                             ['Email:', item['email']],
@@ -7570,6 +7597,7 @@ def add_new_account():
                             ['Payment Mode:', item['payment_mode']],
                             ['Date Paid:', (item['date_of_payment']).strftime('%Y-%m-%d')],
                             ['Balance:', f"UGX {item['amount_demanded']}"],
+                            ['Payment Status:', f"Cleared"],
                             ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
                         ]
 
@@ -7639,6 +7667,7 @@ def add_new_account():
                         # Create the receipt details
                         data = [
                             ['Payment Receipt - ' + company['company_name'], ''],
+                            ['Receipt No:', receipt_number],
                             ['Receipt for:', item['client_name']],
                             ['Tel:', item['telephone']],
                             ['Email:', item['email']],
@@ -7649,6 +7678,7 @@ def add_new_account():
                             ['Payment Mode:', item['payment_mode']],
                             ['Date Paid:', (item['date_of_payment']).strftime('%Y-%m-%d')],
                             ['Balance:', f"UGX {item['amount_demanded']}"],
+                            ['Payment Status:', f"Pending"],
                             ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
                         ]
 
@@ -7727,6 +7757,7 @@ def add_new_account():
                 except (ValueError, TypeError) as e:
                     # Log or handle the exception as needed
                     flash(f"Error processing account {item.get('itemName', 'unknown')}: {e}", 'error')
+                receipt_number += 1
             if added == 1:
                 flash('Accounts were added','success')
             return jsonify({'redirect': url_for('new_accounts_page')})
@@ -7777,6 +7808,35 @@ def update_accounts():
             all_items = request.json.get('items', [])  # Access the JSON data sent from the client
             timestamp = datetime.now()
 
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+            
+            last_receipt_cursor = db.transaction_finance_accounts.find(
+                {'company_name': company['company_name']},
+                {'receipt_number': 1, '_id': 0}
+            ).sort('receipt_number', -1).limit(1)
+
+            old_receipt_cursor = db.old_transaction_finance_accounts.find(
+                {'company_name': company['company_name']},
+                {'receipt_number': 1, '_id': 0}
+            ).sort('receipt_number', -1).limit(1)
+
+            last_receipt_number = next(last_receipt_cursor, None)
+            old_receipt_number = next(old_receipt_cursor, None)
+
+            if last_receipt_number:
+                if old_receipt_number:
+                    if last_receipt_number['receipt_number']>old_receipt_number['receipt_number']:
+                        receipt_number = last_receipt_number['receipt_number'] + 1
+                    else:
+                        receipt_number = old_receipt_number['receipt_number'] + 1
+                else:
+                    receipt_number = last_receipt_number['receipt_number'] + 1
+            elif old_receipt_number:
+                receipt_number = old_receipt_number['receipt_number'] + 1
+            else:
+                receipt_number = 1
+                
             updated = 0
             for item in all_items:
                 updated = 1
@@ -7786,6 +7846,10 @@ def update_accounts():
                 item['date_of_payment'] = datetime.strptime(item.get('date_of_payment', ''), '%Y-%m-%d')
                 amount = account['amount'] + item['amount_paid']
                 amount_demanded = account['value_amount'] - amount
+                if amount_demanded == 0:
+                    payment_status = "Cleared"
+                else:
+                    payment_status = "Pending"
                 db.old_transaction_finance_accounts.insert_one(account)
 
                 ##generate payment receipt
@@ -7809,6 +7873,7 @@ def update_accounts():
                 # Create the receipt details
                 data = [
                     ['Payment Receipt - ' + account['company_name'], ''],
+                    ['Receipt No:', receipt_number],
                     ['Receipt for:', account['client_name']],
                     ['Tel:', account['telephone']],
                     ['Email:', account['email']],
@@ -7819,6 +7884,7 @@ def update_accounts():
                     ['Payment Mode:', item['payment_mode']],
                     ['Date Paid:', (item['date_of_payment']).strftime('%Y-%m-%d')],
                     ['Balance:', f"UGX {amount_demanded}"],
+                    ['Payment Status:', f"{payment_status}"],
                     ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
                 ]
 
@@ -7891,6 +7957,7 @@ def update_accounts():
                     db.old_transaction_finance_accounts.insert_one(updated_document)
                     db.transaction_finance_accounts.delete_one({'_id': ObjectId(item['client_id'])})
                 db.audit_logs.insert_one({'user': login_data,'Activity': 'Updated account','Item': item['client_id'],'timestamp': timestamp})
+                receipt_number += 1
 
             if updated == 1:
                 flash('Client updated successfully', 'success')
