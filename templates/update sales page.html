@@ -382,19 +382,16 @@
 
         <script>
           document.getElementById("myForm").addEventListener("submit", function (event) {
-              // Disable the submit button
-              var submitButton = document.getElementById("submit-button");
-              submitButton.disabled = true;
-  
-              // Show the wait message
-              var waitMessage = document.getElementById("wait-message");
-              waitMessage.style.display = "inline";
-  
-              // Optionally, you can also change the text of the submit button
-              submitButton.value = "Submitting...";
-  
-              // Proceed with form submission
-              event.currentTarget.submit();
+            // Disable the submit button
+            var submitButton = document.getElementById("submit-button");
+            submitButton.disabled = true;
+
+            // Show the wait message
+            var waitMessage = document.getElementById("wait-message");
+            waitMessage.style.display = "inline";
+
+            // Optionally, you can also change the text of the submit button
+            submitButton.value = "Submitting...";
           });
         </script>
 

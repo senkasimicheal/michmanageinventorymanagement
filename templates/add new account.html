@@ -234,42 +234,43 @@
             <!-- partial:partials/_sidebar.html -->
             <nav class="sidebar sidebar-offcanvas" id="sidebar">
                 <ul class="nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
-                        <i class="typcn typcn-credit-card menu-icon"></i>
-                        <span class="menu-title">Dashboard</span>
-                    </a>
-                </li>
-                {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('new_accounts_page') }}" id="new-stock">
-                        <i class="typcn typcn-document-add menu-icon"></i>
-                        <span class="menu-title">New Accounts</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('update_existing_account') }}" id="update-new-stock">
-                        <i class="typcn typcn-briefcase menu-icon"></i>
-                        <span class="menu-title">Update Accounts</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('current_accounts') }}" id="update-new-stock">
-                        <i class="typcn typcn-briefcase menu-icon"></i>
-                        <span class="menu-title">Current Accounts</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('accounts_history') }}" id="update-new-stock">
-                        <i class="typcn typcn-briefcase menu-icon"></i>
-                        <span class="menu-title">Accounts History</span>
-                    </a>
-                </li>
-                {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
+                            <i class="typcn typcn-credit-card menu-icon"></i>
+                            <span class="menu-title">Dashboard</span>
+                        </a>
+                    </li>
+                    {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager')
+                    %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('new_accounts_page') }}" id="new-stock">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">New Accounts</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('update_existing_account') }}" id="update-new-stock">
+                            <i class="typcn typcn-briefcase menu-icon"></i>
+                            <span class="menu-title">Update Accounts</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('current_accounts') }}" id="update-new-stock">
+                            <i class="typcn typcn-briefcase menu-icon"></i>
+                            <span class="menu-title">Current Accounts</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('accounts_history') }}" id="update-new-stock">
+                            <i class="typcn typcn-briefcase menu-icon"></i>
+                            <span class="menu-title">Accounts History</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </nav>
             <!-- partial -->
@@ -298,11 +299,12 @@
                         <label class="input_labels" for="">Email (Optional)</label>
                         <input class="property_inputs" type="email" name="email">
                         <label class="input_labels" for="">Project Name</label>
-                        <input class="property_inputs" type="text" name="project_name" id="project_name" list="projectList" autocomplete="off">
+                        <input class="property_inputs" type="text" name="project_name" id="project_name"
+                            list="projectList" autocomplete="off">
                         <datalist id="projectList">
                             {% for project in some_projects %}
-                                <option value="{{ project['project_name'] }}">
-                            {% endfor %}
+                            <option value="{{ project['project_name'] }}">
+                                {% endfor %}
                         </datalist>
                         <label class="input_labels" for="">Account Type</label>
                         <select name="account_type" id="">
@@ -350,7 +352,8 @@
                             placeholder="enter payment date"><br>
                         <button type="button" id="add-account-button">Add Account</button>
                         <input type="submit" class="btn" id="submit-button" value="Submit">
-                        <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
+                        <span id="wait-message" style="color: green; display: none;">Please wait, your data is being
+                            saved...</span>
                     </form>
                 </div>
                 <!-- content-wrapper ends -->
@@ -412,12 +415,9 @@
 
             // Optionally, you can also change the text of the submit button
             submitButton.value = "Submitting...";
-
-            // Proceed with form submission
-            event.currentTarget.submit();
         });
     </script>
-    
+
     <script>
         const amountPaidInput = document.getElementById('amount_paid');
         const valueAmountInput = document.getElementById('value_amount');
@@ -573,4 +573,5 @@
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
     <!-- End custom js for this page-->
 </body>
+
 </html>

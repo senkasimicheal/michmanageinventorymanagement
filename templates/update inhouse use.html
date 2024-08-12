@@ -22,44 +22,45 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
   <script>
-      function fetchNotifications() {
-        fetch('/notifications')
-          .then(response => response.json())
-          .then(data => {
-            let notificationsDiv = document.getElementById('notification');
-            notificationsDiv.innerHTML = ''; // Clear previous notifications
+    function fetchNotifications() {
+      fetch('/notifications')
+        .then(response => response.json())
+        .then(data => {
+          let notificationsDiv = document.getElementById('notification');
+          notificationsDiv.innerHTML = ''; // Clear previous notifications
 
-              // Check if data is not empty or does not contain empty strings
-              const validNotifications = data.filter(notification => notification.trim() !== '');
+          // Check if data is not empty or does not contain empty strings
+          const validNotifications = data.filter(notification => notification.trim() !== '');
 
-              if (validNotifications.length > 0) {
-                notificationsDiv.style.display = 'block'; // Show the div if there are valid notifications
-                validNotifications.forEach(notification => {
-                  let notificationElement = document.createElement('div');
-                  notificationElement.textContent = notification;
-                  notificationsDiv.appendChild(notificationElement);
-                    });
+          if (validNotifications.length > 0) {
+            notificationsDiv.style.display = 'block'; // Show the div if there are valid notifications
+            validNotifications.forEach(notification => {
+              let notificationElement = document.createElement('div');
+              notificationElement.textContent = notification;
+              notificationsDiv.appendChild(notificationElement);
+            });
 
-                  // Hide notifications after 5 seconds
-                  setTimeout(() => {
-                    notificationsDiv.innerHTML = '';
-                    notificationsDiv.style.display = 'none'; // Hide the div after 5 seconds
-                  }, 5000);
+            // Hide notifications after 5 seconds
+            setTimeout(() => {
+              notificationsDiv.innerHTML = '';
+              notificationsDiv.style.display = 'none'; // Hide the div after 5 seconds
+            }, 5000);
 
-                  // Play notification sound
-                  const audio = new Audio('/static/audios/notification sound.mp3');
-                  audio.play();
-                } else {
-                  notificationsDiv.style.display = 'none'; // Hide the div if there are no valid notifications
-                }
-            })
-          .catch(error => console.error('Error fetching notifications:', error));
+            // Play notification sound
+            const audio = new Audio('/static/audios/notification sound.mp3');
+            audio.play();
+          } else {
+            notificationsDiv.style.display = 'none'; // Hide the div if there are no valid notifications
+          }
+        })
+        .catch(error => console.error('Error fetching notifications:', error));
     }
 
     setInterval(fetchNotifications, 15000); // Fetch notifications every 15 seconds
     window.onload = fetchNotifications; // Fetch notifications on page load
   </script>
 </head>
+
 <body>
   <!-- preloader -->
   <div class="preloader">
@@ -84,7 +85,7 @@
     <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
       <div class="navbar-brand-wrapper d-flex justify-content-center">
         <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
-          <a class="navbar-brand brand-logo" href="#"><img src="/static/images/logo.png" alt="logo"/></a>
+          <a class="navbar-brand brand-logo" href="#"><img src="/static/images/logo.png" alt="logo" /></a>
           <a class="navbar-brand brand-logo-mini" href="#"><img class="display-picture-logged-in"
               src="data:image/jpeg;base64,{{ dp }}" alt="DP"></a>
           <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
@@ -111,16 +112,18 @@
             </div>
           </li>
           <li class="nav-item nav-user-status dropdown">
-            
+
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
           <li class="nav-item dropdown">
-            <a class="nav-link count-indicator dropdown-toggle d-flex justify-content-center align-items-center" id="messageDropdown" href="#" data-toggle="dropdown">
+            <a class="nav-link count-indicator dropdown-toggle d-flex justify-content-center align-items-center"
+              id="messageDropdown" href="#" data-toggle="dropdown">
               <i class="typcn typcn-cog-outline mx-0"></i>
               <span class="count"></span>
             </a>
-            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="messageDropdown">
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
+              aria-labelledby="messageDropdown">
               <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
               <a class="dropdown-item preview-item" href="{{url_for('account_setup_page')}}">
                 <div class="preview-item-content flex-grow">
@@ -188,7 +191,8 @@
             </div>
           </li>
         </ul>
-        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button"
+          data-toggle="offcanvas">
           <span class="typcn typcn-th-menu"></span>
         </button>
       </div>
@@ -223,12 +227,12 @@
       </div>
     </nav>
     <div class="container-fluid page-body-wrapper">
-      
+
       <!-- partial -->
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
-          
+
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stock_overview') }}">
@@ -338,21 +342,23 @@
       <!-- partial -->
       <div class="main-panel">
         <div id="notification" class="notification"></div>
-        
+
         <div>
           {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                  {% for category, message in messages %}
-                      <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}" style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
-                          {{ message }}
-                      </div>
-                  {% endfor %}
-              {% endif %}
+          {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}"
+            style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+            {{ message }}
+          </div>
+          {% endfor %}
+          {% endif %}
           {% endwith %}
         </div>
 
         <div class="inhouse-use-form content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('inhouse_used_items')}}" method="POST">
+          <form id="myForm" class="property_forn content-pannel" action="{{url_for('inhouse_used_items')}}"
+            method="POST">
             <label class="input_labels" for="">Item Used</label>
             <div class="custom-select-container">
               <input type="text" id="filterInput" name="typed_input" placeholder="Type to search...">
@@ -365,7 +371,8 @@
             <input class="property_inputs" type="number" name="inhouse_use_quantity" id="update_sale_quantity" min="1">
             <div id="quantity_warning" style="display: none; color: red;">Quantity sold exceeds available stock.</div>
             <label class="input_labels" for="">Date</label>
-            <input class="property_inputs" type="date" name="inhouse_use_date" id="inhouse_use_date" placeholder="enter start date"><br>
+            <input class="property_inputs" type="date" name="inhouse_use_date" id="inhouse_use_date"
+              placeholder="enter start date"><br>
             <button type="button" id="inhouse-use-button">Add Item</button>
             <input type="submit" class="btn" id="submit-button" value="Submit">
             <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
@@ -374,19 +381,16 @@
 
         <script>
           document.getElementById("myForm").addEventListener("submit", function (event) {
-              // Disable the submit button
-              var submitButton = document.getElementById("submit-button");
-              submitButton.disabled = true;
-  
-              // Show the wait message
-              var waitMessage = document.getElementById("wait-message");
-              waitMessage.style.display = "inline";
-  
-              // Optionally, you can also change the text of the submit button
-              submitButton.value = "Submitting...";
-  
-              // Proceed with form submission
-              event.currentTarget.submit();
+            // Disable the submit button
+            var submitButton = document.getElementById("submit-button");
+            submitButton.disabled = true;
+
+            // Show the wait message
+            var waitMessage = document.getElementById("wait-message");
+            waitMessage.style.display = "inline";
+
+            // Optionally, you can also change the text of the submit button
+            submitButton.value = "Submitting...";
           });
         </script>
 
@@ -408,78 +412,78 @@
 
             // Ensure itemsToUpdate is available
             if (typeof itemsToUpdate === 'undefined') {
-                console.error('itemsToUpdate is not defined.');
-                return;
+              console.error('itemsToUpdate is not defined.');
+              return;
             }
 
             // Populate options initially
             function populateOptions() {
-                optionsContainer.innerHTML = ''; // Clear previous options
-                itemsToUpdate.forEach(item => {
-                    const optionDiv = document.createElement('div');
-                    optionDiv.textContent = item.itemName;
-                    optionDiv.dataset.availableQuantity = item.available_quantity;
-                    optionDiv.dataset.unitOfMeasurement = item.unitOfMeasurement;
-                    optionDiv.addEventListener('click', function () {
-                        filterInput.value = item.itemName;
-                        stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement;
-                        stockDetailsElement.style.color = 'green';
-                        selectedItem = item; // Store selected item
-                        optionsContainer.style.display = 'none';
-                        updateSaleQuantity.value = ''; // Reset the quantity input
-                        quantityWarning.style.display = 'none'; // Hide warning initially
-                        updateSaleButton.disabled = false; // Enable button
-                        submitButton.disabled = false; // Enable button
-                    });
-                    optionsContainer.appendChild(optionDiv);
+              optionsContainer.innerHTML = ''; // Clear previous options
+              itemsToUpdate.forEach(item => {
+                const optionDiv = document.createElement('div');
+                optionDiv.textContent = item.itemName;
+                optionDiv.dataset.availableQuantity = item.available_quantity;
+                optionDiv.dataset.unitOfMeasurement = item.unitOfMeasurement;
+                optionDiv.addEventListener('click', function () {
+                  filterInput.value = item.itemName;
+                  stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement;
+                  stockDetailsElement.style.color = 'green';
+                  selectedItem = item; // Store selected item
+                  optionsContainer.style.display = 'none';
+                  updateSaleQuantity.value = ''; // Reset the quantity input
+                  quantityWarning.style.display = 'none'; // Hide warning initially
+                  updateSaleButton.disabled = false; // Enable button
+                  submitButton.disabled = false; // Enable button
                 });
+                optionsContainer.appendChild(optionDiv);
+              });
             }
 
             filterInput.addEventListener('focus', function () {
-                optionsContainer.style.display = 'block';
+              optionsContainer.style.display = 'block';
             });
 
             filterInput.addEventListener('input', function () {
-                const filter = filterInput.value.toLowerCase().trim();
-                const options = optionsContainer.children;
+              const filter = filterInput.value.toLowerCase().trim();
+              const options = optionsContainer.children;
 
-                for (let i = 0; i < options.length; i++) {
-                    const optionText = options[i].textContent.toLowerCase();
-                    if (optionText.includes(filter)) {
-                        options[i].style.display = '';
-                    } else {
-                        options[i].style.display = 'none';
-                    }
+              for (let i = 0; i < options.length; i++) {
+                const optionText = options[i].textContent.toLowerCase();
+                if (optionText.includes(filter)) {
+                  options[i].style.display = '';
+                } else {
+                  options[i].style.display = 'none';
                 }
+              }
             });
 
             document.addEventListener('click', function (event) {
-                if (!optionsContainer.contains(event.target) && !filterInput.contains(event.target)) {
-                    optionsContainer.style.display = 'none';
-                }
+              if (!optionsContainer.contains(event.target) && !filterInput.contains(event.target)) {
+                optionsContainer.style.display = 'none';
+              }
             });
 
             updateSaleQuantity.addEventListener('input', function () {
-                if (selectedItem) {
-                    const availableQuantity = parseInt(selectedItem.available_quantity, 10);
-                    const quantitySold = parseInt(this.value, 10);
+              if (selectedItem) {
+                const availableQuantity = parseInt(selectedItem.available_quantity, 10);
+                const quantitySold = parseInt(this.value, 10);
 
-                    if (quantitySold > availableQuantity) {
-                        quantityWarning.style.display = 'block';
-                        updateSaleButton.disabled = true;
-                        submitButton.disabled = true;
-                    } else {
-                        quantityWarning.style.display = 'none';
-                        updateSaleButton.disabled = false;
-                        submitButton.disabled = false;
-                    }
+                if (quantitySold > availableQuantity) {
+                  quantityWarning.style.display = 'block';
+                  updateSaleButton.disabled = true;
+                  submitButton.disabled = true;
+                } else {
+                  quantityWarning.style.display = 'none';
+                  updateSaleButton.disabled = false;
+                  submitButton.disabled = false;
                 }
+              }
             });
 
             updateSaleButton.addEventListener('click', function () {
-                if (updateSaleButton.disabled) {
-                    alert('Cannot add item. Quantity sold exceeds available stock.');
-                }
+              if (updateSaleButton.disabled) {
+                alert('Cannot add item. Quantity sold exceeds available stock.');
+              }
             });
 
             // Initial population of options
@@ -489,16 +493,16 @@
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-sm-flex justify-content-center justify-content-sm-between">
-                      <p>
-                        &copy; <span id="displayYear"></span> All Rights Reserved By
-                        <a href="#">Mich Manage</a>
-                      </p>
-                    </div>
-                </div>    
-            </div>        
+          <div class="card">
+            <div class="card-body">
+              <div class="d-sm-flex justify-content-center justify-content-sm-between">
+                <p>
+                  &copy; <span id="displayYear"></span> All Rights Reserved By
+                  <a href="#">Mich Manage</a>
+                </p>
+              </div>
+            </div>
+          </div>
         </footer>
         <!-- partial -->
       </div>
@@ -510,13 +514,13 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Hide all alerts after 5 seconds
-        setTimeout(function() {
-            var alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                alert.style.display = 'none';
-            });
-        }, 5000);
+      // Hide all alerts after 5 seconds
+      setTimeout(function () {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function (alert) {
+          alert.style.display = 'none';
+        });
+      }, 5000);
     });
   </script>
 
@@ -536,12 +540,12 @@
 
   <script>
     document.getElementById('end_date').addEventListener('change', function () {
-        var startDate = new Date(document.getElementById('start_date').value);
-        var endDate = new Date(this.value);
-        if (endDate <= startDate) {
-            alert("End date should be after start date.");
-            this.value = '';
-        }
+      var startDate = new Date(document.getElementById('start_date').value);
+      var endDate = new Date(this.value);
+      if (endDate <= startDate) {
+        alert("End date should be after start date.");
+        this.value = '';
+      }
     });
   </script>
 
@@ -569,7 +573,7 @@
         };
 
         // Add the object to the array
-        itemsArray.push(itemObject);      
+        itemsArray.push(itemObject);
 
         // Clear the input fields
         document.querySelector('input[name="typed_input"]').value = '';
@@ -595,47 +599,47 @@
           },
           body: JSON.stringify({ items: itemsArray })
         })
-        .then(response => response.json())
-        .then(data => {
-          // Clear the array after successful submission
-          itemsArray = [];
-          
-          // Optionally, clear all input fields here as well
-          // ...
-          
-          if (data.redirect) {
+          .then(response => response.json())
+          .then(data => {
+            // Clear the array after successful submission
+            itemsArray = [];
+
+            // Optionally, clear all input fields here as well
+            // ...
+
+            if (data.redirect) {
               window.location.href = data.redirect; // Redirect to the new URL
-          } else {
+            } else {
               alert(data.message);
-          }
-          
-        })
-        .catch((error) => {
-          alert("An error occurred while submitting updates.");
-        });
+            }
+
+          })
+          .catch((error) => {
+            alert("An error occurred while submitting updates.");
+          });
       });
     });
   </script>
 
-<script>
-  window.onload = function(){
-    var date = new Date();
-    var day = date.getDate();
-    var month = date.getMonth() + 1;
-    var year = date.getFullYear();
+  <script>
+    window.onload = function () {
+      var date = new Date();
+      var day = date.getDate();
+      var month = date.getMonth() + 1;
+      var year = date.getFullYear();
 
-    if(month < 10) month = "0" + month;
-    if(day < 10) day = "0" + day;
+      if (month < 10) month = "0" + month;
+      if (day < 10) day = "0" + day;
 
-    var today = year + "-" + month + "-" + day;
+      var today = year + "-" + month + "-" + day;
 
-    var enddateFields = document.getElementsByName("inhouse_use_date");
-    for(var i = 0; i < enddateFields.length; i++){
-      enddateFields[i].setAttribute("max", today);
+      var enddateFields = document.getElementsByName("inhouse_use_date");
+      for (var i = 0; i < enddateFields.length; i++) {
+        enddateFields[i].setAttribute("max", today);
+      }
+
     }
-
-  }
-</script>
+  </script>
 
   <!-- base:js -->
   <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
