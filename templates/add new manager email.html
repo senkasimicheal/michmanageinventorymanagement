@@ -381,9 +381,8 @@
               {% if session['account_type'] == 'Enterprise Resource Planning' %}
               <option value="Stock Management">Stock Management</option>
               {% endif %}
-              {% if session['account_type'] == 'all_accounts' %}
-              <option value="Property Management">Property Management</option>
-              <option value="Stock Management">Stock Management</option>
+              {% if session['account_type'] == 'Accounting' %}
+              <option value="Property Management">Accounting</option>
               {% endif %}
             </select>
             <input required type="submit" class="btn" value="Submit">
