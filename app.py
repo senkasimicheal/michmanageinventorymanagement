@@ -826,6 +826,15 @@ def register_account():
         
     # Get form data
     form_data = request.form
+    # List of required fields
+    required_fields = ['name', 'email', 'phone_number', 'company_name', 'username', 'address', 'password', 'confirm_password']
+
+    # Check if any of the required fields are empty
+    for field in required_fields:
+        if not form_data.get(field):
+            flash(f'{field.replace("_", " ").title()} is required', 'error')
+            return redirect('/manager_register')
+        
     name = form_data.get('name')
     email = form_data.get('email')
     phone_number = form_data.get('phone_number')
@@ -856,9 +865,9 @@ def register_account():
 
     # Generate verification code
     code = generate_code()
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     is_manager = db.managers.find_one({'manager_email': email})
     if is_manager:
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         account = company['account_type']
         # Remove any empty strings from the list
         account = [atype for atype in account if atype]
