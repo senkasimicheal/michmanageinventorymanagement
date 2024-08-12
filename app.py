@@ -872,6 +872,8 @@ def register_account():
                 account_type = 'Property Management'
             elif account == 'Stock Management':
                 account_type = 'Stock Management'
+            elif account == 'Accounting':
+                account_type = 'Accounting'
         else:
             account = company['account_type']
         
