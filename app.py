@@ -847,9 +847,8 @@ def register_account():
         elif 'Property Management' in account and len(account) == 1:
             # If only 'Property Management' is present
             account_type = 'Property Management'
-        elif 'Enterprise Resource Planning' in account and 'Property Management' in account:
-            # If both are present
-            account_type = 'all_accounts'
+        elif 'Accounting' in account and len(account) == 1:
+            account_type = 'Accounting'
 
         manager = {
             'createdAt': datetime.now(),
@@ -885,9 +884,8 @@ def register_account():
             elif 'Property Management' in account and len(account) == 1:
                 # If only 'Property Management' is present
                 account_type = 'Property Management'
-            elif 'Enterprise Resource Planning' in account and 'Property Management' in account:
-                # If both are present
-                account_type = 'all_accounts'
+            elif 'Accounting' in account and len(account) == 1:
+                account_type = 'Accounting'
 
         manager = {
             'createdAt': datetime.now(),
