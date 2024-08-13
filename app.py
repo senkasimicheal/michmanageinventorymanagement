@@ -5630,7 +5630,7 @@ def update_sale():
             out_of_stock_items = []
             over_quantified = []
             timestamp = datetime.now()
-
+            updates = 0
             for item in all_items:
                 try:
                     item['quantity'] = float(item.get('quantity', 0))
@@ -5646,6 +5646,7 @@ def update_sale():
 
                     if existing_item:
                         if item['saleDate'] >= existing_item['stockDate']:
+                            updates = 1
                             if 'available_quantity' in existing_item:
                                 if existing_item['available_quantity'] <= 0:
                                     out_of_stock_items.append(item['itemName'])
@@ -5682,9 +5683,10 @@ def update_sale():
                         flash(f"Item {item['itemName']} does not exist.", 'error')
                 except (ValueError, TypeError) as e:
                     flash(f"Error processing item {item.get('itemName', 'unknown')}: {e}", 'error')
-
-            message = 'Sales updated successfully'
-            flash(message, 'success')
+            
+            if updates ==1:
+                message = 'Sales updated successfully'
+                flash(message, 'success')
 
             if out_of_stock_items:
                 flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
