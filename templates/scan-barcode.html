@@ -1,76 +1,56 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>QR Code Scanner</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
-
 <body>
-    <h1>QR Code Scanner</h1>
-    <video id="video" autoplay></video>
-    <p id="message"></p>
-    <script>
-        const video = document.getElementById('video');
-        const messageElement = document.getElementById('message');
-        let timer;
+    <h1>Scan Barcode</h1>
+    <div id="reader" style="width: 300px; height: 300px;"></div>
+    <p id="product-details"></p>
 
-        // Get user media (camera access)
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then((stream) => {
-                video.srcObject = stream;
-                startScanning();
-            })
-            .catch((error) => {
-                console.error('Error accessing camera:', error);
+    <script>
+            function onScanSuccess(decodedText, decodedResult) {
+                // Stop scanning after a successful scan
+                html5QrCode.stop().catch((error) => {
+                    console.error("Failed to stop the scanner", error);
             });
 
-        function startScanning() {
-            timer = setTimeout(() => {
-                messageElement.textContent = 'No QR code detected. Camera turned off.';
-                video.srcObject = null; // Turn off the camera
-            }, 30000); // 10 seconds
+            // Send the decoded barcode to the Flask backend
+            fetch(`/get_product?barcode=${encodeURIComponent(decodedText)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('product-details').innerText = "Product not found!";
+                    } else {
+                        document.getElementById('product-details').innerText =
+                            `Product Name: ${data.product_name}, Selling Price: $${data.selling_price}`;
+                    }
+                })
+                .catch(error => console.error('Error fetching product:', error));
+        }
 
-            // Continuously capture frames and decode QR codes
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-
-            function scanQRCode() {
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-                const decodedObjects = jsQR(imageData.data, canvas.width, canvas.height);
-                if (decodedObjects) {
-                    clearTimeout(timer); // QR code detected, stop the timer
-                    const productData = decodedObjects.data;
-
-                    // Send product data to the server
-                    fetch('/process_qr', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ productData }),
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                messageElement.textContent = `Product data sent successfully: ${productData}`;
-                            } else {
-                                messageElement.textContent = 'Error sending product data.';
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error sending product data:', error);
-                        });
-                }
-
-                requestAnimationFrame(scanQRCode);
+            function onScanFailure(error) {
+                console.warn(`Code scan error = ${error}`);
             }
 
-            // Start scanning
-            scanQRCode();
-        }
+            // Create an instance of Html5Qrcode
+            var html5QrCode = new Html5Qrcode("reader");
+
+            // Start scanning with strict rear camera usage
+            html5QrCode.start(
+                { facingMode: { exact: "environment" } }, // Explicitly request the rear camera
+                {
+                    fps: 10, // Frames per second
+                    qrbox: 250 // Size of the scanning box
+                },
+                onScanSuccess,
+                onScanFailure
+            ).catch((error) => {
+                console.error("Failed to start the scanner", error);
+            });
     </script>
 </body>
-
 </html>
