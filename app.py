@@ -117,7 +117,7 @@ def before_request():
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
                                                                'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
-                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','scan','get_product'):
+                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','scan_product_for_sale','get_product'):
         return redirect('/')
 
 @app.after_request
@@ -5731,6 +5731,102 @@ def update_sale():
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
+
+###barcode reader
+@app.route('/scan-product-for-sale')
+def scan_product_for_sale():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Enterprise Resource Planning':
+            return render_template('scan-barcode.html')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+@app.route('/get_product')
+def get_product():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Enterprise Resource Planning':
+            barcode_data = request.args.get('barcode')
+            
+            if not barcode_data:
+                flash('Invalid barcode format, scan again', 'error')
+                return redirect('/scan-product-for-sale')
+            else:
+                if '-' not in barcode_data:
+                    flash('Invalid barcode format, scan again', 'error')
+                    return redirect('/scan-product-for-sale')
+                else:
+                    product_name, selling_price = barcode_data.rsplit('-', 1)
+
+                    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+                    
+                    existing_item = db.inventories.find_one({
+                        'itemName': product_name,
+                        'company_name': company['company_name']
+                    })
+
+                    if existing_item:
+                        timestamp = datetime.now()
+                        if 'available_quantity' in existing_item:
+                            if existing_item['available_quantity'] > 0:
+                                revenue = float(selling_price)
+                                available_quantity = existing_item['available_quantity'] - 1
+                                stockDate = existing_item['stockDate']
+                            else:
+                                flash('Item is out of stock', 'error')
+                                return redirect('/scan-product-for-sale')
+                        else:
+                            if existing_item['quantity'] > 0:
+                                revenue = float(selling_price)  
+                                available_quantity = existing_item['quantity'] - 1
+                                stockDate = existing_item['stockDate']
+                            else:
+                                flash('Item is out of stock', 'error')
+                                return redirect('/scan-product-for-sale')
+                        stock_id = existing_item['_id']
+                        data = {
+                            'itemName': product_name,
+                            'quantity': 1,
+                            'unitPrice': revenue,
+                            'saleDate': timestamp,
+                            'company_name': company['company_name'],
+                            'timestamp': timestamp,
+                            'revenue': revenue,
+                            'stockDate': stockDate,
+                            'stock_id': stock_id
+                        }
+
+                        db.stock_sales.insert_one(data)
+                        db.audit_logs.insert_one({
+                            'user': login_data,
+                            'Activity': 'Added a new sale',
+                            'Item': product_name,
+                            'timestamp': datetime.now()
+                        })
+                        db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
+                        flash(f'Sale for {product_name} was successful', 'success')
+                        return redirect('/scan-product-for-sale')
+                    else:
+                        flash('Scanned item was not found, scan again', 'error')
+                        return redirect('/scan-product-for-sale')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
     
 @app.route('/in-house-use', methods=['POST'])
 def inhouse():
@@ -9008,24 +9104,6 @@ scheduler.add_job(
 )
 
 scheduler.start()
-
-@app.route('/scan')
-def scan():
-    return render_template('scan-barcode.html')
-
-@app.route('/get_product')
-def get_product():
-    barcode_data = request.args.get('barcode')
-    
-    if not barcode_data:
-        return jsonify({"error": "No barcode data provided"}), 400
-    
-    product_name, selling_price = barcode_data.rsplit('-', 1)
-    return jsonify({
-        "product_name": product_name,
-        "selling_price": selling_price
-    })
-    
 
 if __name__ == '__main__':
     app.run()
