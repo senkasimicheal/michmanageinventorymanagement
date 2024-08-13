@@ -255,6 +255,12 @@
               <span class="menu-title">Update Stock</span>
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('generate_bar_codes') }}" id="update-new-stock">
+              <i class="typcn typcn-briefcase menu-icon"></i>
+              <span class="menu-title">Generate bar codes</span>
+            </a>
+          </li>
           {% endif %}
           {% if session.get('update_sales') != 'no' %}
           <li class="nav-item">

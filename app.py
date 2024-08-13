@@ -30,6 +30,8 @@ from zipfile import ZipFile
 import tempfile
 import string
 import qrcode
+import barcode
+from barcode.writer import ImageWriter
 import threading
 import time
 from docx2pdf import convert
@@ -115,7 +117,7 @@ def before_request():
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
                                                                'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
-                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page'):
+                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code'):
         return redirect('/')
 
 @app.after_request
@@ -717,6 +719,38 @@ def update_sales_page():
             available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
             return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+@app.route('/generate product bar codes page')
+def generate_bar_codes():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Enterprise Resource Planning':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+            if not company:
+                flash('Company not found', 'error')
+                return redirect('/')
+            
+            dp_str = company.get('dp')
+            available_itemNames = []
+            available_items = db.inventories.find({'company_name': company['company_name']})
+            for item in available_items:
+                if item.get('available_quantity', 0) > 0:
+                    available_itemNames.append({
+                        'itemName': item.get('itemName', '')
+                    })
+
+            # Sort the available_itemNames list in alphabetical order by 'itemName'
+            available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+
+            return render_template('generate barcodes.html', dp=dp_str, available_itemNames=available_itemNames)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -8855,6 +8889,53 @@ def view_finance_receipt(id):
         else:
             flash("No receipt found for this transaction", 'error')
             return redirect('/accounts-history')
+
+def remove_file_later(filepath, delay=10):
+    """ Schedule file deletion after a delay """
+    def delayed_removal():
+        time.sleep(delay)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    threading.Thread(target=delayed_removal).start()
+
+@app.route('/store-bar-code', methods=['POST'])
+def store_bar_code():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Enterprise Resource Planning':
+            product_name = request.form.get('typed_input')
+            price = request.form.get('update_sale_unit_price')
+            if product_name and price:
+                selling_price = float(price)
+                barcode_data = f"{product_name}-{selling_price}"
+                barcode_generator = barcode.get('code128', barcode_data, writer=ImageWriter())
+                filename = f'{product_name}.png'
+                filename_to_save = f'{product_name}'
+                filepath = os.path.join('.', filename)
+                barcode_generator.save(filename_to_save)
+                db.inventories.update_one({'itemName': product_name}, {'$set': {'selling_price': price}})
+                flash(f'Bar code for {product_name} was generated and downloaded to your device', 'success')
+                remove_file_later(filepath, delay=10)
+                return jsonify({
+                    'download_url': url_for('download_barcode', filename=filename),
+                    'redirect_url': url_for('generate_bar_codes')
+                })
+            else:
+                flash('Failed to generate barcode', 'error')
+                return redirect('/generate product bar codes page')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+        
+@app.route('/download-barcode/<filename>')
+def download_barcode(filename):
+    return send_from_directory(directory='.', path=filename, as_attachment=True, download_name=filename)
 
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_financial_reminders():
