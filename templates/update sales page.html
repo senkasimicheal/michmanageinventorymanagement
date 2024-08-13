@@ -21,7 +21,6 @@
   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
     function fetchNotifications() {
       fetch('/notifications')
@@ -379,62 +378,12 @@
             <input class="property_inputs" type="date" name="update_sale_date" id="update_sale_date"
               placeholder="enter start date"><br>
             
-            <!-- Scan Barcode Button -->
-            <button type="button" id="scan-barcode-button">Scan Barcode</button>
-            <input type="text" id="scanned_barcode" name="scanned_barcode" placeholder="Scanned Barcode" readonly
-              style="display:none;"><br>
-            
-            <!-- Barcode Scanner Display -->
-            <div id="scanner-container" style="position:relative; width:100%; max-width:400px; height:300px; display:none;">
-              <div id="interactive" class="viewport" style="width:100%; height:100%;"></div>
-            </div>
-            
             <!-- Form Buttons -->
             <button type="button" id="update-sale-button">Add Item</button>
             <input type="submit" class="btn" id="submit-button" value="Submit">
             <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
           </form>
       </div>
-
-      <script>
-        document.getElementById('scan-barcode-button').addEventListener('click', function () {
-          // Show the scanner container
-          document.getElementById('myForm').style.display = 'none';
-          document.getElementById('scanner-container').style.display = 'block';
-          
-          // Initialize QuaggaJS
-          Quagga.init({
-            inputStream: {
-              name: "Live",
-              type: "LiveStream",
-              target: document.querySelector('#interactive'), // Or '#yourElement' (optional)
-              constraints: {
-                facingMode: "environment" // or "user" for front camera
-              },
-            },
-            decoder: {
-              readers: ["code_128_reader"] // List of barcode formats to support
-            },
-          }, function (err) {
-            if (err) {
-              console.log(err);
-              return;
-            }
-            Quagga.start();
-          });
-
-          // Process the detected barcode
-          Quagga.onDetected(function (data) {
-            var barcode = data.codeResult.code;
-            document.getElementById('scanned_barcode').value = barcode;
-            document.getElementById('scanned_barcode').style.display = 'block';
-            document.getElementById('myForm').style.display = 'block';
-            document.getElementById('scanner-container').style.display = 'none';
-            Quagga.stop();
-            });
-        });
-      </script>
-
         <script>
           document.getElementById("myForm").addEventListener("submit", function (event) {
             // Disable the submit button

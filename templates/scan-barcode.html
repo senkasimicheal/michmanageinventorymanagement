@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>QR Code Scanner</title>
+</head>
+
+<body>
+    <h1>QR Code Scanner</h1>
+    <video id="video" autoplay></video>
+    <p id="message"></p>
+    <script>
+        const video = document.getElementById('video');
+        const messageElement = document.getElementById('message');
+        let timer;
+
+        // Get user media (camera access)
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+                startScanning();
+            })
+            .catch((error) => {
+                console.error('Error accessing camera:', error);
+            });
+
+        function startScanning() {
+            timer = setTimeout(() => {
+                messageElement.textContent = 'No QR code detected. Camera turned off.';
+                video.srcObject = null; // Turn off the camera
+            }, 30000); // 10 seconds
+
+            // Continuously capture frames and decode QR codes
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            function scanQRCode() {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+                const decodedObjects = jsQR(imageData.data, canvas.width, canvas.height);
+                if (decodedObjects) {
+                    clearTimeout(timer); // QR code detected, stop the timer
+                    const productData = decodedObjects.data;
+
+                    // Send product data to the server
+                    fetch('/process_qr', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ productData }),
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                messageElement.textContent = `Product data sent successfully: ${productData}`;
+                            } else {
+                                messageElement.textContent = 'Error sending product data.';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error sending product data:', error);
+                        });
+                }
+
+                requestAnimationFrame(scanQRCode);
+            }
+
+            // Start scanning
+            scanQRCode();
+        }
+    </script>
+</body>
+
+</html>
