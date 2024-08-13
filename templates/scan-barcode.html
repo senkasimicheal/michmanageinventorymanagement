@@ -7,10 +7,8 @@
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
         #reader {
-            width: 100%;
-            /* Adjust as needed */
-            height: 400px;
-            /* Adjust as needed */
+            width: 100%; /* Adjust as needed */
+            height: 400px; /* Adjust as needed */
             border: 1px solid black;
         }
     </style>
@@ -21,27 +19,31 @@
     <p id="product-details"></p>
 
     <script>
+            // Ensure Html5Qrcode is defined before using it
+            if (typeof Html5Qrcode === 'undefined') {
+                console.error("Html5Qrcode library is not loaded.");
+            } else {
             function onScanSuccess(decodedText, decodedResult) {
-            console.log(`Scan success: ${decodedText}`); // Log the successful scan
+                console.log(`Scan success: ${decodedText}`); // Log the successful scan
 
-            // Stop scanning after a successful scan
-            html5QrCode.stop().catch((error) => {
-                console.error("Failed to stop the scanner", error);
-            });
+                // Stop scanning after a successful scan
+                html5QrCode.stop().catch((error) => {
+                    console.error("Failed to stop the scanner", error);
+                });
 
-            // Send the decoded barcode to the Flask backend
-            fetch(`/get_product?barcode=${encodeURIComponent(decodedText)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById('product-details').innerText = "Product not found!";
-                    } else {
-                        document.getElementById('product-details').innerText = 
-                            `Product Name: ${data.product_name}, Selling Price: $${data.selling_price}`;
-                    }
-                })
-                .catch(error => console.error('Error fetching product:', error));
-        }
+                // Send the decoded barcode to the Flask backend
+                fetch(`/get_product?barcode=${encodeURIComponent(decodedText)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            document.getElementById('product-details').innerText = "Product not found!";
+                        } else {
+                            document.getElementById('product-details').innerText =
+                                `Product Name: ${data.product_name}, Selling Price: $${data.selling_price}`;
+                        }
+                    })
+                    .catch(error => console.error('Error fetching product:', error));
+            }
 
             function onScanFailure(error) {
                 console.warn(`Code scan error = ${error}`);
@@ -63,12 +65,13 @@
                 },
                 onScanSuccess,
                 onScanFailure
-        ).then(() => {
-            // Camera started successfully
-            onCameraStarted();
-        }).catch((error) => {
-            console.error("Failed to start the scanner", error);
-        });
+            ).then(() => {
+                // Camera started successfully
+                onCameraStarted();
+            }).catch((error) => {
+                console.error("Failed to start the scanner", error);
+            });
+        }
     </script>
 </body>
 </html>
