@@ -5,17 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barcode Scanner</title>
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        #reader {
+            width: 100%;
+            /* Adjust as needed */
+            height: 400px;
+            /* Adjust as needed */
+            border: 1px solid black;
+        }
+    </style>
 </head>
 <body>
     <h1>Scan Barcode</h1>
-    <div id="reader" style="width: 300px; height: 300px;"></div>
+    <div id="reader"></div>
     <p id="product-details"></p>
 
     <script>
             function onScanSuccess(decodedText, decodedResult) {
-                // Stop scanning after a successful scan
-                html5QrCode.stop().catch((error) => {
-                    console.error("Failed to stop the scanner", error);
+            console.log(`Scan success: ${decodedText}`); // Log the successful scan
+
+            // Stop scanning after a successful scan
+            html5QrCode.stop().catch((error) => {
+                console.error("Failed to stop the scanner", error);
             });
 
             // Send the decoded barcode to the Flask backend
@@ -25,7 +36,7 @@
                     if (data.error) {
                         document.getElementById('product-details').innerText = "Product not found!";
                     } else {
-                        document.getElementById('product-details').innerText =
+                        document.getElementById('product-details').innerText = 
                             `Product Name: ${data.product_name}, Selling Price: $${data.selling_price}`;
                     }
                 })
@@ -36,8 +47,12 @@
                 console.warn(`Code scan error = ${error}`);
             }
 
+            function onCameraStarted() {
+                console.log("Camera has been started and is now streaming.");
+            }
+
             // Create an instance of Html5Qrcode
-            var html5QrCode = new Html5Qrcode("reader");
+            const html5QrCode = new Html5Qrcode("reader");
 
             // Start scanning with strict rear camera usage
             html5QrCode.start(
@@ -48,9 +63,12 @@
                 },
                 onScanSuccess,
                 onScanFailure
-            ).catch((error) => {
-                console.error("Failed to start the scanner", error);
-            });
+        ).then(() => {
+            // Camera started successfully
+            onCameraStarted();
+        }).catch((error) => {
+            console.error("Failed to start the scanner", error);
+        });
     </script>
 </body>
 </html>
