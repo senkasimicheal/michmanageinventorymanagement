@@ -5781,46 +5781,53 @@ def get_product():
                     })
 
                     if existing_item:
-                        timestamp = datetime.now()
-                        if 'available_quantity' in existing_item:
-                            if existing_item['available_quantity'] > 0:
-                                revenue = float(selling_price)
-                                available_quantity = existing_item['available_quantity'] - 1
-                                stockDate = existing_item['stockDate']
+                        revenue = float(selling_price)
+                        if 'selling_price' in existing_item:
+                            if revenue == existing_item['selling_price']:
+                                timestamp = datetime.now()
+                                if 'available_quantity' in existing_item:
+                                    if existing_item['available_quantity'] > 0:
+                                        available_quantity = existing_item['available_quantity'] - 1
+                                        stockDate = existing_item['stockDate']
+                                    else:
+                                        flash('Item is out of stock', 'error')
+                                        return redirect('/scan-product-for-sale')
+                                else:
+                                    if existing_item['quantity'] > 0:  
+                                        available_quantity = existing_item['quantity'] - 1
+                                        stockDate = existing_item['stockDate']
+                                    else:
+                                        flash('Item is out of stock', 'error')
+                                        return redirect('/scan-product-for-sale')
+                                stock_id = existing_item['_id']
+                                data = {
+                                    'itemName': product_name,
+                                    'quantity': 1,
+                                    'unitPrice': revenue,
+                                    'saleDate': timestamp,
+                                    'company_name': company['company_name'],
+                                    'timestamp': timestamp,
+                                    'revenue': revenue,
+                                    'stockDate': stockDate,
+                                    'stock_id': stock_id
+                                }
+
+                                db.stock_sales.insert_one(data)
+                                db.audit_logs.insert_one({
+                                    'user': login_data,
+                                    'Activity': 'Added a new sale',
+                                    'Item': product_name,
+                                    'timestamp': datetime.now()
+                                })
+                                db.inventories.update_one({'itemName': product_name}, {'$set': {'available_quantity': available_quantity}})
+                                flash(f'Sale for {product_name} was successful', 'success')
+                                return redirect('/scan-product-for-sale')
                             else:
-                                flash('Item is out of stock', 'error')
+                                flash('Invalid barcode format, scan again', 'error')
                                 return redirect('/scan-product-for-sale')
                         else:
-                            if existing_item['quantity'] > 0:
-                                revenue = float(selling_price)  
-                                available_quantity = existing_item['quantity'] - 1
-                                stockDate = existing_item['stockDate']
-                            else:
-                                flash('Item is out of stock', 'error')
-                                return redirect('/scan-product-for-sale')
-                        stock_id = existing_item['_id']
-                        data = {
-                            'itemName': product_name,
-                            'quantity': 1,
-                            'unitPrice': revenue,
-                            'saleDate': timestamp,
-                            'company_name': company['company_name'],
-                            'timestamp': timestamp,
-                            'revenue': revenue,
-                            'stockDate': stockDate,
-                            'stock_id': stock_id
-                        }
-
-                        db.stock_sales.insert_one(data)
-                        db.audit_logs.insert_one({
-                            'user': login_data,
-                            'Activity': 'Added a new sale',
-                            'Item': product_name,
-                            'timestamp': datetime.now()
-                        })
-                        db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
-                        flash(f'Sale for {product_name} was successful', 'success')
-                        return redirect('/scan-product-for-sale')
+                            flash('Invalid barcode format, scan again', 'error')
+                            return redirect('/scan-product-for-sale')
                     else:
                         flash('Scanned item was not found, scan again', 'error')
                         return redirect('/scan-product-for-sale')
