@@ -5645,36 +5645,39 @@ def update_sale():
                     })
 
                     if existing_item:
-                        if 'available_quantity' in existing_item:
-                            if existing_item['available_quantity'] <= 0:
-                                out_of_stock_items.append(item['itemName'])
-                                continue
-                            if item['quantity'] > existing_item['available_quantity']:
-                                over_quantified.append(item['itemName'])
-                                continue
-                            revenue = item['quantity'] * item['unitPrice']
-                            available_quantity = existing_item['available_quantity'] - item['quantity']
-                            item['revenue'] = revenue
-                            item['stockDate'] = existing_item['stockDate']
-                        else:
-                            if item['quantity'] > existing_item['quantity']:
-                                over_quantified.append(item['itemName'])
-                                continue
-                            revenue = item['quantity'] * item['unitPrice']
-                            available_quantity = existing_item['quantity'] - item['quantity']
-                            item['revenue'] = revenue
-                            item['stockDate'] = existing_item['stockDate']
-                        
-                        item['stock_id'] = existing_item['_id']
+                        if item['saleDate'] >= existing_item['stockDate']:
+                            if 'available_quantity' in existing_item:
+                                if existing_item['available_quantity'] <= 0:
+                                    out_of_stock_items.append(item['itemName'])
+                                    continue
+                                if item['quantity'] > existing_item['available_quantity']:
+                                    over_quantified.append(item['itemName'])
+                                    continue
+                                revenue = item['quantity'] * item['unitPrice']
+                                available_quantity = existing_item['available_quantity'] - item['quantity']
+                                item['revenue'] = revenue
+                                item['stockDate'] = existing_item['stockDate']
+                            else:
+                                if item['quantity'] > existing_item['quantity']:
+                                    over_quantified.append(item['itemName'])
+                                    continue
+                                revenue = item['quantity'] * item['unitPrice']
+                                available_quantity = existing_item['quantity'] - item['quantity']
+                                item['revenue'] = revenue
+                                item['stockDate'] = existing_item['stockDate']
+                            
+                            item['stock_id'] = existing_item['_id']
 
-                        db.stock_sales.insert_one(item)
-                        db.audit_logs.insert_one({
-                            'user': login_data,
-                            'Activity': 'Added a new sale',
-                            'Item': item['itemName'],
-                            'timestamp': datetime.now()
-                        })
-                        db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
+                            db.stock_sales.insert_one(item)
+                            db.audit_logs.insert_one({
+                                'user': login_data,
+                                'Activity': 'Added a new sale',
+                                'Item': item['itemName'],
+                                'timestamp': datetime.now()
+                            })
+                            db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
+                        else:
+                            flash(f"Sales date must be newer than stock date for {item['itemName']}.", 'error')
                     else:
                         flash(f"Item {item['itemName']} does not exist.", 'error')
                 except (ValueError, TypeError) as e:
