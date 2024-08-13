@@ -117,7 +117,7 @@ def before_request():
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
                                                                'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
-                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','scan'):
+                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','scan','get_product'):
         return redirect('/')
 
 @app.after_request
@@ -9012,6 +9012,24 @@ scheduler.start()
 @app.route('/scan')
 def scan():
     return render_template('scan-barcode.html')
+
+@app.route('/get_product')
+def get_product():
+    barcode_data = request.args.get('barcode')
+    
+    if not barcode_data:
+        return jsonify({"error": "No barcode data provided"}), 400
+    
+    # Split the barcode data into product name and selling price
+    try:
+        product_name, selling_price = barcode_data.rsplit('-', 1)
+        return jsonify({
+            "product_name": product_name,
+            "selling_price": selling_price
+        })
+    except ValueError:
+        return jsonify({"error": "Invalid barcode format"}), 400
+    
 
 if __name__ == '__main__':
     app.run()
