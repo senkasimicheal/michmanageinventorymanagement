@@ -16,7 +16,6 @@
 <body>
     <h1>Scan Barcode</h1>
     <div id="scanner"></div>
-    <p id="product-details"></p>
 
     <script>
             function startScanner() {
@@ -40,24 +39,14 @@
                     Quagga.start();
                 });
 
-                Quagga.onDetected(function (data) {
-                    console.log("Barcode detected:", data.codeResult.code);
+            Quagga.onDetected(function (data) {
+                console.log("Barcode detected:", data.codeResult.code);
 
                 // Stop the scanner
                 Quagga.stop();
 
-                // Send the decoded barcode to the Flask backend
-                fetch(`/get_product?barcode=${encodeURIComponent(data.codeResult.code)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            document.getElementById('product-details').innerText = "Product not found!";
-                        } else {
-                            document.getElementById('product-details').innerText = 
-                                `Product Name: ${data.product_name}, Selling Price: $${data.selling_price}`;
-                        }
-                    })
-                    .catch(error => console.error('Error fetching product:', error));
+                // Redirect to the /get_product route with the barcode data
+                window.location.href = `/get_product?barcode=${encodeURIComponent(data.codeResult.code)}`;
             });
         }
 

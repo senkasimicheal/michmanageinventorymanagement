@@ -9020,15 +9020,11 @@ def get_product():
     if not barcode_data:
         return jsonify({"error": "No barcode data provided"}), 400
     
-    # Split the barcode data into product name and selling price
-    try:
-        product_name, selling_price = barcode_data.rsplit('-', 1)
-        return jsonify({
-            "product_name": product_name,
-            "selling_price": selling_price
-        })
-    except ValueError:
-        return jsonify({"error": "Invalid barcode format"}), 400
+    product_name, selling_price = barcode_data.rsplit('-', 1)
+    return jsonify({
+        "product_name": product_name,
+        "selling_price": selling_price
+    })
     
 
 if __name__ == '__main__':
