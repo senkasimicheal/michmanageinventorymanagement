@@ -22,13 +22,6 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
   <script src="https://unpkg.com/quagga@latest/dist/quagga.min.js"></script>
-    <style>
-        #scanner {
-            width: 100%;
-            height: 400px;
-            border: 1px solid black;
-        }
-    </style>
 </head>
 
 <body>
@@ -333,7 +326,9 @@
                     inputStream: {
                         type: "LiveStream",
                         constraints: {
-                            facingMode: "environment" // Use rear camera
+                            facingMode: "environment", // Use rear camera
+                            width: { ideal: 300 }, // Ideal width of the camera feed
+                            height: { ideal: 320 }
                         },
                         target: document.querySelector('#scanner')
                     },
@@ -361,7 +356,7 @@
             }
     
             startScanner();
-        </script>
+          </script>
         </div>
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
@@ -386,22 +381,25 @@
         <!-- container-scroller -->
         
         <script>
-            document.addEventListener("DOMContentLoaded", functio() {            / Hide all alerts           r 5 seconds
+            document.addEventListener("DOMContentLoaded", function () {
+              // Hide all alerts after 5 seconds
               setTimeout(function () {
-                      var alerts = document.querySelec            ('.alert');
-                      alerts.forEach(function (alert                            alert.st              lay = 'none';
-                                              }, 5000);
-            });
+              var alerts = document.querySelectorAll('.alert');
+              alerts.forEach(function (alert) {
+                alert.style.display = 'none';
+              });
+            }, 5000);
+          });
         </script>
-        
+      
         <script>
           let counter = 0;
-            const  = document.getElementById('spinner');
-        
+            const spinner = document.getElementById('spinner');
+
             const intervalId = setInterval(() => {
               counter++;
               spinner.textContent = `${counter}%`;
-        
+
               if (counter === 100) {
                 clearInterval(intervalId);
               }
