@@ -3,75 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <title>Barcode Scanner with QuaggaJS</title>
+    <script src="https://unpkg.com/quagga@latest/dist/quagga.min.js"></script>
     <style>
-        #reader {
-            width: 100%; /* Adjust as needed */
-            height: 400px; /* Adjust as needed */
+        #scanner {
+            width: 100%;
+            height: 400px;
             border: 1px solid black;
         }
     </style>
 </head>
 <body>
     <h1>Scan Barcode</h1>
-    <div id="reader"></div>
+    <div id="scanner"></div>
     <p id="product-details"></p>
 
     <script>
-            // Ensure Html5Qrcode is defined before using it
-            if (typeof Html5Qrcode === 'undefined') {
-                console.error("Html5Qrcode library is not loaded.");
-            } else {
-            function onScanSuccess(decodedText, decodedResult) {
-                console.log(`Scan success: ${decodedText}`); // Log the successful scan
-
-                // Stop scanning after a successful scan
-                html5QrCode.stop().catch((error) => {
-                    console.error("Failed to stop the scanner", error);
+            function startScanner() {
+                Quagga.init({
+                    inputStream: {
+                        type: "LiveStream",
+                        constraints: {
+                            facingMode: "environment" // Use rear camera
+                        },
+                        target: document.querySelector('#scanner')
+                    },
+                    decoder: {
+                        readers: ["code_128_reader"] // Adjust to your needs
+                    }
+                }, function (err) {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                    console.log("Quagga initialized.");
+                    Quagga.start();
                 });
 
+                Quagga.onDetected(function (data) {
+                    console.log("Barcode detected:", data.codeResult.code);
+
+                // Stop the scanner
+                Quagga.stop();
+
                 // Send the decoded barcode to the Flask backend
-                fetch(`/get_product?barcode=${encodeURIComponent(decodedText)}`)
+                fetch(`/get_product?barcode=${encodeURIComponent(data.codeResult.code)}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.error) {
                             document.getElementById('product-details').innerText = "Product not found!";
                         } else {
-                            document.getElementById('product-details').innerText =
+                            document.getElementById('product-details').innerText = 
                                 `Product Name: ${data.product_name}, Selling Price: $${data.selling_price}`;
                         }
                     })
                     .catch(error => console.error('Error fetching product:', error));
-            }
-
-            function onScanFailure(error) {
-                console.warn(`Code scan error = ${error}`);
-            }
-
-            function onCameraStarted() {
-                console.log("Camera has been started and is now streaming.");
-            }
-
-            // Create an instance of Html5Qrcode
-            const html5QrCode = new Html5Qrcode("reader");
-
-            // Start scanning with strict rear camera usage
-            html5QrCode.start(
-                { facingMode: { exact: "environment" } }, // Explicitly request the rear camera
-                {
-                    fps: 10, // Frames per second
-                    qrbox: 250 // Size of the scanning box
-                },
-                onScanSuccess,
-                onScanFailure
-            ).then(() => {
-                // Camera started successfully
-                onCameraStarted();
-            }).catch((error) => {
-                console.error("Failed to start the scanner", error);
             });
         }
+
+            startScanner();
     </script>
 </body>
 </html>
