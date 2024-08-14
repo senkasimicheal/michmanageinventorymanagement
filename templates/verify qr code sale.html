@@ -164,7 +164,7 @@
 
         <div class="update-sales-form content-wrapper">
           <p>Product Price: {{selling_price}}</p>
-          <form id="myForm" class="property_forn content-panel" action="{{ url_for('update_sale') }}" method="POST">
+          <form id="myForm" class="property_forn content-panel" action="{{ url_for('get_product') }}" method="POST">
             <label class="input_labels" for="">Secret ID</label>
             <input class="property_inputs" type="text" name="secret_id" minlength="4" required>
             <input type="hidden" name="company_id" value="{{company_id}}">
