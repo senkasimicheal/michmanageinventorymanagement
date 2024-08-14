@@ -115,7 +115,7 @@ def before_request():
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
                                                                'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
-                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes'):
+                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','verify_user_making_sale','get_product'):
         return redirect('/')
 
 @app.after_request
