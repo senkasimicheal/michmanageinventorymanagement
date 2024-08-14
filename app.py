@@ -8996,7 +8996,7 @@ def get_product():
     print(company_id)
     print(product_id)
     print(selling_price)
-    company = db.managers.find_one({'_id': ObjectId(company_id)},{'secret_id': 1, '_id': 0})
+    company = db.managers.find_one({'_id': ObjectId(company_id)})
     if company:
         print(company)
         if 'secret_id' in company:
@@ -9028,7 +9028,7 @@ def get_product():
                             'quantity': 1,
                             'unitPrice': revenue,
                             'saleDate': timestamp,
-                            'company_name': company['company_name'],
+                            'company_name': company['name'],
                             'timestamp': timestamp,
                             'revenue': revenue,
                             'stockDate': stockDate,
