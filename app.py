@@ -30,8 +30,6 @@ from zipfile import ZipFile
 import tempfile
 import string
 import qrcode
-import barcode
-from barcode.writer import ImageWriter
 import threading
 import time
 from docx2pdf import convert
