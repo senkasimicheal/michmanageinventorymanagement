@@ -8963,12 +8963,23 @@ def download_barcode(filename):
 
 @app.route('/verify_user_making_sale')
 def verify_user_making_sale():
+    db, fs = get_db_and_fs()
     # Extract company_name and product_id from the query parameters
     company_name = request.args.get('company_name')
     product_id = request.args.get('product_id')
-    
-    # Render the verification page with hidden inputs
-    return render_template('verify qr code sale.html', company_name=company_name, product_id=product_id)
+
+    existing_item = db.inventories.find_one({'_id': ObjectId(product_id)})
+    if existing_item:
+        if 'selling_price' in existing_item:
+            selling_price = existing_item['selling_price']
+            # Render the verification page with hidden inputs
+            return render_template('verify qr code sale.html', company_name=company_name, product_id=product_id, selling_price=selling_price)
+        else:
+            flash('No selling price set for the item', 'error')
+            return redirect('/')
+    else:
+        flash('Scanned item is not in stock list', 'error')
+        return redirect('/')
 
 @app.route('/get_product')
 def get_product():
@@ -8977,6 +8988,8 @@ def get_product():
     secret_id = request.form.get('secret_id')
     company_name = request.form.get('company_name')
     product_id = request.form.get('product_id')
+    selling_price = request.form.get('selling_price')
+    selling_price = float(selling_price)
     company = db.managers.find_one({'name': company_name},{'secret_id': 1, '_id': 0})
     if company:
         if 'secret_id' in company:
@@ -9026,7 +9039,7 @@ def get_product():
                         return redirect('/')
             else:
                 flash('Wrong secret id was provided', 'error')
-                return render_template('verify qr code sale.html', company_name=company_name, product_id=product_id)
+                return render_template('verify qr code sale.html', company_name=company_name, product_id=product_id, selling_price=selling_price)
         else:
             flash('No secret id set for the company', 'error')
             return redirect('/')
