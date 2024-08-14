@@ -8983,7 +8983,7 @@ def verify_user_making_sale():
         flash('Scanned item is not in stock list', 'error')
         return redirect('/')
 
-@app.route('/get_product')
+@app.route('/get_product', methods=['GET', 'POST'])
 def get_product():
     db, fs = get_db_and_fs()
     
