@@ -8992,16 +8992,10 @@ def get_product():
     product_id = request.form.get('product_id')
     selling_price = request.form.get('selling_price')
     selling_price = float(selling_price)
-    print(secret_id)
-    print(company_id)
-    print(product_id)
-    print(selling_price)
     company = db.managers.find_one({'_id': ObjectId(company_id)})
     if company:
-        print(company)
         if 'secret_id' in company:
             if secret_id == company['secret_id']:
-                print(secret_id)
                 existing_item = db.inventories.find_one({'_id': ObjectId(product_id)})
 
                 if existing_item:
@@ -9046,7 +9040,6 @@ def get_product():
                         flash(f'Sale for {existing_item["itemName"]} was successful', 'success')
                         return redirect('/')
             else:
-                print("Wrong secret ID")
                 flash('Wrong secret id was provided', 'error')
                 return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
         else:
