@@ -8919,7 +8919,7 @@ def store_bar_code():
                 product_id_string = str(product_id['_id'])
 
                 # QR Code Generation
-                url = f'https://michmanagement.onrender.com//verify_user_making_sale?company_name={company['company_name']}&product_id={product_id_string}'
+                url = f'https://michmanagement.onrender.com//verify_user_making_sale?company_name={company["company_name"]}&product_id={product_id_string}'
                 qr = qrcode.QRCode(
                     version=1,
                     error_correction=qrcode.constants.ERROR_CORRECT_L,
