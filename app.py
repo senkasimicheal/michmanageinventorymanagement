@@ -8914,9 +8914,9 @@ def store_bar_code():
             product_name = request.form.get('typed_input')
             price = request.form.get('update_sale_unit_price')
             if product_name and price:
-                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                manager = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                 'password': 0, 'auth': 0, 'dark_mode': 0})
-                
+                company = db.managers.find_one({'name': manager['company_name']})
                 product_id = db.inventories.find_one({'itemName': product_name})
                 product_id_string = str(product_id['_id'])
                 company_id = str(company["_id"])
