@@ -322,52 +322,37 @@
           <div id="scanner"></div>
           <script>
             function startScanner() {
-              Quagga.init({
-                inputStream: {
-                  name: "Live",
-                  type: "LiveStream",
-                  constraints: {
-                    width: 640,
-                    height: 480,
-                    facingMode: "environment" // Use rear camera
-                  },
-                  area: { // defines the rectangle area of the detection/localization
-                    top: "10%", // top offset
-                    right: "10%", // right offset
-                    left: "10%", // left offset
-                    bottom: "10%" // bottom offset
-                  },
-                  singleChannel: false // true: only the red color-channel is read
-                },
-                locator: {
-                  patchSize: "medium", // x-small, small, medium, large, x-large
-                  halfSample: true
-                },
-                numOfWorkers: navigator.hardwareConcurrency, // auto-detect CPU cores
-                decoder: {
-                  readers: ["code_128_reader"] // Adjust to your needs
-                },
-                locate: true
-              }, function (err) {
-                if (err) {
-                  console.error(err);
-                  return;
-                }
-                console.log("Quagga initialized.");
-                Quagga.start();
-              });
-
-              Quagga.onDetected(function (data) {
-                console.log("Barcode detected:", data.codeResult.code);
-
-                // Stop the scanner
-                Quagga.stop();
-
-                // Redirect to the /get_product route with the barcode data
-                window.location.href = `/get_product?barcode=${encodeURIComponent(data.codeResult.code)}`;
-              });
+                Quagga.init({
+                    inputStream: {
+                        type: "LiveStream",
+                        constraints: {
+                            facingMode: "environment" // Use rear camera
+                        },
+                        target: document.querySelector('#scanner')
+                    },
+                    decoder: {
+                        readers: ["code_128_reader"] // Adjust to your needs
+                    }
+                }, function (err) {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                    console.log("Quagga initialized.");
+                    Quagga.start();
+                });
+    
+                Quagga.onDetected(function (data) {
+                    console.log("Barcode detected:", data.codeResult.code);
+    
+                    // Stop the scanner
+                    Quagga.stop();
+    
+                    // Redirect to the /get_product route with the barcode data
+                    window.location.href = `/get_product?barcode=${encodeURIComponent(data.codeResult.code)}`;
+                });
             }
-
+    
             startScanner();
           </script>
         </div>
