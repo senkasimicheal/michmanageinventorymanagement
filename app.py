@@ -5810,7 +5810,7 @@ def get_product():
                             'timestamp': datetime.now()
                         })
                         db.inventories.update_one({'itemName': existing_item['itemName']}, {'$set': {'available_quantity': available_quantity}})
-                        flash(f'Sale for {existing_item['itemName']} was successful', 'success')
+                        flash(f'Sale for {existing_item["itemName"]} was successful', 'success')
                         return redirect('/scan-product-for-sale')
                     else:
                         flash('Invalid barcode format, scan again', 'error')
