@@ -167,7 +167,7 @@
           <form id="myForm" class="property_forn content-panel" action="{{ url_for('update_sale') }}" method="POST">
             <label class="input_labels" for="">Secret ID</label>
             <input class="property_inputs" type="text" name="secret_id" minlength="4" required>
-            <input type="hidden" name="company_name" value="{{company_name}}">
+            <input type="hidden" name="company_id" value="{{company_id}}">
             <input type="hidden" name="product_id" value="{{product_id}}">
             <input type="hidden" name="selling_price" value="{{selling_price}}">
             <input type="submit" class="btn" id="submit-button" value="Submit">

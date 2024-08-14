@@ -1517,17 +1517,21 @@ def account_setup_initiated():
         flash('Login first', 'error')
         return redirect('/')
     else:
+        company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0})
         auth = request.form.get("switchState")
         dark_mode = request.form.get("switchState1")
         name = request.form.get("name")
         phone_number = request.form.get("phone_number")
         address = request.form.get("address")
         dp = request.files['dp'] if 'dp' in request.files else None
+        secret_id = request.form.get("secret_id")
 
         update_fields = {}
 
         if auth:
             update_fields['auth'] = auth
+        if secret_id:
+            db.managers.update_one({'name': company['company_name']}, {'$set': {'secret_id': secret_id}})
         if dark_mode:
             update_fields['dark_mode'] = dark_mode
         if name:
@@ -8917,9 +8921,9 @@ def store_bar_code():
                 
                 product_id = db.inventories.find_one({'itemName': product_name})
                 product_id_string = str(product_id['_id'])
-
+                company_id = str(company["_id"])
                 # QR Code Generation
-                url = f'https://michmanagement.onrender.com//verify_user_making_sale?company_name={company["company_name"]}&product_id={product_id_string}'
+                url = f'https://michmanagement.onrender.com//verify_user_making_sale?company_id={company_id}&product_id={product_id_string}'
                 qr = qrcode.QRCode(
                     version=1,
                     error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -8965,7 +8969,7 @@ def download_barcode(filename):
 def verify_user_making_sale():
     db, fs = get_db_and_fs()
     # Extract company_name and product_id from the query parameters
-    company_name = request.args.get('company_name')
+    company_id = request.args.get('company_id')
     product_id = request.args.get('product_id')
 
     existing_item = db.inventories.find_one({'_id': ObjectId(product_id)})
@@ -8973,7 +8977,7 @@ def verify_user_making_sale():
         if 'selling_price' in existing_item:
             selling_price = existing_item['selling_price']
             # Render the verification page with hidden inputs
-            return render_template('verify qr code sale.html', company_name=company_name, product_id=product_id, selling_price=selling_price)
+            return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
         else:
             flash('No selling price set for the item', 'error')
             return redirect('/')
@@ -8986,11 +8990,11 @@ def get_product():
     db, fs = get_db_and_fs()
     
     secret_id = request.form.get('secret_id')
-    company_name = request.form.get('company_name')
+    company_id = request.form.get('company_id')
     product_id = request.form.get('product_id')
     selling_price = request.form.get('selling_price')
     selling_price = float(selling_price)
-    company = db.managers.find_one({'name': company_name},{'secret_id': 1, '_id': 0})
+    company = db.managers.find_one({'_id': ObjectId(company_id)},{'secret_id': 1, '_id': 0})
     if company:
         if 'secret_id' in company:
             if secret_id == company['secret_id']:
@@ -9029,7 +9033,7 @@ def get_product():
 
                         db.stock_sales.insert_one(data)
                         db.audit_logs.insert_one({
-                            'user': company_name,
+                            'user': company_id,
                             'Activity': 'Added a new sale',
                             'Item': existing_item['itemName'],
                             'timestamp': datetime.now()
@@ -9039,7 +9043,7 @@ def get_product():
                         return redirect('/')
             else:
                 flash('Wrong secret id was provided', 'error')
-                return render_template('verify qr code sale.html', company_name=company_name, product_id=product_id, selling_price=selling_price)
+                return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
         else:
             flash('No secret id set for the company', 'error')
             return redirect('/')

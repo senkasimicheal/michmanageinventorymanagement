@@ -396,6 +396,10 @@
           <form id="myForm" class="property_forn content-pannel" action="{{url_for('account_setup_initiated')}}" method="POST" enctype="multipart/form-data">
             <label style="margin-top: 5px;" class="input_labels" for="">2 Factor Authentication</label>
             <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch" onclick="updateHiddenInput()"><br>
+            {% if session['is_manager'] == 'is_manager' %}
+            <label class="input_labels" for="">Generate Scret ID</label>
+            <input class="property_inputs" type="text" name="secret_id" minlength="4" required><br>
+            {% endif %}
             <input type="hidden" id="hiddenInput" name="switchState" value="no">
             <label style="margin-top: 5px;" class="input_labels" for="">Enable dark mode</label>
             <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch1" onclick="updateHiddenInput1()"><br>
