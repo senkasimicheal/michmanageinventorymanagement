@@ -1742,86 +1742,82 @@ def tenant_data():
         return redirect('/tenant-login-page')
     else:
         account_type = session.get('account_type')
-        if account_type == 'Property Management':
-            current_tenant_data = list(db.tenants.find({'tenantEmail': tenantEmail, 'propertyName': propertyName}))
+        current_tenant_data = list(db.tenants.find({'tenantEmail': tenantEmail, 'propertyName': propertyName}))
 
-            tenant_acc_setting = db.tenant_user_accounts.find_one({'_id': ObjectId(login_data)})
-            dp = tenant_acc_setting.get('dp')
-            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            auth = tenant_acc_setting.get('auth', "no")
+        tenant_acc_setting = db.tenant_user_accounts.find_one({'_id': ObjectId(login_data)})
+        dp = tenant_acc_setting.get('dp')
+        dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+        auth = tenant_acc_setting.get('auth', "no")
 
-            if len(current_tenant_data) == 0:
-                flash('We found no amount demanded', 'error')
-                return redirect('/complaint-form')
-            else:
-
-                tenant_data = []
-                month_mapping = {
-                    'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
-                    'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12,
-                    'Quarter 1': 3, 'Quarter 2': 6, 'Quarter 3': 9, 'Quarter 4': 12,
-                    '2024': 12, '2025': 12, '2026': 12
-                }
-                current_month = datetime.now().strftime('%B')
-                current_month_number = datetime.now().month
-                # Loop through each tenant in the old tenant data
-                for tenant in current_tenant_data:
-                    # Extract the required information
-                    name = tenant.get('tenantName')
-                    phone = tenant.get('tenantPhone')
-                    propertyName = tenant.get('propertyName')
-                    months_paid = tenant.get('months_paid')
-                    date_paid = tenant.get('date_last_paid')
-
-                    amount_demanded = max(0, tenant['section_value'] - tenant['available_amount'])
-                    last_payment_month = month_mapping.get(tenant['months_paid'], 0)
-                    last_payment_date = datetime(year=tenant["date_last_paid"].year, month=last_payment_month, day=1)
-                    next_payment_date = last_payment_date + timedelta(days=30)
-                    remaining_days = (next_payment_date - datetime.now()).days
-                    remaining_days = abs(remaining_days)
-
-                    if amount_demanded == 0:
-                        if last_payment_month < current_month_number:
-                            amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
-                            amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month
-
-                            tenant_data.append({
-                                'name': name,
-                                'phone': phone,
-                                'propertyName': propertyName,
-                                'amount_demanded': amount_demanded,
-                                'months_paid': f"From {calendar.month_name[last_payment_month+1]} to {current_month}",
-                                'date_paid': date_paid.strftime("%Y-%m-%d")
-                            })
-
-                    elif amount_demanded > 0:
-                        if last_payment_month == current_month_number:
-                            tenant_data.append({
-                                'name': name,
-                                'phone': phone,
-                                'propertyName': propertyName,
-                                'amount_demanded': amount_demanded,
-                                'months_paid': months_paid,
-                                'date_paid': date_paid.strftime("%Y-%m-%d")
-                            })
-                        
-                        elif last_payment_month < current_month_number:
-                            amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
-                            amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month
-
-                            tenant_data.append({
-                                'name': name,
-                                'phone': phone,
-                                'propertyName': propertyName,
-                                'amount_demanded': amount_demanded,
-                                'months_paid': f"From {months_paid} to {current_month}",
-                                'date_paid': date_paid.strftime("%Y-%m-%d")
-                            })
-            
-                return render_template('tenant monitor account.html',tenant_data=tenant_data, dp=dp_str, auth=auth)
+        if len(current_tenant_data) == 0:
+            flash('We found no amount demanded', 'error')
+            return redirect('/complaint-form')
         else:
-            flash('Your session expired or does not exist', 'error')
-            return redirect('/')
+
+            tenant_data = []
+            month_mapping = {
+                'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+                'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12,
+                'Quarter 1': 3, 'Quarter 2': 6, 'Quarter 3': 9, 'Quarter 4': 12,
+                '2024': 12, '2025': 12, '2026': 12
+            }
+            current_month = datetime.now().strftime('%B')
+            current_month_number = datetime.now().month
+            # Loop through each tenant in the old tenant data
+            for tenant in current_tenant_data:
+                # Extract the required information
+                name = tenant.get('tenantName')
+                phone = tenant.get('tenantPhone')
+                propertyName = tenant.get('propertyName')
+                months_paid = tenant.get('months_paid')
+                date_paid = tenant.get('date_last_paid')
+
+                amount_demanded = max(0, tenant['section_value'] - tenant['available_amount'])
+                last_payment_month = month_mapping.get(tenant['months_paid'], 0)
+                last_payment_date = datetime(year=tenant["date_last_paid"].year, month=last_payment_month, day=1)
+                next_payment_date = last_payment_date + timedelta(days=30)
+                remaining_days = (next_payment_date - datetime.now()).days
+                remaining_days = abs(remaining_days)
+
+                if amount_demanded == 0:
+                    if last_payment_month < current_month_number:
+                        amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
+                        amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month
+
+                        tenant_data.append({
+                            'name': name,
+                            'phone': phone,
+                            'propertyName': propertyName,
+                            'amount_demanded': amount_demanded,
+                            'months_paid': f"From {calendar.month_name[last_payment_month+1]} to {current_month}",
+                            'date_paid': date_paid.strftime("%Y-%m-%d")
+                        })
+
+                elif amount_demanded > 0:
+                    if last_payment_month == current_month_number:
+                        tenant_data.append({
+                            'name': name,
+                            'phone': phone,
+                            'propertyName': propertyName,
+                            'amount_demanded': amount_demanded,
+                            'months_paid': months_paid,
+                            'date_paid': date_paid.strftime("%Y-%m-%d")
+                        })
+                    
+                    elif last_payment_month < current_month_number:
+                        amount_next_month = int((round((remaining_days) / 30 + 0.5, 0)) * tenant['section_value'])
+                        amount_demanded = (tenant['section_value'] - tenant['available_amount']) + amount_next_month
+
+                        tenant_data.append({
+                            'name': name,
+                            'phone': phone,
+                            'propertyName': propertyName,
+                            'amount_demanded': amount_demanded,
+                            'months_paid': f"From {months_paid} to {current_month}",
+                            'date_paid': date_paid.strftime("%Y-%m-%d")
+                        })
+            
+            return render_template('tenant monitor account.html',tenant_data=tenant_data, dp=dp_str, auth=auth)
 
 #############LOADING COMPLAINTS PAGE##########
 @app.route('/complaint-form')
@@ -2394,7 +2390,7 @@ def update_tenant_info():
                             time_unit = 'year(s)'
 
                         overdue_status = 'overdue' if overdue else 'due in'
-                        tenant_data.append((tenant['tenantName'], tenant['tenantPhone'], tenant['tenantEmail'],
+                        tenant_data.append((tenant['_id'],tenant['tenantName'], tenant['tenantPhone'], tenant['tenantEmail'],
                                             tenant['propertyName'], tenant['selected_section'], tenant['payment_type'],
                                             tenant['amount'], tenant['payment_mode'], tenant['months_paid'], 
                                             tenant['available_amount'], amount_demanded, tenant['payment_completion'], 
@@ -2404,7 +2400,6 @@ def update_tenant_info():
             if 'dp' in company:
                 dp = base64.b64decode(company['dp'])
                 dp_str = base64.b64encode(dp).decode()
-            
             return render_template('tenant information.html', tenant_data=tenant_data, dp=dp_str, current_year=current_year)
         else:
             flash('Your session expired or does not exist', 'error')
@@ -2518,7 +2513,6 @@ def get_financial_receipt():
 def update():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
-    current_year = datetime.now().year
     if login_data is None:
         flash('Login first', 'error') 
         return redirect('/')
@@ -2526,31 +2520,27 @@ def update():
         account_type = session.get('account_type')
         if account_type == 'Property Management':
             send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
+            
+            tenantId = request.form.get('tenantId')
+            section_tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
 
             new_amount_from_form = request.form.get('amount_paid')
             payment_mode = request.form.get('payment_mode')
             months_paid = request.form.get('months_paid')
             date = request.form.get('date')
-            tenantEmail = request.form.get('tenantEmail')
-            propertyName = request.form.get('propertyName')
-            selected_section = request.form.get('selected_section')
+            tenantEmail = section_tenant['tenantEmail']
+            propertyName = section_tenant['propertyName']
+            selected_section = section_tenant['selected_section']
             new_amount = int(new_amount_from_form)
             # Convert the date string to a datetime object
             date = datetime.strptime(date, '%Y-%m-%d')
-            current_year = datetime.now().year
 
-            section_tenant = db.tenants.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section})
             section_value = section_tenant['section_value']
             payment_status = ""
 
             company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
-            else:
-                dp_str = None
 
             old_data = db.tenants.find_one({'tenantEmail': tenantEmail, 'propertyName':propertyName, 'selected_section': selected_section})
-            query = {'company_name': company['company_name']}
                     
             old_amount = old_data['available_amount']
             old_date = old_data['date_last_paid']
@@ -3532,8 +3522,8 @@ def update_new_manager_email():
         return redirect('/add-new-manager-email')
 
 #######CLICK TO UPDATE TENANT#############
-@app.route('/selected-tenant/<tenantName>/<tenantEmail>/<propertyName>/<selected_section>/<payment_type>/<amount>/<months_paid>/<date_last_paid>')
-def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, payment_type, amount, months_paid,date_last_paid):
+@app.route('/selected-tenant/<tenantId>')
+def selected_tenant(tenantId):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
@@ -3547,15 +3537,16 @@ def selected_tenant(tenantName, tenantEmail, propertyName, selected_section, pay
                 dp_str = company['dp']
             else:
                 dp_str = None
-            date_last_paid = datetime.strptime(date_last_paid, '%Y-%m-%d')
-            return render_template('update tenant information.html',tenantName=tenantName,tenantEmail=tenantEmail,propertyName=propertyName,selected_section=selected_section,payment_type=payment_type,amount=amount,months_paid=months_paid,year=date_last_paid.year,dp=dp_str)
+            tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
+            date_last_paid = tenant['date_last_paid']
+            return render_template('update tenant information.html',tenantId=tenantId,tenantName=tenant['tenantName'],propertyName=tenant['propertyName'],selected_section=tenant['selected_section'],payment_type=tenant['payment_type'],amount=tenant['amount'],months_paid=tenant['months_paid'],year=date_last_paid.year,dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
         
 ##########EDIT TENANT INFO###################
-@app.route('/edit/<tenantName>/<email>/<property_name>/<selected_section>/<payment_type>')
-def edit(tenantName, email, property_name, selected_section, payment_type):
+@app.route('/edit/<tenantId>')
+def edit(tenantId):
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
     if login_data is None:
@@ -3570,11 +3561,11 @@ def edit(tenantName, email, property_name, selected_section, payment_type):
                 dp_str = company['dp']
             else:
                 dp_str = None
-            tenant = db.tenants.find_one({'propertyName': property_name, 'selected_section': selected_section, 'tenantName': tenantName, 'company_name': company['company_name']})
+            tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
             if tenant is None:
                 return "Tenant not found", 404
             # Pass the tenant's info to the template
-            return render_template('edit.html',tenantName=tenantName, tenant=tenant, payment_type=payment_type, dp=dp_str)
+            return render_template('edit.html',tenantId=tenantId,tenantName=tenant['tenantName'], payment_type=tenant['payment_type'], dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -3592,9 +3583,7 @@ def make_edits():
         if account_type == 'Property Management':
             send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
-            tenantEmail = request.form.get('tenantEmail')
-            propertyName = request.form.get('propertyName')
-            selected_section = request.form.get('selected_section')
+            tenantId = request.form.get('tenantId')
             company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
             # Create a dictionary for the fields to update
             fields_to_update = {}
@@ -3604,7 +3593,7 @@ def make_edits():
                 section_value = int(section_value)
                 fields_to_update['section_value'] = section_value
             else:
-                tenant = db.tenants.find_one({'propertyName': propertyName, 'selected_section': selected_section, 'tenantEmail': tenantEmail, 'company_name': company['company_name']})
+                tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
                 section_value = tenant['section_value']
 
             date_last_paid = tenant['date_last_paid']
@@ -3619,7 +3608,7 @@ def make_edits():
                 doc = SimpleDocTemplate(buffer, pagesize=letter)
 
                 # QR Code Generation
-                url = f'https://michmanagement.onrender.com//get_receipt?tenantEmail={tenantEmail}&propertyName={propertyName}&selected_section={selected_section}&months_paid={{{tenant["months_paid"]}}}&year={date_last_paid.year}'
+                url = f'https://michmanagement.onrender.com//get_receipt?tenantId={tenantId}'
                 qr = qrcode.QRCode(
                     version=1,
                     error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -3635,7 +3624,7 @@ def make_edits():
                 data = [
                     ['Rent Payment Receipt - ' + company['company_name'], ''],
                     ['Receipt for:', tenant['tenantName']],
-                    ['Property Name:', propertyName],
+                    ['Property Name:', tenant['propertyName']],
                     ['Payment Type:', tenant['payment_type']],
                     ['Amount Paid:', f"{tenant['currency']} {amount}"],
                     ['Payment Mode:', tenant['payment_mode']],
@@ -3687,7 +3676,7 @@ def make_edits():
                 if send_emails is not None:
                     msg = Message('Rent Payment Receipt-Mich Manage', 
                                 sender='michpmts@gmail.com', 
-                                recipients=[tenantEmail])
+                                recipients=[tenant['tenantEmail']])
                     msg.html = f"""
                     <html>
                     <body>
@@ -3725,16 +3714,15 @@ def make_edits():
                     payment_completion = 'Partial'
                 elif amount > section_value:
                     flash('Amount entered should not exceed section value', 'error')
-                    return redirect(url_for('edit', email=tenantEmail))
+                    return redirect(url_for('edit', tenantId=tenantId))
                 else:
                     payment_completion = 'Full'
                 fields_to_update['payment_completion'] = payment_completion
 
-            db.tenants.update_one({'propertyName': propertyName, 'selected_section': selected_section, 'tenantEmail':tenantEmail, 'company_name': company['company_name']},
-                                    {'$set': fields_to_update})
+            db.tenants.update_one({'_id': ObjectId(tenantId)},{'$set': fields_to_update})
 
             flash('Tenant was successfully edited', 'success')
-            tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
+            tenant_user = db.tenant_user_accounts.find_one({'tenantEmail': tenant['tenantEmail'], 'propertyName': tenant['propertyName']})
             if tenant_user:
                 db.userNotifications.create_index([("timestamp", ASCENDING)], expireAfterSeconds=20)
                 db.userNotifications.insert_one({
@@ -3743,7 +3731,7 @@ def make_edits():
                     'notification': f"New payment recorded by manager {login_data}",
                     'timestamp': datetime.utcnow()
                 })
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Edit tenant data', 'tenantEmail':tenantEmail, 'timestamp': datetime.now()})
+            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Edit tenant data', 'tenantEmail':tenant['tenantEmail'], 'timestamp': datetime.now()})
             return redirect('/update-tenant-info')
         else:
             flash('Your session expired or does not exist', 'error')
@@ -9121,5 +9109,5 @@ scheduler.add_job(
 
 scheduler.start()
 
-if __name__ == '__main__':
-    app.run()
+# if __name__ == '__main__':
+#     app.run()

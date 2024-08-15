@@ -371,11 +371,12 @@
                   <th>Section Value</th>
                   <th>Last Paid</th>
                   <th>Remaining Period</th>
-                  <th>Edit</th>
                   <th>Delete</th>
               </tr>
-              {% for tenantName, tenantPhone, tenantEmail, propertyName, selected_section, payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid, remaining_days, time_unit, overdue_status in tenant_data %}
-              <tr title="{{ tenantName }}" style="cursor: pointer;" onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';">
+              {% for _id, tenantName, tenantPhone, tenantEmail, propertyName, selected_section, payment_type, amount, payment_mode,
+              months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency,
+              date_last_paid, remaining_days, time_unit, overdue_status in tenant_data %}
+              <tr title="{{ tenantName }}" style="cursor: pointer;" data-id="{{ _id }}">
                   <td>{{ loop.index }}</td>
                   <td>{{ tenantName }}</td>
                   <td>{{ tenantPhone }} <a href="tel:{{ tenantPhone }}" class="btn-primary">&#9742;</a></td>
@@ -392,14 +393,11 @@
                   <td>{{ date_last_paid }}</td>
                   <td>{{ overdue_status }} {{ remaining_days }} {{ time_unit }}</td>
                   <td>
-                      <a href="{{ url_for('edit', tenantName=tenantName, email=tenantEmail, property_name=propertyName, selected_section=selected_section, payment_type=payment_type) }}">Edit</a>
-                  </td>
-                  <td>
                       <a href="{{ url_for('delete_tenant', tenantEmail=tenantEmail,propertyName=propertyName,selected_section=selected_section) }}" onclick="event.stopPropagation(); return confirmDelete();">Delete</a>
                   </td>
               </tr>
               {% endfor %}
-              <tr>
+              <tr id="totalRow">
                   <td colspan="8" style="font-weight: bold;">Total</td>
                   <td style="font-weight: bold;" id="totalAmountPaid">0</td>
                   <td style="font-weight: bold;" id="totalAmountDemanded">0</td>
@@ -433,9 +431,8 @@
                 payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid,
                 remaining_days, time_unit, overdue_status in tenant_data %}
                 {% if amount_demanded > 0 %}
-                    <tr title="{{ tenantName }}" style="cursor: pointer;" 
-                    {% if session.get('update_tenant') != 'no' %}
-                        onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';"
+                    <tr title="{{ tenantName }}" style="cursor: pointer;" {% if session.get('update_tenant') !='no'
+                      %}onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';"
                     {% endif %}>
                         <td>{{ loop.index }}</td>
                         <td>{{ tenantName }}</td>
@@ -452,9 +449,6 @@
                         <td>{{overdue_status}} {{ remaining_days }} {{time_unit}}</td>
                         {% if session.get('edit_tenant') != 'no' %}
                         <td>
-                            <a href="{{ url_for('edit', tenantName=tenantName, email=tenantEmail, property_name=propertyName, selected_section=selected_section, payment_type=payment_type) }}">Edit</a>
-                        </td>
-                        <td>
                             <a href="{{ url_for('delete_tenant', tenantEmail=tenantEmail,propertyName=propertyName,selected_section=selected_section) }}" onclick="event.stopPropagation(); return confirmDelete();">Delete</a>
                         </td>
                         {% endif %}
@@ -465,6 +459,82 @@
             {% endif %}
           </div>
         </div>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', (event) => {
+            const table = document.getElementById('tenantTable');
+            let buttonContainer = null;
+
+            // Create button container and buttons once
+            function createButtons() {
+              buttonContainer = document.createElement('div');
+              buttonContainer.classList.add('button-container');
+              buttonContainer.style.display = 'inline-block';
+
+              // Create edit button
+              const editButton = document.createElement('button');
+              editButton.textContent = 'Edit';
+              editButton.classList.add('action-button', 'edit-button');
+              editButton.style.marginRight = '5px';
+
+              // Create update button
+              const updateButton = document.createElement('button');
+              updateButton.textContent = 'Update';
+              updateButton.classList.add('action-button', 'update-button');
+
+              // Append buttons to the container
+              buttonContainer.appendChild(editButton);
+              buttonContainer.appendChild(updateButton);
+            }
+
+            // When a row is clicked
+            table.addEventListener('click', (e) => {
+              if (e.target && e.target.nodeName === 'TD') {
+                // Get the clicked row
+                const currentRow = e.target.parentElement;
+
+                // Skip if the row has id 'totalRow'
+                if (currentRow.id === 'totalRow') return;
+
+                // Remove buttons from the previous row, if any
+                if (buttonContainer && buttonContainer.parentNode) {
+                  buttonContainer.parentNode.removeChild(buttonContainer);
+                }
+
+                const tenantId = currentRow.getAttribute('data-id');
+                const tenantName = currentRow.cells[1].textContent;
+                const propertyName = currentRow.cells[3].textContent;
+
+                // Set button actions
+                buttonContainer.children[0].onclick = function () {
+                  if (confirm(`Are you sure you want to edit tenant: ${tenantName}, Property: ${propertyName}?`)) {
+                    window.location.href = `/edit/${tenantId}`;
+                  }
+                };
+                buttonContainer.children[1].onclick = function () {
+                  if (confirm(`Are you sure you want to update tenant: ${tenantName}, Property: ${propertyName}?`)) {
+                    window.location.href = `/selected-tenant/${tenantId}`;
+                  }
+                };
+
+                // Insert the container into the second cell of the clicked row
+                currentRow.cells[1].appendChild(buttonContainer);
+              }
+            });
+
+            // Remove buttons when clicking outside the table
+            window.addEventListener('click', function (event) {
+              if (!table.contains(event.target)) {
+                if (buttonContainer && buttonContainer.parentNode) {
+                  buttonContainer.parentNode.removeChild(buttonContainer);
+                }
+              }
+            });
+
+            // Initial button creation
+            createButtons();
+          });
+        </script>
 
         <script>
           function calculateTotals() {

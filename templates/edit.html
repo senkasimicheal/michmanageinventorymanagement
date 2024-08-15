@@ -353,9 +353,7 @@
           <form id="myForm" class="property_forn content-pannel" action="{{url_for('make_edits')}}" method="POST" enctype="multipart/form-data">
             <h6 class="tenant_name">For: {{ tenantName }}</h6>
             <!-- Hidden input for tenantEmail -->
-            <input type="hidden" name="tenantEmail" value="{{ tenant.tenantEmail }}">
-            <input type="hidden" name="propertyName" value="{{ tenant.propertyName }}">
-            <input type="hidden" name="selected_section" value="{{ tenant.selected_section }}">
+            <input type="hidden" name="tenantId" value="{{ tenantId }}">
             <label class="input_labels" for="">Section Value</label>
             <input class="property_inputs" type="number" min="100000" name="section_value"><br>
             <label class="input_labels" for="">Amount Paid</label>
