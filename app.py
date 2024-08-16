@@ -8980,6 +8980,8 @@ def get_product():
     product_id = request.form.get('product_id')
     selling_price = request.form.get('selling_price')
     selling_price = float(selling_price)
+    update_sale_quantity = request.form.get('update_sale_quantity')
+    update_sale_quantity = float(update_sale_quantity)
     company = db.managers.find_one({'_id': ObjectId(company_id)})
     if company:
         if 'secret_id' in company:
@@ -8991,23 +8993,23 @@ def get_product():
                         revenue = existing_item['selling_price']
                         timestamp = datetime.now()
                         if 'available_quantity' in existing_item:
-                            if existing_item['available_quantity'] > 0:
-                                available_quantity = existing_item['available_quantity'] - 1
+                            if existing_item['available_quantity'] >= update_sale_quantity:
+                                available_quantity = existing_item['available_quantity'] - update_sale_quantity
                                 stockDate = existing_item['stockDate']
                             else:
-                                flash('Item is out of stock', 'error')
-                                return redirect('/')
+                                flash('Item is out of stock, enter some small quantity', 'error')
+                                return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
                         else:
-                            if existing_item['quantity'] > 0:  
-                                available_quantity = existing_item['quantity'] - 1
+                            if existing_item['quantity'] >= update_sale_quantity:  
+                                available_quantity = existing_item['quantity'] - update_sale_quantity
                                 stockDate = existing_item['stockDate']
                             else:
-                                flash('Item is out of stock', 'error')
-                                return redirect('/')
+                                flash('Item is out of stock, enter some small quantity', 'error')
+                                return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
                         stock_id = existing_item['_id']
                         data = {
                             'itemName': existing_item['itemName'],
-                            'quantity': 1,
+                            'quantity': update_sale_quantity,
                             'unitPrice': revenue,
                             'saleDate': timestamp,
                             'company_name': company['name'],
