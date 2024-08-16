@@ -322,7 +322,7 @@ def send_reports():
         if send_emails is not None:
             msg = Message(
                 'Mich Manage - Monthly Property Performance Report',
-                sender='michpmts@gmail.com',
+                sender='michmanage@outlook.com',
                 recipients=[email]
             )
 
@@ -381,7 +381,7 @@ def send_payment_reminders():
             #Sending reminder message
             if send_emails is not None:
                 msg = Message('Rent Payment Overdue - Mich Manage', 
-                sender='michpmts@gmail.com', 
+                sender='michmanage@outlook.com', 
                 recipients=[manager_email])
                 msg.html = f"""
                 <html>
@@ -405,7 +405,7 @@ def send_payment_reminders():
             #Sending reminder message
             if send_emails is not None:
                 msg = Message('Payment Reminder - Mich Manage', 
-                sender='michpmts@gmail.com', 
+                sender='michmanage@outlook.com', 
                 recipients=[tenant_email])
                 msg.html = f"""
                 <html>
@@ -458,7 +458,7 @@ def send_contract_expiry_reminders():
             # Sending reminder message
             if send_emails is not None:
                 msg = Message('Contract Expiry Reminder - Mich Manage', 
-                sender='michpmts@gmail.com', 
+                sender='michmanage@outlook.com', 
                 recipients=[manager_email])
                 msg.html = f"""
                 <html>
@@ -489,11 +489,11 @@ def send_message():
     email = request.form.get('email')
     phone = request.form.get('phone')
     message = request.form.get('message')
-    admin_sender = 'michpmts@gmail.com'
+    admin_sender = 'michmanage@outlook.com'
     #Sending inquiries
     if send_emails is not None:
         msg = Message('Inquiries - Mich Manage', 
-        sender='michpmts@gmail.com', 
+        sender='michmanage@outlook.com', 
         recipients=[admin_sender, email])
         msg.html = f"""
         <html>
@@ -991,7 +991,7 @@ def register_account():
     no_send_emails_code = 0
     if send_emails is not None:
         msg = Message('Email Verification from Mich Manage', 
-                    sender='michpmts@gmail.com', 
+                    sender='michmanage@outlook.com', 
                     recipients=[email])
         msg.html = f"""
         <html>
@@ -1086,7 +1086,7 @@ def send_verification_email(manager_email, manager_name, code):
 
     if send_emails is not None:
         msg = Message('Password Reset Verification Code - Mich Manage', 
-                    sender='michpmts@gmail.com', 
+                    sender='michmanage@outlook.com', 
                     recipients=[manager_email])
         msg.html = f"""
         <html>
@@ -1172,7 +1172,7 @@ def password_reset_verifying_user():
     # Send password reset successful email
     if send_emails is not None:
         msg = Message('Your Password Has Been Successfully Reset', 
-                    sender='michpmts@gmail.com', 
+                    sender='michmanage@outlook.com', 
                     recipients=[email])
         msg.html = f"""
         <html>
@@ -1241,7 +1241,7 @@ def userlogin():
             #Sending verification code
             if send_emails is not None:
                 msg = Message('Verify Your Identity - Mich Manage', 
-                              sender='michpmts@gmail.com', 
+                              sender='michmanage@outlook.com', 
                               recipients=[manager["email"]])
                 msg.html = f"""
                 <html>
@@ -1362,7 +1362,7 @@ def resend_auth_code(username):
     #Sending verification code
     if send_emails is not None:
         msg = Message('Verify Your Identity - Mich Manage', 
-        sender='michpmts@gmail.com', 
+        sender='michmanage@outlook.com', 
         recipients=[manager["email"]])
         msg.html = f"""
         <html>
@@ -1667,7 +1667,7 @@ def tenant_login():
 
                 if send_emails is not None:
                     msg = Message('Verify Your Identity - Mich Manage', 
-                    sender='michpmts@gmail.com', 
+                    sender='michmanage@outlook.com', 
                     recipients=[tenant["tenantEmail"]])
                     msg.html = f"""
                     <html>
@@ -1894,7 +1894,7 @@ def add_complaint():
         #Sending verification code
         if send_emails is not None:
             msg = Message('New Complaint On Mich Manage', 
-            sender='michpmts@gmail.com', 
+            sender='michmanage@outlook.com', 
             recipients=[manager_email])
             msg.html = f"""
             <html>
@@ -2005,7 +2005,7 @@ def tenant_reply_complaint():
 
         if send_emails is not None:
             msg = Message('New Reply From Tenant', 
-            sender='michpmts@gmail.com', 
+            sender='michmanage@outlook.com', 
             recipients=[manager_email])
             msg.html = f"""
             <html>
@@ -2148,7 +2148,7 @@ def update_complaint():
 
             if send_emails is not None:
                 msg = Message('New Reply From Property Manager', 
-                sender='michpmts@gmail.com', 
+                sender='michmanage@outlook.com', 
                 recipients=[tenant_email])
                 msg.html = f"""
                 <html>
@@ -2214,7 +2214,7 @@ def resolved_complaints(complaint_id):
 
             if send_emails is not None:
                 msg = Message('Complaint was resolved', 
-                sender='michpmts@gmail.com', 
+                sender='michmanage@outlook.com', 
                 recipients=[tenant_email, manager_email])
                 msg.html = f"""
                 <html>
@@ -2684,7 +2684,7 @@ def update():
                                     # Create the email message
                                     if send_emails is not None:
                                         msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
+                                                    sender='michmanage@outlook.com', 
                                                     recipients=[tenantEmail])
                                         msg.html = f"""
                                         <html>
@@ -2720,7 +2720,7 @@ def update():
                                     # Create the email message
                                     if send_emails is not None:
                                         msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
+                                                    sender='michmanage@outlook.com', 
                                                     recipients=[tenantEmail])
                                         msg.html = f"""
                                         <html>
@@ -2760,7 +2760,7 @@ def update():
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
+                                                sender='michmanage@outlook.com', 
                                                 recipients=[tenantEmail])
                                     msg.html = f"""
                                     <html>
@@ -2796,7 +2796,7 @@ def update():
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
+                                                sender='michmanage@outlook.com', 
                                                 recipients=[tenantEmail])
                                     msg.html = f"""
                                     <html>
@@ -2843,7 +2843,7 @@ def update():
                                     # Create the email message
                                     if send_emails is not None:
                                         msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
+                                                    sender='michmanage@outlook.com', 
                                                     recipients=[tenantEmail])
                                         msg.html = f"""
                                         <html>
@@ -2879,7 +2879,7 @@ def update():
                                     # Create the email message
                                     if send_emails is not None:
                                         msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                    sender='michpmts@gmail.com', 
+                                                    sender='michmanage@outlook.com', 
                                                     recipients=[tenantEmail])
                                         msg.html = f"""
                                         <html>
@@ -2918,7 +2918,7 @@ def update():
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
+                                                sender='michmanage@outlook.com', 
                                                 recipients=[tenantEmail])
                                     msg.html = f"""
                                     <html>
@@ -2954,7 +2954,7 @@ def update():
                                 # Create the email message
                                 if send_emails is not None:
                                     msg = Message('Rent Payment Receipt-Mich Manage', 
-                                                sender='michpmts@gmail.com', 
+                                                sender='michmanage@outlook.com', 
                                                 recipients=[tenantEmail])
                                     msg.html = f"""
                                     <html>
@@ -3093,7 +3093,7 @@ def update():
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
-                                            sender='michpmts@gmail.com', 
+                                            sender='michmanage@outlook.com', 
                                             recipients=[tenantEmail])
                                 msg.html = f"""
                                 <html>
@@ -3129,7 +3129,7 @@ def update():
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
-                                            sender='michpmts@gmail.com', 
+                                            sender='michmanage@outlook.com', 
                                             recipients=[tenantEmail])
                                 msg.html = f"""
                                 <html>
@@ -3165,7 +3165,7 @@ def update():
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
-                                            sender='michpmts@gmail.com', 
+                                            sender='michmanage@outlook.com', 
                                             recipients=[tenantEmail])
                                 msg.html = f"""
                                 <html>
@@ -3209,7 +3209,7 @@ def update():
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
-                                            sender='michpmts@gmail.com', 
+                                            sender='michmanage@outlook.com', 
                                             recipients=[tenantEmail])
                                 msg.html = f"""
                                 <html>
@@ -3245,7 +3245,7 @@ def update():
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
-                                            sender='michpmts@gmail.com', 
+                                            sender='michmanage@outlook.com', 
                                             recipients=[tenantEmail])
                                 msg.html = f"""
                                 <html>
@@ -3281,7 +3281,7 @@ def update():
                             # Create the email message
                             if send_emails is not None:
                                 msg = Message('Rent Payment Receipt-Mich Manage', 
-                                            sender='michpmts@gmail.com', 
+                                            sender='michmanage@outlook.com', 
                                             recipients=[tenantEmail])
                                 msg.html = f"""
                                 <html>
@@ -3675,7 +3675,7 @@ def make_edits():
                 # Create the email message
                 if send_emails is not None:
                     msg = Message('Rent Payment Receipt-Mich Manage', 
-                                sender='michpmts@gmail.com', 
+                                sender='michmanage@outlook.com', 
                                 recipients=[tenant['tenantEmail']])
                     msg.html = f"""
                     <html>
@@ -3987,7 +3987,7 @@ def add_tenant():
                     # Create the email message
                     if send_emails is not None:
                         msg = Message('Rent Payment Receipt-Mich Manage', 
-                                    sender='michpmts@gmail.com', 
+                                    sender='michmanage@outlook.com', 
                                     recipients=[tenantEmail])
                         msg.html = f"""
                         <html>
@@ -4049,7 +4049,7 @@ def add_tenant():
                     # Create the email message
                     if send_emails is not None:
                         msg = Message('Rent Payment Receipt-Mich Manage', 
-                                    sender='michpmts@gmail.com', 
+                                    sender='michmanage@outlook.com', 
                                     recipients=[tenantEmail])
                         msg.html = f"""
                         <html>
@@ -4217,7 +4217,7 @@ def add_property_manager():
 
             if send_emails is not None:
                 msg = Message('Account Creation Invitation from Mich Manage', 
-                            sender='michpmts@gmail.com', 
+                            sender='michmanage@outlook.com', 
                             recipients=allowed_managers)
                 msg.html = f"""
                 <html>
@@ -7968,7 +7968,7 @@ def add_new_account():
                     if item['email']:
                         if send_emails is not None:
                             msg = Message(f"Payment Receipt From {company['company_name']}", 
-                                        sender='michpmts@gmail.com', 
+                                        sender='michmanage@outlook.com', 
                                         recipients=[item['email']])
                             msg.html = f"""
                             <html>
@@ -8177,7 +8177,7 @@ def update_accounts():
                 if email and email.strip():
                     if send_emails is not None:
                         msg = Message(f"Payment Receipt From {account['company_name']}", 
-                                    sender='michpmts@gmail.com', 
+                                    sender='michmanage@outlook.com', 
                                     recipients=[account['email']])
                         msg.html = f"""
                         <html>
@@ -8433,7 +8433,7 @@ def apply_finance_edits():
                         if email and email.strip():
                             if send_emails is not None:
                                 msg = Message(f"Payment Receipt From {selected_item['company_name']}", 
-                                            sender='michpmts@gmail.com', 
+                                            sender='michmanage@outlook.com', 
                                             recipients=[selected_item['email']])
                                 msg.html = f"""
                                 <html>
@@ -9054,7 +9054,7 @@ def send_payment_financial_reminders():
                 #Sending reminder message
                 if send_emails is not None:
                     msg = Message('Payment Reminders - Mich Manage', 
-                    sender='michpmts@gmail.com', 
+                    sender='michmanage@outlook.com', 
                     recipients=[user_email])
                     msg.html = f"""
                     <html>
