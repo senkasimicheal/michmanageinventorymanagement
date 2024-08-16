@@ -275,7 +275,20 @@
             <a class="nav-link" href="{{ url_for('add_tenants') }}" id="add-tenant">
               <i class="typcn typcn-film menu-icon"></i>
               <span class="menu-title">Add Tenants</span>
-              
+            </a>
+            </li>
+            {% endif %}
+            {% if session.get('add_properties') != 'no' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('property_expenses') }}" id="add-property">
+                <i class="typcn typcn-document-text menu-icon"></i>
+                <span class="menu-title">Add Expenses</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('view_property_expenses') }}" id="add-property">
+                <i class="typcn typcn-document-text menu-icon"></i>
+                <span class="menu-title">View Expenses</span>
             </a>
           </li>
           {% endif %}

@@ -252,7 +252,20 @@
             <a class="nav-link" href="{{ url_for('add_tenants') }}" id="add-tenant">
               <i class="typcn typcn-film menu-icon"></i>
               <span class="menu-title">Add Tenants</span>
-              
+            </a>
+            </li>
+            {% endif %}
+            {% if session.get('add_properties') != 'no' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('property_expenses') }}" id="add-property">
+                <i class="typcn typcn-document-text menu-icon"></i>
+                <span class="menu-title">Add Expenses</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('view_property_expenses') }}" id="add-property">
+                <i class="typcn typcn-document-text menu-icon"></i>
+                <span class="menu-title">View Expenses</span>
             </a>
           </li>
           {% endif %}
@@ -397,8 +410,10 @@
             <label style="margin-top: 5px;" class="input_labels" for="">2 Factor Authentication</label>
             <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch" onclick="updateHiddenInput()"><br>
             {% if session['is_manager'] == 'is_manager' %}
+            {% if session['account_type'] == 'Enterprise Resource Planning' %}
             <label class="input_labels" for="">Generate Scret ID</label>
             <input class="property_inputs" type="text" name="secret_id" minlength="4" required><br>
+            {% endif %}
             {% endif %}
             <input type="hidden" id="hiddenInput" name="switchState" value="no">
             <label style="margin-top: 5px;" class="input_labels" for="">Enable dark mode</label>

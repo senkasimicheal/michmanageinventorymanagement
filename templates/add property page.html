@@ -274,7 +274,20 @@
             <a class="nav-link" href="{{ url_for('add_tenants') }}" id="add-tenant">
               <i class="typcn typcn-film menu-icon"></i>
               <span class="menu-title">Add Tenants</span>
-              
+            </a>
+            </li>
+            {% endif %}
+            {% if session.get('add_properties') != 'no' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('property_expenses') }}" id="add-property">
+                <i class="typcn typcn-document-text menu-icon"></i>
+                <span class="menu-title">Add Expenses</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('view_property_expenses') }}" id="add-property">
+                <i class="typcn typcn-document-text menu-icon"></i>
+                <span class="menu-title">View Expenses</span>
             </a>
           </li>
           {% endif %}
@@ -351,11 +364,11 @@
         </div>
         <div class="add-property-forms content-wrapper">
           <form id="myForm" class="property_forn content-pannel" action="{{url_for('add_property')}}" method="POST" enctype="multipart/form-data">
-            <h4>Add new property</h4>
+            <h4>Add new properties</h4>
             <label class="input_labels" for="">Property Unique Name</label>
-            <input class="property_inputs" type="text" name="propertyName" required><br>
+            <input class="property_inputs" type="text" name="propertyName"><br>
             <label class="input_labels" for="">Property Type</label>
-            <select class="property_inputs" name="type" id="" required>
+            <select class="property_inputs" name="type" id="">
                 <option value="" disabled selected>Select type</option>
                 <option value="Studio Apartments">Studio Apartments</option>
                 <option value="One-Bedroom Apartments">One-Bedroom Apartments</option>
@@ -372,26 +385,28 @@
             <label class="input_labels" for="">Property Sections</label>
             <input class="property_inputs" type="text" id="values" name="sections" pattern="[^ ]*" multiple oninput="processInput()"><br>
             <label class="input_labels" for="">Overall Property Value</label>
-            <input class="property_inputs" type="number" min="100000" name="property_value" required><br>
+            <input class="property_inputs" type="number" min="100000" name="property_value"><br>
             <label class="input_labels" for="">Late payment day</label>
-            <input class="property_inputs" type="number" min="6" name="late_payment_day" required><br>
+            <input class="property_inputs" type="number" min="6" name="late_payment_day"><br>
             <label class="input_labels" for="">Property Address</label>
-            <input class="property_inputs" type="text" name="address" required><br>
+            <input class="property_inputs" type="text" name="address"><br>
             <label class="input_labels" for="">City</label>
-            <input class="property_inputs" type="text" name="city" required><br>
+            <input class="property_inputs" type="text" name="city"><br>
             <label class="input_labels" for="">State/Province</label>
-            <input class="property_inputs" type="text" name="state" required><br>
+            <input class="property_inputs" type="text" name="state"><br>
             <label class="input_labels" for="">County/Parish</label>
-            <input class="property_inputs" type="text" name="parish" required><br>
+            <input class="property_inputs" type="text" name="parish"><br>
             <label class="input_labels" for="">Owner Name</label>
-            <input class="property_inputs" type="text" name="owner_name" required><br>
+            <input class="property_inputs" type="text" name="owner_name"><br>
             <label class="input_labels" for="">Email Address</label>
-            <input class="property_inputs" type="email" name="owner_email" required><br>
+            <input class="property_inputs" type="email" name="owner_email"><br>
             <label class="input_labels" for="">Phone Number</label>
-            <input class="property_inputs" type="tel" name="owner_phone" required><br>
+            <input class="property_inputs" type="tel" name="owner_phone"><br>
             <label class="input_labels" for="">Residence</label>
-            <input class="property_inputs" type="text" name="owner_residence" required>
-            <input style="margin-top: 2rem !important;" type="submit" class="btn" value="Add" required>
+            <input class="property_inputs" type="text" name="owner_residence"><br>
+            <button type="button" id="add-item-button">Add Property</button>
+            <input type="submit" class="btn" id="submit-button" value="Submit">
+            <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
           </form>
         </div>
         <!-- content-wrapper ends -->
@@ -415,6 +430,118 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      let itemsArray = [];
+
+      document.getElementById('add-item-button').addEventListener('click', () => {
+        // Get the form values
+        const propertyName = document.querySelector('input[name="propertyName"]').value;
+        const type = document.querySelector('select[name="type"]').value;
+        const sections = document.querySelector('input[name="sections"]').value;
+        const property_value = document.querySelector('input[name="property_value"]').value;
+        const late_payment_day = document.querySelector('input[name="late_payment_day"]').value;
+        const address = document.querySelector('input[name="address"]').value;
+        const city = document.querySelector('input[name="city"]').value;
+        const state = document.querySelector('input[name="state"]').value;
+        const parish = document.querySelector('input[name="parish"]').value;
+        const owner_name = document.querySelector('input[name="owner_name"]').value;
+        const owner_email = document.querySelector('input[name="owner_email"]').value;
+        const owner_phone = document.querySelector('input[name="owner_phone"]').value;
+        const owner_residence = document.querySelector('input[name="owner_residence"]').value;
+
+        // Check if any of the fields are empty
+        if (!propertyName || !type || !sections || !property_value || !late_payment_day || !address || !city || !state || !parish || !owner_name || !owner_email || !owner_phone || !owner_residence) {
+          alert("Please fill in all fields before adding a property.");
+          return; // Stop here if any field is empty
+        }
+
+        // Create an object with the form data
+        const itemObject = {
+          propertyName,
+          type,
+          sections,
+          property_value,
+          late_payment_day,
+          address,
+          city,
+          state,
+          parish,
+          owner_name,
+          owner_email,
+          owner_phone,
+          owner_residence
+        };
+
+        // Add the object to the array
+        itemsArray.push(itemObject);
+
+        // Clear the input fields
+        document.querySelector('input[name="propertyName"]').value = '';
+        document.querySelector('select[name="type"]').value = '';
+        document.querySelector('input[name="sections"]').value = '';
+        document.querySelector('input[name="property_value"]').value = '';
+        document.querySelector('input[name="late_payment_day"]').value = '';
+        document.querySelector('input[name="address"]').value = '';
+        document.querySelector('input[name="city"]').value = '';
+        document.querySelector('input[name="state"]').value = '';
+        document.querySelector('input[name="parish"]').value = '';
+        document.querySelector('input[name="owner_name"]').value = '';
+        document.querySelector('input[name="owner_email"]').value = '';
+        document.querySelector('input[name="owner_phone"]').value = '';
+        document.querySelector('input[name="owner_residence"]').value = '';
+      });
+
+      // Handle the form submission
+      document.querySelector('.add-property-forms form').addEventListener('submit', (e) => {
+        e.preventDefault(); // Prevent the default form submission
+
+        if (itemsArray.length === 0) {
+          alert("Please add at least one property.");
+          return; // Stop here if no items have been added
+        }
+
+        // Disable the submit button and show the wait message only if itemsArray is not empty
+        var submitButton = document.getElementById("submit-button");
+        submitButton.disabled = true;
+
+        var waitMessage = document.getElementById("wait-message");
+        waitMessage.style.display = "inline";
+
+        // Optionally, change the text of the submit button
+        submitButton.value = "Submitting...";
+
+        // Send the itemsArray to your Flask app using fetch or another method
+        fetch('{{url_for('add_property')}}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ items: itemsArray })
+        })
+          .then(response => response.json())
+          .then(data => {
+            // Clear the array after successful submission
+            itemsArray = [];
+
+            // Optionally, clear all input fields here as well
+            if (data.redirect) {
+              window.location.href = data.redirect; // Redirect to the new URL
+            } else {
+              alert(data.message);
+            }
+
+          })
+          .catch((error) => {
+            alert("An error occurred while submitting properties.");
+            // Re-enable the submit button and hide the wait message if there's an error
+            submitButton.disabled = false;
+            waitMessage.style.display = "none";
+          });
+      });
+    });
+  </script>
 
   <script>
     function processInput() {
@@ -452,11 +579,11 @@
             }
         }
         if (!allAnswered) {
-            if (!confirm('Are you sure you want to add this property?')) {
+          if (!confirm('Are you sure you want to add the properties?')) {
                 event.preventDefault();
             }
         } else {
-            if (!confirm('Are you sure you want to add this property?')) {
+          if (!confirm('Are you sure you want to add the properties?')) {
                 event.preventDefault();
             }
         }

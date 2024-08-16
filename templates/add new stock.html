@@ -436,21 +436,6 @@
   </script>
 
   <script>
-    document.getElementById("myForm").addEventListener("submit", function (event) {
-      // Disable the submit button
-      var submitButton = document.getElementById("submit-button");
-      submitButton.disabled = true;
-
-      // Show the wait message
-      var waitMessage = document.getElementById("wait-message");
-      waitMessage.style.display = "inline";
-
-      // Optionally, you can also change the text of the submit button
-      submitButton.value = "Submitting...";
-    });
-  </script>
-
-  <script>
     document.getElementById('end_date').addEventListener('change', function () {
       var startDate = new Date(document.getElementById('start_date').value);
       var endDate = new Date(this.value);
@@ -506,6 +491,16 @@
           return; // Stop here if no items have been added
         }
 
+        // Disable the submit button and show the wait message only if itemsArray is not empty
+        var submitButton = document.getElementById("submit-button");
+        submitButton.disabled = true;
+
+        var waitMessage = document.getElementById("wait-message");
+        waitMessage.style.display = "inline";
+
+        // Optionally, change the text of the submit button
+        submitButton.value = "Submitting...";
+
         // Send the itemsArray to your Flask app using fetch or another method
         fetch('{{url_for('add_new_stock')}}', {
           method: 'POST',
@@ -529,6 +524,9 @@
           })
           .catch((error) => {
             alert("An error occurred while submitting items.");
+            // Re-enable the submit button and hide the wait message if there's an error
+            submitButton.disabled = false;
+            waitMessage.style.display = "none";
           });
       });
     });

@@ -380,21 +380,6 @@
         </div>
 
         <script>
-          document.getElementById("myForm").addEventListener("submit", function (event) {
-            // Disable the submit button
-            var submitButton = document.getElementById("submit-button");
-            submitButton.disabled = true;
-
-            // Show the wait message
-            var waitMessage = document.getElementById("wait-message");
-            waitMessage.style.display = "inline";
-
-            // Optionally, you can also change the text of the submit button
-            submitButton.value = "Submitting...";          
-          });
-        </script>
-
-        <script>
           // Convert the items_to_update list from Jinja to a JavaScript array
           const itemsToUpdate = {{ items_to_update | tojson }};
         </script>
@@ -517,75 +502,87 @@
   </script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', (event) => {
-      let itemsArray = [];
+      document.addEventListener('DOMContentLoaded', (event) => {
+        let itemsArray = [];
 
-      document.getElementById('update-item-button').addEventListener('click', () => {
-        // Get the form values
-        const itemName = document.querySelector('input[name="typed_input"]').value;
-        const quantity = document.querySelector('input[name="update_quantity"]').value;
-        const unitPrice = document.querySelector('input[name="update_unit_price"]').value;
-        const stockDate = document.querySelector('input[name="update_stockdatee"]').value;
+        document.getElementById('update-item-button').addEventListener('click', () => {
+          // Get the form values
+          const itemName = document.querySelector('input[name="typed_input"]').value;
+          const quantity = document.querySelector('input[name="update_quantity"]').value;
+          const unitPrice = document.querySelector('input[name="update_unit_price"]').value;
+          const stockDate = document.querySelector('input[name="update_stockdatee"]').value;
 
-        // Check if any of the fields are empty
-        if (!itemName || !quantity || !unitPrice || !stockDate) {
-          alert("Please fill in all fields before updating an item.");
-          return; // Stop here if any field is empty
-        }
-
-        // Create an object with the form data
-        const itemObject = {
-          itemName,
-          quantity,
-          unitPrice,
-          stockDate
-        };
-
-        // Add the object to the array
-        itemsArray.push(itemObject);       
-
-        // Clear the input fields
-        document.querySelector('input[name="typed_input"]').value = '';
-        document.querySelector('input[name="update_quantity"]').value = '';
-        document.querySelector('input[name="update_unit_price"]').value = '';
-      });
-
-      // Handle the form submission
-      document.querySelector('.update-new-stock-form form').addEventListener('submit', (e) => {
-        e.preventDefault(); // Prevent the default form submission
-
-        if (itemsArray.length === 0) {
-          alert("Please update at least one item.");
-          return; // Stop here if no items have been added
-        }
-
-        // Send the itemsArray to your Flask app using fetch or another method
-        fetch('{{url_for('update_new_stock')}}', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ items: itemsArray })
-        })
-        .then(response => response.json())
-        .then(data => {
-          // Clear the array after successful submission
-          itemsArray = [];
-          
-          // Optionally, clear all input fields here as well
-          if (data.redirect) {
-              window.location.href = data.redirect; // Redirect to the new URL
-          } else {
-              alert(data.message);
+          // Check if any of the fields are empty
+          if (!itemName || !quantity || !unitPrice || !stockDate) {
+            alert("Please fill in all fields before updating an item.");
+            return; // Stop here if any field is empty
           }
-          
-        })
-        .catch((error) => {
-          alert("An error occurred while submitting updates.");
+
+          // Create an object with the form data
+          const itemObject = {
+            itemName,
+            quantity,
+            unitPrice,
+            stockDate
+          };
+
+          // Add the object to the array
+          itemsArray.push(itemObject);
+
+          // Clear the input fields
+          document.querySelector('input[name="typed_input"]').value = '';
+          document.querySelector('input[name="update_quantity"]').value = '';
+          document.querySelector('input[name="update_unit_price"]').value = '';
+        });
+
+        // Handle the form submission
+        document.querySelector('.update-new-stock-form form').addEventListener('submit', (e) => {
+          e.preventDefault(); // Prevent the default form submission
+
+          if (itemsArray.length === 0) {
+            alert("Please update at least one item.");
+            return; // Stop here if no items have been added
+          }
+
+          // Disable the submit button and show the wait message only if itemsArray is not empty
+          var submitButton = document.getElementById("submit-button");
+          submitButton.disabled = true;
+
+          var waitMessage = document.getElementById("wait-message");
+          waitMessage.style.display = "inline";
+
+          // Optionally, change the text of the submit button
+          submitButton.value = "Submitting...";
+
+          // Send the itemsArray to your Flask app using fetch or another method
+          fetch('{{url_for('update_new_stock')}}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: itemsArray })
+          })
+            .then(response => response.json())
+            .then(data => {
+              // Clear the array after successful submission
+              itemsArray = [];
+
+              // Optionally, clear all input fields here as well
+              if (data.redirect) {
+                window.location.href = data.redirect; // Redirect to the new URL
+              } else {
+                alert(data.message);
+              }
+          })
+            .catch((error) => {
+              alert("An error occurred while submitting updates.");
+            // Re-enable the submit button and hide the wait message if there's an error
+            submitButton.disabled = false;
+            waitMessage.style.display = "none";
+          });
         });
       });
-    });
-  </script>
+    </script>
 
   <script>
     window.onload = function(){

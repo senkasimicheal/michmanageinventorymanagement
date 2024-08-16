@@ -115,7 +115,8 @@ def before_request():
                                                                'add_complaint', 'my_complaints', 'tenant_reply_complaint', 'resolve_complaints' , 'update_complaint', 'new_subscription', 'new_subscription_initiated', 'export', 'apply_for_advert', 'submit_advert_application', 'authentication','tenant_account_setup_page', 'resend_auth_code',
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
                                                                'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
-                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','verify_user_making_sale','get_product'):
+                                                               'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','verify_user_making_sale','get_product',
+                                                               'download_property_expense_data','view_property_expenses','add_new_property_expense','property_expenses','apply_property_expense_edits','edit_property_expense'):
         return redirect('/')
 
 @app.after_request
@@ -740,10 +741,9 @@ def generate_bar_codes():
             available_itemNames = []
             available_items = db.inventories.find({'company_name': company['company_name']})
             for item in available_items:
-                if item.get('available_quantity', 0) > 0:
-                    available_itemNames.append({
-                        'itemName': item.get('itemName', '')
-                    })
+                available_itemNames.append({
+                    'itemName': item.get('itemName', '')
+                })
 
             # Sort the available_itemNames list in alphabetical order by 'itemName'
             available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
@@ -2251,59 +2251,35 @@ def add_property():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            propertyName = request.form.get('propertyName', '').strip()
-            type = request.form.get('type')
-            sections = request.form.get('sections').split(',')
-            property_value = request.form.get('property_value')
-            property_value = int(property_value)
-            late_payment_day = request.form.get('late_payment_day')
-            late_payment_day = int(late_payment_day)
-            currency = request.form.get('currency')
-            address = request.form.get('address')
-            city = request.form.get('city')
-            state = request.form.get('state')
-            parish = request.form.get('parish')
-            owner_name = request.form.get('owner_name')
-            owner_email = request.form.get('owner_email')
-            owner_phone = request.form.get('owner_phone')
-            owner_residence = request.form.get('owner_residence')
+            all_items = request.json.get('items', [])  # Access the JSON data sent from the client
+            skipped_items = []  # List to hold names of items that were not added
+            added_items = []  # List to hold names of items that were successfully added
+            for item in all_items:
+                item['propertyName'] = item.get('propertyName', '').strip()
+                item['sections'] = item.get('sections','').split(',')
+                item['property_value'] = int(item['property_value'])
+                item['late_payment_day'] = int(item['late_payment_day'])
 
-            property_exists = db.property_managed.find_one({'propertyName': propertyName})
-            manager = db.registered_managers.find_one({'username':login_data})
-            is_manager = db.managers.find_one({'manager_email': manager['email']})
-            properties = db.property_managed.count_documents({'company_name': manager['company_name']})
-            if is_manager['amount_per_month'] == 100000 and properties>=20:
-                flash('Maximum number of properties is reached', 'error')
-                return redirect('/load-dashboard-page')
-            elif is_manager['amount_per_month'] == 150000 and properties>=30:
-                flash('Maximum number of properties is reached', 'error')
-                return redirect('/load-dashboard-page')
-            elif is_manager['amount_per_month'] == 200000 and properties>=50:
-                flash('Maximum number of properties is reached', 'error')
-                return redirect('/load-dashboard-page')
-            else:
+                property_exists = db.property_managed.find_one({'propertyName': item['propertyName']})
+                manager = db.registered_managers.find_one({'username':login_data})
+                
                 if property_exists is None:
-                    property_details = {'username': login_data,
-                                        'propertyName': propertyName,
-                                        'company_name': manager['company_name'],
-                                        'type': type,
-                                        'sections': sections,
-                                        'property_value': property_value,
-                                        'late_payment_day': late_payment_day,
-                                        'currency': currency,
-                                        'address': address, 'city': city,
-                                        'state': state, 'parish': parish,
-                                        'owner_name': owner_name,
-                                        'owner_email': owner_email,
-                                        'owner_phone': owner_phone,
-                                        'owner_residence': owner_residence}
-                    db.property_managed.insert_one(property_details)
-                    db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add property data', 'propertyName':propertyName, 'timestamp': datetime.now()})
-                    flash('Property was added successfully', 'success')
-                    return redirect('/load-dashboard-page')
+                    item['username'] = login_data
+                    item['company_name'] = manager['company_name']
+                    db.property_managed.insert_one(item)
+                    db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add property data', 'propertyName':item['propertyName'], 'timestamp': datetime.now()})
+                    added_items.append(item['propertyName'])
                 else:
-                    flash('This Property is in the database', 'error')
-                    return redirect('/load-dashboard-page')
+                    skipped_items.append(item.get('propertyName', 'unknown'))
+
+            message = ""
+            if added_items:
+                message += 'The following properties were added: ' + ', '.join(added_items)
+                flash(message, 'success')
+            if skipped_items:
+                message_skipped = 'The following properties were not added because they already exist: ' + ', '.join(skipped_items)
+                flash(message_skipped, 'error')
+            return jsonify({'redirect': url_for('load_dashboard_page')})
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -4238,6 +4214,272 @@ def add_property_manager():
         else:
             flash('Company already registered', 'error')
             return render_template("managers accounts.html")
+ 
+######add expenses
+@app.route('/property-expenses-page')
+def property_expenses():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Property Management':
+            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+            
+            if company.get('add_properties') in ('yes', None):
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                
+                property_data_list = list(db.property_managed.find({'company_name': company['company_name']},{'propertyName':1,'_id':0}))
+
+                return render_template('property expenses.html', dp=dp_str,property_data=property_data_list)
+            else:
+                flash('You do not have rights to add expenses', 'error')
+                return redirect("/load-dashboard-page")
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+@app.route('/add-new-property-expense', methods=['POST'])
+def add_new_property_expense():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Property Management':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+                
+            all_items = request.json.get('items', [])  # Access the JSON data sent from the client
+            timestamp = datetime.now()
+
+            for expense in all_items:
+                expense['expenseName'] = expense.get('expenseName', '').strip()
+                
+                try:
+                    # Convert 'quantity' and 'unitPrice' to floats
+                    expense['amount'] = float(expense.get('amount', 0))
+                    expense['expenseDate'] = datetime.strptime(expense.get('expenseDate', ''), '%Y-%m-%d')
+
+                    expense['company_name'] = company.get('company_name', '')
+                    expense['timestamp'] = timestamp
+
+                    # Insert the new stock entry into MongoDB
+                    db.property_expenses.insert_one(expense)
+                    db.audit_logs.insert_one({
+                        'user': login_data,
+                        'Activity': 'Added new expense',
+                        'Item': expense['expenseName'],
+                        'timestamp': datetime.now()
+                    })
+                    flash('Expense(s) were added', 'success')
+                except (ValueError, TypeError) as e:
+                    # Log or handle the exception as needed
+                    flash(f"Error processing expense {expense.get('expenseName', 'unknown')}: {e}", 'error')
+
+            return jsonify({'redirect': url_for('property_expenses')})
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+###viewing stock history
+@app.route('/view-property-expenses')
+def view_property_expenses():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Property Management':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
+            if company.get('add_properties') in ('yes', None):
+                company_name = company['company_name']
+                twelve_months_ago = datetime.now() - timedelta(days=365)
+                expense_info = list(db.property_expenses.find({'company_name': company_name, 'expenseDate': {'$gte': twelve_months_ago}}))
+                expense_info.sort(key=lambda x: x.get('timestamp', x['expenseDate']), reverse=True)
+
+                dp = company.get('dp')
+                dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+                return render_template('view property expenses.html', expense_info = expense_info, dp=dp_str)
+            else:
+                flash('You do not have rights to view expenses', 'error')
+                return redirect("/load-dashboard-page")
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+####edit expense
+@app.route('/edit-property-expense/<item_id>', methods=['GET', 'POST'])
+def edit_property_expense(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Property Management':
+            manager = db.registered_managers.find_one({'username':login_data},{'_id':0,'createdAt':0,'code':0,'address':0})
+            if manager.get('add_properties') in ('yes', None):
+                if 'dp' in manager:
+                    dp_str = manager['dp']
+                else:
+                    dp_str = None
+                return render_template('edit property expenses.html',item_id=item_id,dp=dp_str)
+            else:
+                flash('You do not have rights to edit', 'error')
+                return redirect("/load-dashboard-page")
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+    
+@app.route('/apply-property-expense-edits', methods=['POST'])
+def apply_property_expense_edits():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Property Management':
+            item_id = request.form.get("item_id")
+            expense_name = request.form.get("expense_name")
+            propertyName = request.form.get("propertyName")
+            amount = request.form.get("amount")
+            expensedate = request.form.get("expensedate")
+
+            selected_item = db.property_expenses.find_one({'_id': ObjectId(item_id)})
+
+            fields_to_update = {}
+            if selected_item:
+                if expense_name:
+                    fields_to_update['expenseName'] = expense_name
+                if propertyName:
+                    fields_to_update['propertyName'] = propertyName
+                if amount:
+                    fields_to_update['amount'] = float(amount)
+                if expensedate:
+                    expensedate = datetime.strptime(expensedate, '%Y-%m-%d')
+                    fields_to_update['expenseDate'] = expensedate
+            else:
+                flash('Please select an up-to-date expense', 'error')
+            
+            if not fields_to_update:
+                flash('No edits were applied', 'error')
+            else:
+                db.property_expenses.update_one({'_id': ObjectId(item_id)},
+                                    {'$set': fields_to_update})
+                db.audit_logs.insert_one({'user': login_data,'Activity': 'Edit expense','Item': item_id,'timestamp': datetime.now()})
+                flash('Expense updates were applied', 'success')
+            return redirect('/view-property-expenses')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+####delete expense
+@app.route('/delete-property-expense/<item_id>', methods=['POST'])
+def delete_property_expense(item_id):
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error') 
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Property Management':
+            manager = db.registered_managers.find_one({'username':login_data},{'_id':0,'createdAt':0,'code':0,'address':0})
+            if manager.get('add_properties') in ('yes', None):
+                selected_item = db.property_expenses.find_one({'_id': ObjectId(item_id)})
+                if selected_item:
+                    db.property_expenses.delete_one({'_id': ObjectId(item_id)})
+                    db.audit_logs.insert_one({'user': login_data,'Activity': 'Expense deletion','Item': item_id,'timestamp': datetime.now()})
+                    flash('Expense was deleted', 'success')
+                else:
+                    flash('Expense does not exist', 'error')
+            else:
+                flash('You do not have rights to delete', 'error')
+            return redirect('/view-property-expenses')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+###DOANLOAD EXPENSE DATA   
+@app.route('/download-property-expense-data', methods=["POST"])
+def download_property_expense_data():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Property Management':
+            startdate_on_str = request.form.get("startdate")
+            enddate_on_str = request.form.get("enddate")
+            startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+            enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
+
+            expenses = list(db.property_expenses.find(
+                {'company_name': company['company_name'], 'expenseDate': {'$gte': startdate, '$lte': enddate}},
+                {'_id': 0, 'company_name': 0}
+            ))
+
+            # Sort data by expenseDate in descending order
+            sorted_expenses = sorted(expenses, key=lambda x: x["expenseDate"], reverse=True)
+
+            # Create Excel file
+            excel_buffer = BytesIO()
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Expenses"
+
+            # Write header row
+            headers = ['Expense', 'Amount', 'Date', 'Property']
+            ws.append(headers)
+
+            # Write data rows
+            for expense in sorted_expenses:
+                row = [
+                    expense.get('expenseName', ''),
+                    expense.get('amount', 0),
+                    expense.get('expenseDate', '').strftime('%Y-%m-%d') if isinstance(expense.get('expenseDate'), datetime) else '',
+                    expense.get('propertyName', '')
+                ]
+                ws.append(row)
+
+            wb.save(excel_buffer)
+            excel_buffer.seek(0)
+
+            # Create the response
+            response = make_response(excel_buffer.getvalue())
+            response.headers['Content-Disposition'] = f"attachment; filename={company['company_name']}_Expenses_{startdate_on_str}_{enddate_on_str}.xlsx"
+            response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+            # Clean up
+            del wb
+            del excel_buffer
+            gc.collect()
+
+            return response
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
 
 #######NEW SUBSCRIPTION PAGE###############
 @app.route("/new-subscription")

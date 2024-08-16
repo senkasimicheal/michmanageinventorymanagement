@@ -395,21 +395,6 @@
     <!-- container-scroller -->
 
     <script>
-        document.getElementById("myForm").addEventListener("submit", function (event) {
-            // Disable the submit button
-            var submitButton = document.getElementById("submit-button");
-            submitButton.disabled = true;
-
-            // Show the wait message
-            var waitMessage = document.getElementById("wait-message");
-            waitMessage.style.display = "inline";
-
-            // Optionally, you can also change the text of the submit button
-            submitButton.value = "Submitting...";
-        });
-    </script>
-
-    <script>
         document.addEventListener("DOMContentLoaded", function () {
             // Hide all alerts after 5 seconds
             setTimeout(function () {
@@ -437,71 +422,83 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
-            let itemsArray = [];
-
-            document.getElementById('add-expense-button').addEventListener('click', () => {
-                // Get the form values
-                const expenseName = document.querySelector('input[name="expense_name"]').value;
-                const amount = document.querySelector('input[name="amount"]').value;
-                const expenseDate = document.querySelector('input[name="expensedate"]').value;
-
-                // Check if any of the fields are empty
-                if (!expenseName || !amount || !expenseDate) {
-                    alert("Please fill in all fields before adding an expense.");
-                    return; // Stop here if any field is empty
-                }
-
-                // Create an object with the form data
-                const itemObject = {
-                    expenseName,
-                    amount,
-                    expenseDate
-                };
-
-                // Add the object to the array
-                itemsArray.push(itemObject);
-
-                // Clear the input fields
-                document.querySelector('input[name="expense_name"]').value = '';
-                document.querySelector('input[name="amount"]').value = '';
-            });
-
-            // Handle the form submission
-            document.querySelector('.new-stock-form form').addEventListener('submit', (e) => {
-                e.preventDefault(); // Prevent the default form submission
-
-                if (itemsArray.length === 0) {
-                    alert("Please add at least one expense.");
-                    return; // Stop here if no items have been added
-                }
-
-                // Send the itemsArray to your Flask app using fetch or another method
-                fetch('{{url_for('add_new_expense')}}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ items: itemsArray })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Clear the array after successful submission
-                        itemsArray = [];
-
-                        // Optionally, clear all input fields here as well
-                        if (data.redirect) {
-                            window.location.href = data.redirect; // Redirect to the new URL
-                        } else {
-                            alert(data.message);
-                        }
-
-                    })
-                    .catch((error) => {
-                        alert("An error occurred while submitting expenses.");
-                    });
+        let itemsArray = [];
+    
+        document.getElementById('add-expense-button').addEventListener('click', () => {
+            // Get the form values
+            const expenseName = document.querySelector('input[name="expense_name"]').value;
+            const amount = document.querySelector('input[name="amount"]').value;
+            const expenseDate = document.querySelector('input[name="expensedate"]').value;
+    
+            // Check if any of the fields are empty
+            if (!expenseName || !amount || !expenseDate) {
+            alert("Please fill in all fields before adding an expense.");
+            return; // Stop here if any field is empty
+            }
+    
+            // Create an object with the form data
+            const itemObject = {
+            expenseName,
+            amount,
+            expenseDate
+            };
+    
+            // Add the object to the array
+            itemsArray.push(itemObject);
+    
+            // Clear the input fields
+            document.querySelector('input[name="expense_name"]').value = '';
+            document.querySelector('input[name="amount"]').value = '';
+        });
+    
+        // Handle the form submission
+        document.querySelector('.new-stock-form form').addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevent the default form submission
+    
+            if (itemsArray.length === 0) {
+            alert("Please add at least one expense.");
+            return; // Stop here if no items have been added
+            }
+    
+            // Disable the submit button and show the wait message
+            var submitButton = document.getElementById("submit-button");
+            submitButton.disabled = true;
+    
+            var waitMessage = document.getElementById("wait-message");
+            waitMessage.style.display = "inline";
+    
+            // Optionally, change the text of the submit button
+            submitButton.value = "Submitting...";
+    
+            // Send the itemsArray to your Flask app using fetch or another method
+            fetch('{{url_for('add_new_expense')}}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ items: itemsArray })
+            })
+            .then(response => response.json())
+            .then(data => {
+            // Clear the array after successful submission
+            itemsArray = [];
+    
+            // Optionally, clear all input fields here as well
+            if (data.redirect) {
+                window.location.href = data.redirect; // Redirect to the new URL
+            } else {
+                alert(data.message);
+            }
+            })
+            .catch((error) => {
+            alert("An error occurred while submitting expenses.");
+            // Re-enable the submit button and hide the wait message if there's an error
+            submitButton.disabled = false;
+            waitMessage.style.display = "none";
             });
         });
-    </script>
+        });
+    </script>  
 
     <script>
         window.onload = function () {

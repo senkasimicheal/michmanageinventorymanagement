@@ -384,20 +384,6 @@
             <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
           </form>
       </div>
-        <script>
-          document.getElementById("myForm").addEventListener("submit", function (event) {
-            // Disable the submit button
-            var submitButton = document.getElementById("submit-button");
-            submitButton.disabled = true;
-
-            // Show the wait message
-            var waitMessage = document.getElementById("wait-message");
-            waitMessage.style.display = "inline";
-
-            // Optionally, you can also change the text of the submit button
-            submitButton.value = "Submitting...";
-          });
-        </script>
 
         <script>
           // Convert the items_to_update list from Jinja to a JavaScript array
@@ -597,6 +583,16 @@
           return; // Stop here if no items have been added
         }
 
+        // Disable the submit button and show the wait message
+        var submitButton = document.getElementById("submit-button");
+        submitButton.disabled = true;
+
+        var waitMessage = document.getElementById("wait-message");
+        waitMessage.style.display = "inline";
+
+        // Optionally, change the text of the submit button
+        submitButton.value = "Submitting...";
+
         // Send the itemsArray to your Flask app using fetch or another method
         fetch('{{url_for('update_sale')}}', {
           method: 'POST',
@@ -610,17 +606,19 @@
             // Clear the array after successful submission
             itemsArray = [];
 
-            // Optionally, clear all input fields here as well
-            if (data.redirect) {
-              window.location.href = data.redirect; // Redirect to the new URL
-            } else {
-              alert(data.message);
-            }
-
-          })
+          // Optionally, clear all input fields here as well
+          if (data.redirect) {
+            window.location.href = data.redirect; // Redirect to the new URL
+          } else {
+            alert(data.message);
+          }
+        })
           .catch((error) => {
             alert("An error occurred while submitting updates.");
-          });
+          // Re-enable the submit button and hide the wait message if there's an error
+          submitButton.disabled = false;
+          waitMessage.style.display = "none";
+        });
       });
     });
   </script>
