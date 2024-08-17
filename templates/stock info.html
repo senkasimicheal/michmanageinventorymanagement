@@ -389,10 +389,11 @@
                       <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
                     </th>
                     <th>Stocked Quantity</th>
+                    <th>Available Stock</th>
                     <th>Measurement</th>
                     <th>Buying Price</th>
                     <th>Total Buying Price</th>
-                    <th>Available Stock</th>
+                    <th>Total Stock Value</th>
                     </tr>
               </thead>
               <tbody>
@@ -410,21 +411,29 @@
                   </td>
                   <td>{{ stock['stockDate'].strftime('%Y-%m-%d') }}</td>
                   <td>{{ stock['quantity'] }}</td>
+                  <td>
+                    {% if 'available_quantity' in stock %}
+                    {{ stock['available_quantity'] }}
+                    {% else %}
+                    {{ stock['quantity'] }}
+                    {% endif %}
+                  </td>
                   <td>{{ stock['unitOfMeasurement'] }}</td>
                   <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
                   <td class="total-buying-price">{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
-                  <td>
-                    {% if 'available_quantity' in stock %}
-                      {{ stock['available_quantity'] }}
+                  <td class="total-stock-value">
+                    {% if 'oldTotalPrice' in stock %}
+                    {{ '{:,.0f}'.format(stock['oldTotalPrice']+stock['totalPrice']) }}
                     {% else %}
-                      {{ stock['quantity'] }}
+                    {{ '{:,.0f}'.format(stock['totalPrice']) }}
                     {% endif %}
                   </td>
                 </tr>
                 {% endfor %}
                 <tr id="totalRow">
-                  <td style="font-weight: bold;" colspan="6">Total</td>
+                  <td style="font-weight: bold;" colspan="7">Total</td>
                   <td style="font-weight: bold;" id="totalBuyingPrice">0</td>
+                  <td style="font-weight: bold;" id="totalStockValue">0</td>
                   <td></td>
                 </tr>
               </tbody>
@@ -536,22 +545,30 @@
 
   <script>
     function calculateTotals() {
-        let table = document.getElementById("tenantTable");
-        let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
-        let totalBuyingPrice = 0;
-    
-        for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
-            let buyingPriceCell = rows[i].getElementsByClassName("total-buying-price")[0];
-    
-            if (buyingPriceCell && rows[i].style.display !== "none") {
-                let buyingPrice = parseFloat(buyingPriceCell.textContent.replace(/,/g, '')) || 0;
-                totalBuyingPrice += buyingPrice;
-            }
-        }
-    
-        document.getElementById("totalBuyingPrice").textContent = totalBuyingPrice.toLocaleString();
+      let table = document.getElementById("tenantTable");
+      let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+      let totalBuyingPrice = 0;
+      let totalStockValue = 0;
+
+      for (let i = 0; i < rows.length - 1; i++) { // Loop excluding the last row
+          let buyingPriceCell = rows[i].getElementsByClassName("total-buying-price")[0];
+          let stockValueCell = rows[i].getElementsByClassName("total-stock-value")[0];
+
+          if (buyingPriceCell && rows[i].style.display !== "none") {
+              let buyingPrice = parseFloat(buyingPriceCell.textContent.replace(/,/g, '')) || 0;
+              totalBuyingPrice += buyingPrice;
+          }
+
+          if (stockValueCell && rows[i].style.display !== "none") {
+              let stockValue = parseFloat(stockValueCell.textContent.replace(/,/g, '')) || 0;
+              totalStockValue += stockValue;
+          }
+      }
+
+      document.getElementById("totalBuyingPrice").textContent = totalBuyingPrice.toLocaleString();
+      document.getElementById("totalStockValue").textContent = totalStockValue.toLocaleString();
     }
-    
+
     document.addEventListener("DOMContentLoaded", function() {
         calculateTotals();
     });

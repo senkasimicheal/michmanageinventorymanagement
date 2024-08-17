@@ -404,9 +404,10 @@
                     optionDiv.textContent = item.itemName;
                     optionDiv.dataset.availableQuantity = item.available_quantity;
                     optionDiv.dataset.unitOfMeasurement = item.unitOfMeasurement;
+                    optionDiv.dataset.unitPrice = item.unitPrice;
                     optionDiv.addEventListener('click', function () {
                         filterInput.value = item.itemName;
-                        stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement;
+                        stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement + '\nBuying Price: ' + item.unitPrice;
                         stockDetailsElement.style.color = 'green';
                         optionsContainer.style.display = 'none';
                     });

@@ -677,7 +677,8 @@ def update_existing_stock():
                 item_details = {
                     'itemName': item['itemName'],
                     'available_quantity': item.get('available_quantity', ''),
-                    'unitOfMeasurement': item.get('unitOfMeasurement', '')
+                    'unitOfMeasurement': item.get('unitOfMeasurement', ''),
+                    'unitPrice': item.get('unitPrice','')
                 }
                 items_to_update.append(item_details)
             
