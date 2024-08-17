@@ -5852,13 +5852,11 @@ def update_new_stock():
                                 item['available_quantity'] = new_available_quantity
                                 item['totalPrice'] = item['quantity'] * item['unitPrice']
                                 item['oldTotalPrice'] = existing_item.get('totalPrice', 0)
-                                item['oldUnitPrice'] = existing_item.get('unitPrice', 0)
                         else:
                             new_available_quantity = item['quantity']
                             item['available_quantity'] = new_available_quantity
                             item['totalPrice'] = item['quantity'] * item['unitPrice']
                             item['oldTotalPrice'] = existing_item.get('totalPrice', 0)
-                            item['oldUnitPrice'] = existing_item.get('unitPrice', 0)
 
                         # Insert the updated stock entry into MongoDB
                         db.inventories.insert_one(item)
