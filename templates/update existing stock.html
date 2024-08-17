@@ -407,7 +407,7 @@
                     optionDiv.dataset.unitPrice = item.unitPrice;
                     optionDiv.addEventListener('click', function () {
                         filterInput.value = item.itemName;
-                        stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement + '\nBuying Price: ' + item.unitPrice;
+                        stockDetailsElement.innerText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement + '\nOld Buying Price: ' + item.unitPrice;
                         stockDetailsElement.style.color = 'green';
                         optionsContainer.style.display = 'none';
                     });
