@@ -89,14 +89,29 @@
               {% else %}
               <h6>Enter 6 digit code sent to your email</h6>
               {% endif %}
-              <label class="input_labels" for="">Code</label>
-              <input class="property_inputs" type="number" placeholder="enter code here" name="code" required><br>
-              <input style="margin-top: 10px; margin-bottom: 10px;" required type="submit" class="btn" value="Submit">
+              <label class="input_labels" for="">Enter Code</label>
+              <input class="property_inputs verification-code" type="number" placeholder="××××××" name="code" id="codeInput"
+                required><br>
+              <input hidden style="margin-top: 10px; margin-bottom: 10px;" required type="submit" class="btn" value="Verify"><br>
           </form>
       </div>
     </section>
     <!-- end slider section -->
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var codeInput = document.getElementById('codeInput');
+      var form = document.getElementById('myForm');
+
+      // Check the code input length and submit form automatically
+      codeInput.addEventListener('input', function () {
+        if (this.value.length === 6) {
+          form.submit();
+        }
+      });
+    });
+  </script>
 
   <script>
     document.getElementById('myForm').addEventListener('submit', function(event) {

@@ -376,7 +376,8 @@
             <input type="date" name="start_date" id="start_date" required><br>
             <label class="input_labels" for="">Contract End Date</label>
             <input type="date" name="end_date" id="end_date" required><br>
-            <input required type="submit" class="btn" value="Submit">
+            <input required type="submit" class="btn" id="submitButton" value="Submit">
+            <span id="wait-message" style="color: green; display: none;">Please wait, we are adding contract...</span>
           </form>
         </div>
         <script>
@@ -415,6 +416,21 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    document.getElementById("myForm").addEventListener("submit", function (event) {
+      // Disable the submit button
+      var submitButton = document.getElementById("submitButton");
+      submitButton.disabled = true;
+
+      // Show the wait message
+      var waitMessage = document.getElementById("wait-message");
+      waitMessage.style.display = "inline";
+
+      // Optionally, you can also change the text of the submit button
+      submitButton.value = "Adding Contract...";
+    });
+  </script>
 
   <script>
     document.getElementById('myForm').addEventListener('submit', function(event) {

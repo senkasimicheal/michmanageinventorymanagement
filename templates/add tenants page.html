@@ -440,7 +440,8 @@
               <option value="MasterCard">MasterCard</option>
               <option value="Momo Pay">Momo Pay</option>
             </select><br>
-            <input required type="submit" class="btn" value="Add">
+            <input required type="submit" class="btn" id="submitButton" value="Add">
+            <span id="wait-message" style="color: green; display: none;">Please wait, we are adding this tenant...</span>
           </form>
         </div>
         <!-- content-wrapper ends -->
@@ -464,6 +465,21 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    document.getElementById("myForm").addEventListener("submit", function (event) {
+      // Disable the submit button
+      var submitButton = document.getElementById("submitButton");
+      submitButton.disabled = true;
+
+      // Show the wait message
+      var waitMessage = document.getElementById("wait-message");
+      waitMessage.style.display = "inline";
+
+      // Optionally, you can also change the text of the submit button
+      submitButton.value = "Adding Tenant...";
+    });
+  </script>
 
   <script>
     document.getElementById('myForm').addEventListener('submit', function(event) {

@@ -102,7 +102,7 @@
     <!-- slider section -->
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
-        <form class="property_form" action="{{url_for('userlogin')}}" method="POST">
+        <form id="myForm" class="property_form" action="{{url_for('userlogin')}}" method="POST">
           <h6>Login</h6>
           <label class="input_labels" for="loginUsername">Username</label>
           <input class="property_inputs" type="text" name="username" id="loginUsername"
@@ -117,12 +117,28 @@
           </div>
           <br>
           <input type="submit" class="btn" value="Login" id="submitButton" disabled>
+          <span id="wait-message" style="color: green; display: none;">Please wait, we are signing you in...</span><br>
           <span><a href="{{ url_for('verify_username') }}">Forgot Password</a></span>
         </form>                
       </div>
     </section>
     <!-- end slider section -->
   </div>
+
+  <script>
+    document.getElementById("myForm").addEventListener("submit", function (event) {
+      // Disable the submit button
+      var submitButton = document.getElementById("submitButton");
+      submitButton.disabled = true;
+
+      // Show the wait message
+      var waitMessage = document.getElementById("wait-message");
+      waitMessage.style.display = "inline";
+
+      // Optionally, you can also change the text of the submit button
+      submitButton.value = "Signing in...";
+    });
+  </script>
 
   <script>
     function togglePasswordVisibility(passwordId, toggleIcon) {
@@ -138,28 +154,6 @@
       const submitButton = document.getElementById('submitButton');
       submitButton.disabled = !(username && password);
     }
-  </script>   
-
-  <script>
-    document.getElementById('myForm').addEventListener('submit', function(event) {
-        var radios = document.getElementsByTagName('input');
-        var allAnswered = true;
-        for (var i = 0; i < radios.length; i++) {
-            if (radios[i].type === 'radio' && !radios[i].checked) {
-                allAnswered = false;
-                break;
-            }
-        }
-        if (!allAnswered) {
-            if (!confirm('Confirm submission')) {
-                event.preventDefault();
-            }
-        } else {
-            if (!confirm('Confirm submission')) {
-                event.preventDefault();
-            }
-        }
-    });
 </script>
 
 <script>

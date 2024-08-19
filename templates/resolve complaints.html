@@ -371,59 +371,99 @@
         
           <div id="pending">
             <div class="complaints">
-              <h2 class="complaint-heading1">Unresolved Issues</h2>
-              {% for complaint in complaints %}
-              <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('update_complaint') }}">
-                  <div class="complaint-card">
-                      <span>From {{ complaint.tenant_name }}</span>
-                      <h2 class="complaint-heading">{{ complaint.complaint_heading }}</h2>
-                      <p class="complaint-details">{{ complaint.details }}</p>
-                      <div class="complaint-footer">
-                          <span class="complaint-date">Filed on {{ complaint.complained_on.strftime('%Y-%m-%d %H:%M') }}</span>
-                      </div>
-                      <textarea placeholder="Your reply goes here" class="complaint_details_reply" name="Reply_{{ complaint._id }}" required maxlength="100"></textarea>
-                      <input type="hidden" class="clientTime" name="client_time">
-                      <input type="hidden" class="timeZoneOffset" name="time_zone_offset">
-                      <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
-                      <div style="display: flex; align-items: center;">
-                        <input type="submit" value="Reply" id="submit-btn-{{ complaint._id }}" style="background:none;border:none;color:blue; width: 60px !important;">
-                        <span style="margin-left: 10px;">
-                            <a href="{{ url_for('resolved_complaints', complaint_id=complaint._id) }}" id="resolve-link-{{ complaint._id }}">Resolve</a>
-                        </span>
-                      </div>
-                      {% if complaint['image'] %}
-                      <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'] }}" alt="Complaint Image"><br><br>
-                      {% endif %}
-                      <button type="button" id="toggle-replies-btn-{{ complaint._id }}" onclick="toggleReplies('{{ complaint._id }}')">Show Replies</button>
-                      <div class="replies-section" id="replies-{{ complaint._id }}" style="display: none;">
-                          <h4>Replies</h4>
-                          {% for reply in complaint.replies %}
-                          <div class="reply {% if reply.who == 'Manager' %} manager-reply {% else %} user-reply {% endif %}">
-                              <div class="heading-container">
-                                  {% if reply.who != 'Manager' %}
-                                  <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
-                                  {% else %}
-                                  <p class="reply-details">{{ reply.reply_date }}</p>
-                                  {% endif %}
-                                  {% if reply.Reply != 'No reply' %}
-                                      {% if reply.who == 'Manager' %}
-                                          {% if reply.status == 'seen' %}
-                                              <span class="seen-status-icon"><i class="fas fa-check-double"></i></span>
-                                          {% else %}
-                                              <span class="unseen-status-icon"><i class="fas fa-check"></i></span>
-                                          {% endif %}
-                                      {% endif %}
-                                  {% endif %}
-                              </div>
-                              <p class="reply-message">{{ reply.Reply }}</p>
-                          </div>
-                          {% endfor %}
-                      </div>
-                  </div>
-              </form>
-              {% endfor %}
+                <h2 class="complaint-heading1">Unresolved Issues</h2>
+                {% for complaint in complaints %}
+                <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('update_complaint') }}">
+                    <div class="complaint-card">
+                        <span>From {{ complaint.tenant_name }}</span>
+                        <h2 class="complaint-heading">{{ complaint.complaint_heading }}</h2>
+                        <p class="complaint-details">{{ complaint.details }}</p>
+                        <div class="complaint-footer">
+                            <span class="complaint-date">Filed on {{ complaint.complained_on.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        <textarea placeholder="Your reply goes here" class="complaint_details_reply" name="Reply_{{ complaint._id }}" required maxlength="100"></textarea>
+                        <input type="hidden" class="clientTime" name="client_time">
+                        <input type="hidden" class="timeZoneOffset" name="time_zone_offset">
+                        <input type="hidden" name="complaint_id" value="{{ complaint._id }}">
+                        <div style="display: flex; align-items: center;">
+                            <input type="submit" value="Reply" id="submit-btn-{{ complaint._id }}" style="background:none;border:none;color:blue; width: 60px !important;">
+                            <span style="margin-left: 10px;">
+                                <a href="{{ url_for('resolved_complaints', complaint_id=complaint._id) }}" id="resolve-link-{{ complaint._id }}">Resolve</a>
+                            </span>
+                        </div>
+                        <span id="wait-message-{{ complaint._id }}" style="color: green; display: none;">Please wait, sending reply...</span>
+                        {% if complaint['image'] %}
+                        <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'] }}" alt="Complaint Image"><br><br>
+                        {% endif %}
+                        <button type="button" id="toggle-replies-btn-{{ complaint._id }}" onclick="toggleReplies('{{ complaint._id }}')">Show Replies</button>
+                        <div class="replies-section" id="replies-{{ complaint._id }}" style="display: none;">
+                            <h4>Replies</h4>
+                            {% for reply in complaint.replies %}
+                            <div class="reply {% if reply.who == 'Manager' %} manager-reply {% else %} user-reply {% endif %}">
+                                <div class="heading-container">
+                                    {% if reply.who != 'Manager' %}
+                                    <p class="reply-details"><strong>From:</strong> {{ reply.who }} <strong>on:</strong> {{ reply.reply_date }}</p>
+                                    {% else %}
+                                    <p class="reply-details">{{ reply.reply_date }}</p>
+                                    {% endif %}
+                                    {% if reply.Reply != 'No reply' %}
+                                        {% if reply.who == 'Manager' %}
+                                            {% if reply.status == 'seen' %}
+                                                <span class="seen-status-icon"><i class="fas fa-check-double"></i></span>
+                                            {% else %}
+                                                <span class="unseen-status-icon"><i class="fas fa-check"></i></span>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <p class="reply-message">{{ reply.Reply }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+        
+                <script>
+                  document.getElementById("myForm_{{ complaint._id }}").addEventListener("submit", function(event) {
+                      // Disable the submit button
+                      var submitButton = document.getElementById("submit-btn-{{ complaint._id }}");
+                      submitButton.disabled = true;
+              
+                      // Disable the resolve link
+                      var resolveLink = document.getElementById("resolve-link-{{ complaint._id }}");
+                      resolveLink.style.pointerEvents = 'none';  // Disable clicking
+                      resolveLink.style.color = 'gray';  // Optionally change color to indicate disabled state
+              
+                      // Show the wait message for replying
+                      var waitMessage = document.getElementById("wait-message-{{ complaint._id }}");
+                      waitMessage.textContent = "Please wait, sending reply...";
+                      waitMessage.style.display = "inline";
+                  });
+              
+                  document.getElementById("resolve-link-{{ complaint._id }}").addEventListener("click", function(event) {
+                      event.preventDefault();  // Prevent default link behavior
+              
+                      // Disable the resolve link
+                      var resolveLink = document.getElementById("resolve-link-{{ complaint._id }}");
+                      resolveLink.style.pointerEvents = 'none';  // Disable clicking
+                      resolveLink.style.color = 'gray';  // Optionally change color to indicate disabled state
+              
+                      // Disable the submit button
+                      var submitButton = document.getElementById("submit-btn-{{ complaint._id }}");
+                      submitButton.disabled = true;
+              
+                      // Show the wait message for resolving
+                      var waitMessage = document.getElementById("wait-message-{{ complaint._id }}");
+                      waitMessage.textContent = "Please wait, resolving...";
+                      waitMessage.style.display = "inline";
+              
+                      // Optionally, you can redirect after showing the wait message
+                      window.location.href = resolveLink.href;
+                  });
+                </script>              
+                {% endfor %}
             </div>    
-          </div>
+          </div>        
         
           <div id="resolved">
             <div class="complaints">
