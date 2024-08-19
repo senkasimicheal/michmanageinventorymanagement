@@ -4075,6 +4075,7 @@ def delete_tenant(tenantEmail, propertyName, selected_section):
             db.old_tenant_data.insert_one(tenants)
             db.old_tenant_data.update_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section}, {'$set': {'status': 'deleted'}})
             db.tenants.delete_one({'company_name': company['company_name'], 'tenantEmail': tenantEmail, 'propertyName': propertyName, 'selected_section': selected_section})
+            db.tenant_user_accounts.delete_one({'tenantEmail': tenantEmail, 'propertyName': propertyName})
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete tenant', 'tenantName': tenants['tenantName'], 'timestamp': datetime.now()})
             return redirect('/update-tenant-info')
         else:

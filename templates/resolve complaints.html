@@ -460,7 +460,7 @@
                       // Optionally, you can redirect after showing the wait message
                       window.location.href = resolveLink.href;
                   });
-                </script>              
+                </script>
                 {% endfor %}
             </div>    
           </div>        
@@ -503,22 +503,6 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
-
-  <script>
-    document.getElementById('resolveLink').addEventListener('click', function(event) {
-        // Prevent the default action of the link (navigation) initially
-        event.preventDefault();
-
-        // Show the confirmation dialog
-        if (confirm('By Confirming, You resolve the raised complaint')) {
-            // If user confirms, proceed to the link's href
-            window.location.href = event.target.href;
-        } else {
-            // If user cancels, do nothing (stay on the same page)
-            return;
-        }
-    });
-  </script>
 
   <script>
     function toggleReplies(complaintId) {
