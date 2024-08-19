@@ -6362,7 +6362,6 @@ def stock_history_details():
                 twelve_months_ago = datetime.now() - timedelta(days=365)
                 stock_info = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
                 stock_info.sort(key=lambda x: x.get('timestamp', x['stockDate']), reverse=True)
-                stock_info.sort(key=lambda x: x['itemName'])
 
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
