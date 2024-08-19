@@ -371,7 +371,6 @@
         
           <div id="pending">
             <div class="complaints">
-                <h2 class="complaint-heading1">Unresolved Issues</h2>
                 {% for complaint in complaints %}
                 <form id="myForm_{{ complaint._id }}" class="admin_body" method="POST" action="{{ url_for('update_complaint') }}">
                     <div class="complaint-card">
@@ -391,7 +390,7 @@
                                 <a href="{{ url_for('resolved_complaints', complaint_id=complaint._id) }}" id="resolve-link-{{ complaint._id }}">Resolve</a>
                             </span>
                         </div>
-                        <span id="wait-message-{{ complaint._id }}" style="color: green; display: none;">Please wait, sending reply...</span>
+                        <span id="wait-message-{{ complaint._id }}" style="color: green; display: none;">Please wait, sending reply...</span><br>
                         {% if complaint['image'] %}
                         <img class="complaint-image" src="data:image/jpeg;base64,{{ complaint['image'] }}" alt="Complaint Image"><br><br>
                         {% endif %}
@@ -467,7 +466,6 @@
         
           <div id="resolved">
             <div class="complaints">
-                <h2 class="complaint-heading1">Resolved Issues</h2>
                 {% for resolved in resolved_complaints %}
                   <div class="complaint-card">
                       <span>From {{ resolved.tenant_name }}</span>
