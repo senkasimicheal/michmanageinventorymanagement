@@ -5765,6 +5765,8 @@ def add_new_stock():
                     item['totalPrice'] = item['unitPrice'] * item['quantity']
                     item['company_name'] = company.get('company_name', '')
                     item['timestamp'] = timestamp
+                    item['oldTotalPrice'] = item['totalPrice']
+                    item['cumulativeOldPrices'] = item['totalPrice']
 
                     # Check if the item already exists in the database
                     existing_item = db.inventories.find_one({
@@ -5844,7 +5846,8 @@ def update_new_stock():
                                 # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
                                 item['totalPrice'] = item['quantity'] * item['unitPrice']
                                 item['unitOfMeasurement'] = existing_item.get('unitOfMeasurement', '')
-                                item['oldTotalPrice'] = existing_item.get('totalPrice', 0)
+                                item['oldTotalPrice'] = existing_item.get('oldTotalPrice', existing_item.get('totalPrice'))
+                                item['cumulativeOldPrices'] = existing_item.get('cumulativeOldPrices', existing_item.get('totalPrice')) + item['totalPrice']
                                 item['oldUnitPrice'] = existing_item.get('unitPrice', 0)
                                 new_available_quantity = existing_item['available_quantity'] + item['quantity']
                                 item['available_quantity'] = new_available_quantity
@@ -5853,13 +5856,15 @@ def update_new_stock():
                                 item['available_quantity'] = new_available_quantity
                                 item['totalPrice'] = item['quantity'] * item['unitPrice']
                                 item['unitOfMeasurement'] = existing_item.get('unitOfMeasurement', '')
-                                item['oldTotalPrice'] = existing_item.get('totalPrice', 0)
+                                item['oldTotalPrice'] = existing_item.get('oldTotalPrice', existing_item.get('totalPrice'))
+                                item['cumulativeOldPrices'] = existing_item.get('cumulativeOldPrices', existing_item.get('totalPrice')) + item['totalPrice']
                         else:
                             new_available_quantity = item['quantity']
                             item['available_quantity'] = new_available_quantity
                             item['totalPrice'] = item['quantity'] * item['unitPrice']
                             item['unitOfMeasurement'] = existing_item.get('unitOfMeasurement', '')
-                            item['oldTotalPrice'] = existing_item.get('totalPrice', 0)
+                            item['oldTotalPrice'] = existing_item.get('oldTotalPrice', existing_item.get('totalPrice'))
+                            item['cumulativeOldPrices'] = existing_item.get('cumulativeOldPrices', existing_item.get('totalPrice')) + item['totalPrice']
 
                         # Insert the updated stock entry into MongoDB
                         db.inventories.insert_one(item)
@@ -6268,7 +6273,7 @@ def revenue_details():
                 ]
 
                 revenue_info = list(db.stock_sales.aggregate(pipeline))
-                revenue_info.sort(key=lambda x: x['_id']['itemName'])
+                revenue_info.sort(key=lambda x: x['inventoryDetails'][0]['stockDate'], reverse=True)
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
@@ -6361,7 +6366,7 @@ def stock_history_details():
                 company_name = company['company_name']
                 twelve_months_ago = datetime.now() - timedelta(days=365)
                 stock_info = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
-                stock_info.sort(key=lambda x: x.get('timestamp', x['stockDate']), reverse=True)
+                stock_info.sort(key=lambda x: x['stockDate'], reverse=True)
 
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
@@ -7559,10 +7564,16 @@ def apply_item_edits():
                         if new_qty < 0:
                             new_qty = 0
                             flash('Item sales were already updated', 'error')
-                        available_quantity = new_qty + quantity
+                        available_quantity = new_qty + quantity                        
                     else:
                         available_quantity = quantity
-                    db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'quantity': quantity, 'available_quantity': available_quantity}})
+                    
+                    totalPrice = selected_item['unitPrice'] * quantity
+                    if 'cumulativeOldPrices' in selected_item:
+                        cumulativeOldPrices = selected_item['cumulativeOldPrices'] - selected_item['totalPrice'] + totalPrice
+                    else:
+                        cumulativeOldPrices = totalPrice
+                    db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'quantity': quantity, 'available_quantity': available_quantity, 'totalPrice': totalPrice, 'cumulativeOldPrices': cumulativeOldPrices}})
                     applied = 1
                 if unit_price:
                     unit_price = float(unit_price)
@@ -7570,7 +7581,12 @@ def apply_item_edits():
                         new_total_price = quantity * unit_price
                     else:
                         new_total_price = selected_item['quantity'] * unit_price
-                    db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'unitPrice': unit_price, 'totalPrice': new_total_price}})
+                    
+                    if 'cumulativeOldPrices' in selected_item:
+                        cumulativeOldPrices = selected_item['cumulativeOldPrices'] - selected_item['totalPrice'] + new_total_price
+                    else:
+                        cumulativeOldPrices = new_total_price
+                    db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'unitPrice': unit_price, 'totalPrice': new_total_price, 'cumulativeOldPrices': cumulativeOldPrices}})
                     applied = 1
                 if stockdate:
                     stockDate = datetime.strptime(stockdate, '%Y-%m-%d')

@@ -422,7 +422,9 @@
                   <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
                   <td class="total-buying-price">{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
                   <td class="total-stock-value">
-                    {% if 'oldTotalPrice' in stock %}
+                    {% if 'cumulativeOldPrices' in stock %}
+                    {{ '{:,.0f}'.format(stock['cumulativeOldPrices']) }}
+                    {% elif 'oldTotalPrice' in stock %}
                     {{ '{:,.0f}'.format(stock['oldTotalPrice']+stock['totalPrice']) }}
                     {% else %}
                     {{ '{:,.0f}'.format(stock['totalPrice']) }}
