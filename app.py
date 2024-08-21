@@ -9329,15 +9329,24 @@ def store_bar_code():
             product_id = db.inventories.find_one({'itemName': product_name})
             product_id_string = str(product_id['_id'])
 
-            # Generate barcode
+            # Generate the barcode using CODE128 format with enhanced settings
             CODE128 = barcode.get_barcode_class('code128')
+            options = {
+                'module_width': 0.2,        # Width of individual bars
+                'module_height': 15.0,      # Height of the bars
+                'font_size': 10,            # Size of the text below the barcode
+                'text_distance': 5.0,       # Increase the distance between the barcode and the text
+                'quiet_zone': 6.5,          # Margin around the barcode
+                'dpi': 300,                 # Resolution of the barcode
+                'write_text': True          # Include human-readable text below the barcode
+            }
             barcode_image = CODE128(product_id_string, writer=ImageWriter())
             
             # Save the barcode as a PNG file
             filepath = os.path.join('.', product_name)
             product_name_download = f'{product_name}.png'
             filepath_to_remove = os.path.join('.', product_name_download)
-            barcode_image.save(filepath)
+            barcode_image.save(filepath, options)
 
             # Flash success message
             flash(f'Barcode for {product_name} was generated and downloaded to your device', 'success')
