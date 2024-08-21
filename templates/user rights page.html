@@ -479,6 +479,16 @@
               <input type="checkbox" id="mySwitch12" name="permissions" data-input-id="hiddenInput12">
               <input type="hidden" id="hiddenInput12" name="view_sales" value="{{ view_sales }}">
             </div>
+            <div>
+              <label for="mySwitch13">System Selling Prices</label>
+              <input type="checkbox" id="mySwitch13" name="permissions" data-input-id="hiddenInput13">
+              <input type="hidden" id="hiddenInput13" name="system_selling_price" value="{{ system_selling_price }}">
+            </div>
+            <div>
+              <label for="mySwitch14">Point Of Sale Capture</label>
+              <input type="checkbox" id="mySwitch14" name="permissions" data-input-id="hiddenInput14">
+              <input type="hidden" id="hiddenInput14" name="point_of_sale" value="{{ point_of_sale }}">
+            </div>
             <input required type="submit" class="btn" id="submitButton" value="Save">
             <span id="wait-message" style="color: green; display: none;">Please wait, we are saving user rights...</span>
           </form>

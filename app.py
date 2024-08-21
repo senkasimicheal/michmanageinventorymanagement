@@ -36,6 +36,8 @@ from docx2pdf import convert
 import PyPDF2
 import gc
 from collections import defaultdict
+import barcode
+from barcode.writer import ImageWriter
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(16)
@@ -116,7 +118,7 @@ def before_request():
                                                                'tenant_account_setup_initiated', 'tenant_authentication', 'download_apk', 'manager_login_page', 'manager_register_page', 'tenant_register_page', 'tenant_login_page', 'add_properties', 'add_tenants', 'export_tenant_data', 'add_new_stock_page','documentation','manager_notifications',
                                                                'tenant_notifications', 'tenant_popup_notifications','registered_clients','apply_item_edits','expenses_page','add_new_expense','view_expenses','auto_registration_verification','add_new_account','stock_overview','accounts_overview','send_payment_financial_reminders','download_financial_data',
                                                                'delete_finance_account','apply_finance_edits','edit_finance_accounts','accounts_history','current_accounts','update_accounts','update_existing_account','add_new_account','new_accounts_page','generate_bar_codes','store_bar_code','verify_user_making_sale','get_product',
-                                                               'download_property_expense_data','view_property_expenses','add_new_property_expense','property_expenses','apply_property_expense_edits','edit_property_expense'):
+                                                               'download_property_expense_data','view_property_expenses','add_new_property_expense','property_expenses','apply_property_expense_edits','edit_property_expense','scan_bar_code_page','store_scanned_sale','check_bar_code'):
         return redirect('/')
 
 @app.after_request
@@ -709,16 +711,45 @@ def update_sales_page():
             available_items = db.inventories.find({'company_name': company['company_name']})
             for item in available_items:
                 if item.get('available_quantity', 0) > 0:
-                    available_itemNames.append({
+                    item_dict = {
                         'itemName': item.get('itemName', ''),
                         'available_quantity': item.get('available_quantity', ''),
-                        'unitOfMeasurement': item.get('unitOfMeasurement', '') 
-                    })
+                        'unitOfMeasurement': item.get('unitOfMeasurement', '')
+                    }
+                    
+                    # Add the 'sellingPrice' field if it exists in the item
+                    if 'selling_price' in item:
+                        item_dict['selling_price'] = item['selling_price']
+
+                    # Append the item_dict to the available_itemNames list
+                    available_itemNames.append(item_dict)
 
             # Sort the available_itemNames list in alphabetical order by 'itemName'
             available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
             return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+
+@app.route('/scan bar code page')
+def scan_bar_code_page():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Enterprise Resource Planning':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+            if not company:
+                flash('Company not found', 'error')
+                return redirect('/')
+            
+            dp_str = company.get('dp')
+            
+            return render_template('scan bar code.html', dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -977,6 +1008,8 @@ def register_account():
             'view_stock_info': 'no',
             'view_revenue': 'no',
             'view_sales': 'no',
+            'system_selling_price': 'no',
+            'point_of_sale': 'no',
             'view_finance_dashboard': 'no',
             'add_new_finance_account': 'no',
             'update_finance_account': 'no',
@@ -1282,8 +1315,9 @@ def userlogin():
             session['phone_number'] = phone_number
 
             fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock',
-                      'update_sales','inhouse','view_stock_info','view_revenue','view_sales','view_finance_dashboard','add_new_finance_account',
-                      'update_finance_account','view_finance','edit_finance','delete_finance']
+                      'update_sales','inhouse','view_stock_info','view_revenue','view_sales','system_selling_price','point_of_sale',
+                      'view_finance_dashboard','add_new_finance_account','update_finance_account','view_finance','edit_finance',
+                      'delete_finance']
             
             for field in fields:
                 value = manager.get(field)
@@ -5230,6 +5264,8 @@ def manage_user_rights_page(email,company_name):
         view_stock_info = manager.get('view_stock_info', "no")
         view_revenue = manager.get('view_revenue', "no")
         view_sales = manager.get('view_revenue', "no")
+        system_selling_price = manager.get('system_selling_price', "no")
+        point_of_sale = manager.get('point_of_sale', "no")
         view_finance_dashboard = manager.get('view_finance_dashboard', "no")
         add_new_finance_account = manager.get('add_new_finance_account', "no")
         update_finance_account = manager.get('update_finance_account', "no")
@@ -5243,6 +5279,7 @@ def manage_user_rights_page(email,company_name):
                                manage_contracts=manage_contracts,add_stock=add_stock,
                                update_stock=update_stock,update_sales=update_sales,inhouse=inhouse,
                                view_stock_info=view_stock_info,view_revenue=view_revenue,view_sales=view_sales,
+                               system_selling_price=system_selling_price,point_of_sale=point_of_sale,
                                view_finance_dashboard=view_finance_dashboard,add_new_finance_account=add_new_finance_account,
                                update_finance_account=update_finance_account,view_finance=view_finance,
                                edit_finance=edit_finance,delete_finance=delete_finance,dp=dp_str)
@@ -5269,6 +5306,8 @@ def user_rights_initiated():
         view_stock_info = request.form.get('view_stock_info')
         view_revenue = request.form.get('view_revenue')
         view_sales = request.form.get('view_sales')
+        system_selling_price = request.form.get('system_selling_price')
+        point_of_sale = request.form.get('point_of_sale')
         view_finance_dashboard = request.form.get('view_finance_dashboard')
         add_new_finance_account = request.form.get('add_new_finance_account')
         update_finance_account = request.form.get('update_finance_account')
@@ -5301,6 +5340,10 @@ def user_rights_initiated():
             update_fields['view_revenue'] = view_revenue
         if view_sales:
             update_fields['view_sales'] = view_sales
+        if system_selling_price:
+            update_fields['system_selling_price'] = system_selling_price
+        if point_of_sale:
+            update_fields['point_of_sale'] = point_of_sale
         if view_finance_dashboard:
             update_fields['view_finance_dashboard'] = view_finance_dashboard
         if add_new_finance_account:
@@ -5761,6 +5804,12 @@ def add_new_stock():
                     item['unitPrice'] = float(item.get('unitPrice', 0))
                     item['stockDate'] = datetime.strptime(item.get('stockDate', ''), '%Y-%m-%d')
 
+                    selling_price = item.get('selling_price')
+                    if selling_price:
+                        item['selling_price'] = float(selling_price)
+                    else:
+                        item.pop('selling_price', None)
+
                     # Add 'totalPrice' field which is 'unitPrice' * 'quantity'
                     item['totalPrice'] = item['unitPrice'] * item['quantity']
                     item['company_name'] = company.get('company_name', '')
@@ -5833,6 +5882,12 @@ def update_new_stock():
                     item['company_name'] = company.get('company_name', '')
                     item['status'] = "updated stock"
                     item['timestamp'] = timestamp
+
+                    selling_price = item.get('selling_price')
+                    if selling_price:
+                        item['selling_price'] = float(selling_price)
+                    else:
+                        item.pop('selling_price', None)
 
                     # Check if the item already exists in the database
                     existing_item = db.inventories.find_one({
@@ -5912,7 +5967,10 @@ def update_sale():
                 try:
                     item['quantity'] = float(item.get('quantity', 0))
                     item['unitPrice'] = float(item.get('unitPrice', 0))
-                    item['saleDate'] = datetime.strptime(item.get('saleDate', ''), '%Y-%m-%d')
+                    if item['saleDate'] == "null":
+                        item['saleDate'] = timestamp
+                    else:
+                        item['saleDate'] = datetime.strptime(item.get('saleDate', ''), '%Y-%m-%d')
                     item['company_name'] = company.get('company_name', '')
                     item['timestamp'] = timestamp
 
@@ -5974,6 +6032,98 @@ def update_sale():
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
+
+@app.route('/check bar code', methods=['POST'])
+def check_bar_code():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        account_type = session.get('account_type')
+        if account_type == 'Enterprise Resource Planning':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+            product_id = request.form.get('product_id')
+            product = db.inventories.find_one({'_id': ObjectId(product_id)})
+            if product:
+                item_name = product.get('itemName', None)
+                available_quantity = product.get('available_quantity', None)
+                selling_price = product.get('selling_price', None)
+                dp_str = company.get('dp')
+                return render_template("product information.html",dp=dp_str,item_name=item_name,available_quantity=available_quantity,selling_price=selling_price,product_id=product_id)
+            else:
+                flash('Scanned Product does not exist in current stock','error')
+                return redirect('/scan bar code page')
+        else:
+            flash('Your session expired or does not exist', 'error')
+            return redirect('/')
+        
+@app.route('/store scanned sale', methods=['GET', 'POST'])
+def store_scanned_sale():
+    db, fs = get_db_and_fs()
+    login_data = session.get('login_username')
+    
+    if login_data is None:
+        flash('Login first', 'error')
+        return redirect('/')
+    else:
+        product_id = request.form.get('product_id')
+        selling_price = request.form.get('selling_price')
+        selling_price = float(selling_price)
+        update_sale_quantity = request.form.get('update_sale_quantity')
+        update_sale_quantity = float(update_sale_quantity)
+
+        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+
+        existing_item = db.inventories.find_one({'_id': ObjectId(product_id)})
+
+        if existing_item:
+            timestamp = datetime.now()
+            if 'available_quantity' in existing_item:
+                if existing_item['available_quantity'] >= update_sale_quantity:
+                    available_quantity = existing_item['available_quantity'] - update_sale_quantity
+                    stockDate = existing_item['stockDate']
+                else:
+                    flash('Item is out of stock, enter some small quantity', 'error')
+                    return redirect('/scan bar code page')
+            else:
+                if existing_item['quantity'] >= update_sale_quantity:  
+                    available_quantity = existing_item['quantity'] - update_sale_quantity
+                    stockDate = existing_item['stockDate']
+                else:
+                    flash('Item is out of stock, enter some small quantity', 'error')
+                    return redirect('/scan bar code page')
+            stock_id = existing_item['_id']
+            revenue = update_sale_quantity*selling_price
+            data = {
+                'itemName': existing_item['itemName'],
+                'quantity': update_sale_quantity,
+                'unitPrice': selling_price,
+                'saleDate': timestamp,
+                'company_name': company['company_name'],
+                'timestamp': timestamp,
+                'revenue': revenue,
+                'stockDate': stockDate,
+                'stock_id': stock_id
+            }
+
+            db.stock_sales.insert_one(data)
+            db.audit_logs.insert_one({
+                'user': login_data,
+                'Activity': 'Added a new sale',
+                'Item': existing_item['itemName'],
+                'timestamp': datetime.now()
+            })
+            db.inventories.update_one({'itemName': existing_item['itemName']}, {'$set': {'available_quantity': available_quantity}})
+            flash(f'Sale for {existing_item["itemName"]} was successful', 'success')
+            return redirect('/scan bar code page')
+        else:
+            flash('Scanned item does not exist','error')
+            return redirect('/scan bar code page')
     
 @app.route('/in-house-use', methods=['POST'])
 def inhouse():
@@ -7389,8 +7539,9 @@ def notifications():
     manager_account = db.registered_managers.find_one({'username': login_data}, {'_id':0,'createdAt':0,'code':0,'phone_number':0,'address':0,'registered_on':0,'password':0,'auth':0,'dp':0,'dark_mode':0,'password':0})
     if manager_account:
         fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock',
-                      'update_sales','inhouse','view_stock_info','view_revenue','view_sales','view_finance_dashboard','add_new_finance_account',
-                      'update_finance_account','view_finance','edit_finance','delete_finance']
+                      'update_sales','inhouse','view_stock_info','view_revenue','view_sales','system_selling_price','point_of_sale',
+                      'view_finance_dashboard','add_new_finance_account','update_finance_account','view_finance','edit_finance',
+                      'delete_finance']
         for field in fields:
             value = manager_account.get(field)
             if value is not None:
@@ -9163,49 +9314,28 @@ def store_bar_code():
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
             product_name = request.form.get('typed_input')
-            price = request.form.get('update_sale_unit_price')
-            if product_name and price:
-                manager = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
-                company = db.managers.find_one({'name': manager['company_name']})
-                product_id = db.inventories.find_one({'itemName': product_name})
-                product_id_string = str(product_id['_id'])
-                company_id = str(company["_id"])
-                # QR Code Generation
-                url = f'https://michmanagement.onrender.com//verify_user_making_sale?company_id={company_id}&product_id={product_id_string}'
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=3,
-                    border=4,
-                )
-                qr.add_data(url)
-                qr.make(fit=True)
-                img = qr.make_image(fill_color="black", back_color="white")
-                
-                img.save(f'{product_name}.png')
+            product_id = db.inventories.find_one({'itemName': product_name})
+            product_id_string = str(product_id['_id'])
 
+            # Generate barcode
+            CODE128 = barcode.get_barcode_class('code128')
+            barcode_image = CODE128(product_id_string, writer=ImageWriter())
+            
+            # Save the barcode as a PNG file
+            filepath = os.path.join('.', product_name)
+            product_name_download = f'{product_name}.png'
+            filepath_to_remove = os.path.join('.', product_name_download)
+            barcode_image.save(filepath)
 
-                # Load your QR code image
-                qr_code_img = f'{product_name}.png'
-                qr_code = Image(qr_code_img)
-                qr_code.hAlign = 'CENTER'
+            # Flash success message
+            flash(f'Barcode for {product_name} was generated and downloaded to your device', 'success')
 
-                selling_price = float(price)
-
-                filename = f'{product_name}.png'
-                filepath = os.path.join('.', filename)
-
-                db.inventories.update_one({'itemName': product_name}, {'$set': {'selling_price': selling_price}})
-                flash(f'Bar code for {product_name} was generated and downloaded to your device', 'success')
-                remove_file_later(filepath, delay=10)
-                return jsonify({
-                    'download_url': url_for('download_barcode', filename=filename),
-                    'redirect_url': url_for('generate_bar_codes')
-                })
-            else:
-                flash('Failed to generate QR Code', 'error')
-                return redirect('/generate product bar codes page')
+            # Schedule file removal after a delay
+            remove_file_later(filepath_to_remove, delay=10)
+            return jsonify({
+                'download_url': url_for('download_barcode', filename=product_name_download),
+                'redirect_url': url_for('generate_bar_codes')
+            })
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -9213,94 +9343,6 @@ def store_bar_code():
 @app.route('/download-barcode/<filename>')
 def download_barcode(filename):
     return send_from_directory(directory='.', path=filename, as_attachment=True, download_name=filename)
-
-@app.route('/verify_user_making_sale')
-def verify_user_making_sale():
-    db, fs = get_db_and_fs()
-    # Extract company_name and product_id from the query parameters
-    company_id = request.args.get('company_id')
-    product_id = request.args.get('product_id')
-
-    existing_item = db.inventories.find_one({'_id': ObjectId(product_id)})
-    if existing_item:
-        if 'selling_price' in existing_item:
-            selling_price = existing_item['selling_price']
-            # Render the verification page with hidden inputs
-            return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
-        else:
-            flash('No selling price set for the item', 'error')
-            return redirect('/')
-    else:
-        flash('Scanned item is not in stock list', 'error')
-        return redirect('/')
-
-@app.route('/get_product', methods=['GET', 'POST'])
-def get_product():
-    db, fs = get_db_and_fs()
-    
-    secret_id = request.form.get('secret_id')
-    company_id = request.form.get('company_id')
-    product_id = request.form.get('product_id')
-    selling_price = request.form.get('selling_price')
-    selling_price = float(selling_price)
-    update_sale_quantity = request.form.get('update_sale_quantity')
-    update_sale_quantity = float(update_sale_quantity)
-    company = db.managers.find_one({'_id': ObjectId(company_id)})
-    if company:
-        if 'secret_id' in company:
-            if secret_id == company['secret_id']:
-                existing_item = db.inventories.find_one({'_id': ObjectId(product_id)})
-
-                if existing_item:
-                    if 'selling_price' in existing_item:
-                        revenue = existing_item['selling_price']
-                        timestamp = datetime.now()
-                        if 'available_quantity' in existing_item:
-                            if existing_item['available_quantity'] >= update_sale_quantity:
-                                available_quantity = existing_item['available_quantity'] - update_sale_quantity
-                                stockDate = existing_item['stockDate']
-                            else:
-                                flash('Item is out of stock, enter some small quantity', 'error')
-                                return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
-                        else:
-                            if existing_item['quantity'] >= update_sale_quantity:  
-                                available_quantity = existing_item['quantity'] - update_sale_quantity
-                                stockDate = existing_item['stockDate']
-                            else:
-                                flash('Item is out of stock, enter some small quantity', 'error')
-                                return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
-                        stock_id = existing_item['_id']
-                        data = {
-                            'itemName': existing_item['itemName'],
-                            'quantity': update_sale_quantity,
-                            'unitPrice': revenue,
-                            'saleDate': timestamp,
-                            'company_name': company['name'],
-                            'timestamp': timestamp,
-                            'revenue': revenue,
-                            'stockDate': stockDate,
-                            'stock_id': stock_id
-                        }
-
-                        db.stock_sales.insert_one(data)
-                        db.audit_logs.insert_one({
-                            'user': company_id,
-                            'Activity': 'Added a new sale',
-                            'Item': existing_item['itemName'],
-                            'timestamp': datetime.now()
-                        })
-                        db.inventories.update_one({'itemName': existing_item['itemName']}, {'$set': {'available_quantity': available_quantity}})
-                        flash(f'Sale for {existing_item["itemName"]} was successful', 'success')
-                        return redirect('/')
-            else:
-                flash('Wrong secret id was provided', 'error')
-                return render_template('verify qr code sale.html', company_id=company_id, product_id=product_id, selling_price=selling_price)
-        else:
-            flash('No secret id set for the company', 'error')
-            return redirect('/')
-    else:
-        flash('Company does not exist, contact your admin', 'error')
-        return redirect('/')
 
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_financial_reminders():
