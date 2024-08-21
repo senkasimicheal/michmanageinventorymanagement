@@ -37,6 +37,7 @@ import PyPDF2
 import gc
 from collections import defaultdict
 import barcode
+from PIL import Image, ImageDraw, ImageFont
 from barcode.writer import ImageWriter
 
 app = Flask(__name__, static_folder='static')
@@ -9329,32 +9330,60 @@ def store_bar_code():
             product_id = db.inventories.find_one({'itemName': product_name})
             product_id_string = str(product_id['_id'])
 
-            # Generate the barcode using CODE128 format with enhanced settings
+            # Generate the barcode
             CODE128 = barcode.get_barcode_class('code128')
+            writer = ImageWriter()
+
+            # Set the writer options
             options = {
-                'module_width': 0.2,        # Width of individual bars
+                'module_width': 0.3,        # Width of individual bars
                 'module_height': 15.0,      # Height of the bars
                 'font_size': 10,            # Size of the text below the barcode
-                'text_distance': 5.0,       # Increase the distance between the barcode and the text
-                'quiet_zone': 6.5,          # Margin around the barcode
-                'dpi': 300,                 # Resolution of the barcode
-                'write_text': True          # Include human-readable text below the barcode
+                'text_distance': 5.0,       # Distance between the barcode and the text
+                'quiet_zone': 6.5,          # Quiet zone around the barcode
+                'dpi': 300,                 # DPI for better quality
+                'write_text': False         # Temporarily disable text writing
             }
-            barcode_image = CODE128(product_id_string, writer=ImageWriter())
+
+            # Generate the barcode image
+            barcode_image = CODE128(product_id_string, writer=writer)
             
+            # Save the barcode to an in-memory image
+            barcode_img = barcode_image.render(writer_options=options)
+
+            # Convert to Pillow Image to add text
+            draw = ImageDraw.Draw(barcode_img)
+
+            # Use a default font from Pillow
+            font = ImageFont.load_default()
+
+            # Get text size using textbbox
+            text_bbox = draw.textbbox((0, 0), product_id_string, font=font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+
+            img_width, img_height = barcode_img.size
+            text_position = ((img_width - text_width) // 2, img_height - text_height - int(options['text_distance']))
+
+            draw.text(text_position, product_id_string, font=font, fill="black")
+
+            # Expand the image to add more quiet zone if needed
+            new_height = img_height + text_height + int(options['text_distance']) + int(options['quiet_zone'])
+            new_img = Image.new("RGB", (img_width, new_height), "white")
+            new_img.paste(barcode_img, (0, 0))
+
             # Save the barcode as a PNG file
-            filepath = os.path.join('.', product_name)
-            product_name_download = f'{product_name}.png'
-            filepath_to_remove = os.path.join('.', product_name_download)
-            barcode_image.save(filepath, options)
+            filename = f'{product_name}.png'
+            filepath = os.path.join('.', filename)
+            new_img.save(filepath, dpi=(options['dpi'], options['dpi']))
 
             # Flash success message
             flash(f'Barcode for {product_name} was generated and downloaded to your device', 'success')
 
             # Schedule file removal after a delay
-            remove_file_later(filepath_to_remove, delay=10)
+            remove_file_later(filepath, delay=10)
             return jsonify({
-                'download_url': url_for('download_barcode', filename=product_name_download),
+                'download_url': url_for('download_barcode', filename=filename),
                 'redirect_url': url_for('generate_bar_codes')
             })
         else:
