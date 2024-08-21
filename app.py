@@ -7604,7 +7604,6 @@ def notifications():
                 session['account_type'] = 'Enterprise Resource Planning'
             elif 'Accounting' in account_type and len(account_type) == 1:
                 session['account_type'] = 'Accounting'
-            session['is_manager'] = 'is_manager'
 
     # Get the last seen timestamp from the session
     last_seen_timestamp = session.get('last_seen_timestamp', datetime.min)
