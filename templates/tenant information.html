@@ -416,7 +416,7 @@
               </tr>
             </table>
             {% else %}
-            <table class="tenant_table">
+            <table class="tenant_table" id="tenantTable">
               <tr>
                   <th>No.</th>
                   <th>
@@ -434,17 +434,14 @@
                   <th>Last Paid</th>
                   <th>Remaining Period</th>
                   {% if session.get('edit_tenant') != 'no' %}
-                  <th>Edit</th>
                   <th>Delete</th>
                   {% endif %}
               </tr>
-              {% for tenantName, tenantPhone, tenantEmail, propertyName,selected_section,
+                {% for _id, tenantName, tenantPhone, tenantEmail, propertyName,selected_section,
                 payment_type, amount, payment_mode, months_paid, available_amount, amount_demanded, payment_completion, section_value, percentage_paid, currency, date_last_paid,
                 remaining_days, time_unit, overdue_status in tenant_data %}
                 {% if amount_demanded > 0 %}
-                    <tr title="{{ tenantName }}" style="cursor: pointer;" {% if session.get('update_tenant') !='no'
-                      %}onclick="window.location='{{ url_for('selected_tenant', tenantName=tenantName, tenantEmail=tenantEmail, propertyName=propertyName, selected_section=selected_section, payment_type=payment_type,amount=amount,months_paid=months_paid,date_last_paid=date_last_paid) }}';"
-                    {% endif %}>
+                    <tr title="{{ tenantName }}" style="cursor: pointer;" data-id="{{ _id }}">
                         <td>{{ loop.index }}</td>
                         <td>{{ tenantName }}</td>
                         <td>{{ tenantPhone }} <a href="tel:{{ tenantPhone }}" class="btn-primary">&#9742;</a></td>

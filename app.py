@@ -3551,14 +3551,29 @@ def selected_tenant(tenantId):
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            non_manager_update = session.get('update_tenant')
+            if non_manager_update is None:
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
+                date_last_paid = tenant['date_last_paid']
+                return render_template('update tenant information.html',tenantId=tenantId,tenantName=tenant['tenantName'],propertyName=tenant['propertyName'],selected_section=tenant['selected_section'],payment_type=tenant['payment_type'],amount=tenant['amount'],months_paid=tenant['months_paid'],year=date_last_paid.year,dp=dp_str)
             else:
-                dp_str = None
-            tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
-            date_last_paid = tenant['date_last_paid']
-            return render_template('update tenant information.html',tenantId=tenantId,tenantName=tenant['tenantName'],propertyName=tenant['propertyName'],selected_section=tenant['selected_section'],payment_type=tenant['payment_type'],amount=tenant['amount'],months_paid=tenant['months_paid'],year=date_last_paid.year,dp=dp_str)
+                if non_manager_update == "yes":
+                    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                    if 'dp' in company:
+                        dp_str = company['dp']
+                    else:
+                        dp_str = None
+                    tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
+                    date_last_paid = tenant['date_last_paid']
+                    return render_template('update tenant information.html',tenantId=tenantId,tenantName=tenant['tenantName'],propertyName=tenant['propertyName'],selected_section=tenant['selected_section'],payment_type=tenant['payment_type'],amount=tenant['amount'],months_paid=tenant['months_paid'],year=date_last_paid.year,dp=dp_str)
+                else:
+                    flash('You do not have rights to update tenants', 'error')
+                    return redirect('/update-tenant-info')
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -3574,17 +3589,35 @@ def edit(tenantId):
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            # Retrieve the tenant's info using the email
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            non_manager_update = session.get('edit_tenant')
+            if non_manager_update is None:
+                # Retrieve the tenant's info using the email
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
+                if tenant is None:
+                    return "Tenant not found", 404
+                # Pass the tenant's info to the template
+                return render_template('edit.html',tenantId=tenantId,tenantName=tenant['tenantName'], payment_type=tenant['payment_type'], dp=dp_str)
             else:
-                dp_str = None
-            tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
-            if tenant is None:
-                return "Tenant not found", 404
-            # Pass the tenant's info to the template
-            return render_template('edit.html',tenantId=tenantId,tenantName=tenant['tenantName'], payment_type=tenant['payment_type'], dp=dp_str)
+                if non_manager_update == "yes":
+                    # Retrieve the tenant's info using the email
+                    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                    if 'dp' in company:
+                        dp_str = company['dp']
+                    else:
+                        dp_str = None
+                    tenant = db.tenants.find_one({'_id': ObjectId(tenantId)})
+                    if tenant is None:
+                        return "Tenant not found", 404
+                    # Pass the tenant's info to the template
+                    return render_template('edit.html',tenantId=tenantId,tenantName=tenant['tenantName'], payment_type=tenant['payment_type'], dp=dp_str)
+                else:
+                    flash('You do not have rights to edit tenant information', 'error')
+                    return redirect('/update-tenant-info')
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
