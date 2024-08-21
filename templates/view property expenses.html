@@ -166,7 +166,6 @@
                   </p>
                 </div>
               </a>
-              {% if session['account_type'] == 'all_accounts' or session['account_type'] == 'Property Management' %}
               <a class="dropdown-item preview-item" href="{{url_for('assign_properties')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Assign properties
@@ -185,7 +184,6 @@
                   </p>
                 </div>
               </a>
-              {% endif %}
               <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Audit logs

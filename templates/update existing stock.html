@@ -131,6 +131,7 @@
                   </p>
                 </div>
               </a>
+              {% if session['is_manager'] == 'is_manager' %}
               <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
@@ -176,6 +177,7 @@
                   </p>
                 </div>
               </a>
+              {%endif%}
               <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Log Out
