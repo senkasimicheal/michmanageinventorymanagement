@@ -6033,6 +6033,14 @@ def update_sale():
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
 
+def is_valid_object_id(id_str):
+    """ Check if a string is a valid ObjectId """
+    try:
+        ObjectId(id_str)
+        return True
+    except Exception:
+        return False
+    
 @app.route('/check bar code', methods=['POST'])
 def check_bar_code():
     db, fs = get_db_and_fs()
@@ -6047,20 +6055,24 @@ def check_bar_code():
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                     'password': 0, 'auth': 0, 'dark_mode': 0})
             product_id = request.form.get('product_id')
-            product = db.inventories.find_one({'_id': ObjectId(product_id)})
-            if product:
-                item_name = product.get('itemName', None)
-                available_quantity = product.get('available_quantity', None)
-                selling_price = product.get('selling_price', None)
-                dp_str = company.get('dp')
-                return render_template("product information.html",dp=dp_str,item_name=item_name,available_quantity=available_quantity,selling_price=selling_price,product_id=product_id)
-            else:
-                flash('Scanned Product does not exist in current stock','error')
+            if not is_valid_object_id(product_id):
+                flash('Invalid product ID', 'error')
                 return redirect('/scan bar code page')
+            else:
+                product = db.inventories.find_one({'_id': ObjectId(product_id)})
+                if product:
+                    item_name = product.get('itemName', None)
+                    available_quantity = product.get('available_quantity', None)
+                    selling_price = product.get('selling_price', None)
+                    dp_str = company.get('dp')
+                    return render_template("product information.html",dp=dp_str,item_name=item_name,available_quantity=available_quantity,selling_price=selling_price,product_id=product_id)
+                else:
+                    flash('Scanned Product does not exist in current stock','error')
+                    return redirect('/scan bar code page')
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
-        
+     
 @app.route('/store scanned sale', methods=['GET', 'POST'])
 def store_scanned_sale():
     db, fs = get_db_and_fs()
