@@ -5271,7 +5271,7 @@ def manage_user_rights_page(email,company_name):
         inhouse = manager.get('inhouse', "no")
         view_stock_info = manager.get('view_stock_info', "no")
         view_revenue = manager.get('view_revenue', "no")
-        view_sales = manager.get('view_revenue', "no")
+        view_sales = manager.get('view_sales', "no")
         system_selling_price = manager.get('system_selling_price', "no")
         point_of_sale = manager.get('point_of_sale', "no")
         view_finance_dashboard = manager.get('view_finance_dashboard', "no")
