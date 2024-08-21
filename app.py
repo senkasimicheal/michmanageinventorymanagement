@@ -592,7 +592,7 @@ def add_tenants():
                 dp_str = company['dp']
             else:
                 dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email']})        
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})        
 
             if is_manager is None:
                 user_query  = {'username': login_data, 'company_name': company['company_name']}
@@ -930,9 +930,9 @@ def register_account():
 
     # Generate verification code
     code = generate_code()
-    is_manager = db.managers.find_one({'manager_email': email})
+    is_manager = db.managers.find_one({'manager_email': email,'name':company_name})
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     if is_manager:
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         account = company['account_type']
         # Remove any empty strings from the list
         account = [atype for atype in account if atype]
@@ -1325,7 +1325,7 @@ def userlogin():
                 if value is not None:
                     session[field] = value
             
-            is_manager = db.managers.find_one({'manager_email': manager['email']})
+            is_manager = db.managers.find_one({'manager_email': manager['email'], 'name':manager['company_name']})
             if is_manager:
                 session['is_manager'] = 'is_manager'
                 account_type = subscription['account_type']
@@ -1464,7 +1464,7 @@ def authentication():
         session['login_username'] = manager['username']
         session['phone_number'] = manager['phone_number']
 
-        is_manager = db.managers.find_one({'manager_email': manager['email']})
+        is_manager = db.managers.find_one({'manager_email': manager['email'], 'name':manager['company_name']})
         if is_manager:
             session['is_manager'] = 'is_manager'
             account_type = subscription['account_type']
@@ -2075,7 +2075,7 @@ def resolve_complaints():
                 dp_str = company['dp']
             else:
                 dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email']})
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
             ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
             if is_manager is None:
                 property_assigned = db.registered_managers.find({'username': login_data})
@@ -2335,7 +2335,7 @@ def update_tenant_info():
             company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
             dp_str = None
 
-            is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']}) is not None
 
             if not is_manager:
                 property_assigned = db.registered_managers.find({'username': login_data})
@@ -3344,7 +3344,7 @@ def view_property_info():
         if account_type == 'Property Management':
             company = db.registered_managers.find_one({'username': username})
             dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
-            is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']}) is not None
 
             properties_query = {'company_name': company['company_name']}
             if not is_manager:
@@ -3451,9 +3451,10 @@ def view_user_accounts():
     dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
 
     # Check if user is a manager
-    is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
+    is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']}) is not None
     if not is_manager:
         flash("You do not have rights to view other users", 'error')
+        return render_template("view registered managers.html",dp=dp_str)
 
     # Get registered managers data
     registered_managers = list(db.registered_managers.find({'company_name': company['company_name'], 'username': {'$ne': username}}))
@@ -3499,7 +3500,7 @@ def add_new_manager_email():
             dp_str = company['dp']
         else:
             dp_str = None
-        is_manager = db.managers.find_one({'manager_email': company['email']})
+        is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
         if is_manager:
             return render_template('add new manager email.html', dp=dp_str)
         else:
@@ -3895,7 +3896,7 @@ def add_tenant():
             # Delete the QR code image file
             os.remove(f'payment_receipt_qr_{login_data}.png')
 
-            is_manager = db.managers.find_one({'manager_email': company['email']})
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
             num_tenants = db.tenants.count_documents({'company_name': company['company_name']})
             if is_manager['amount_per_month'] == 100000 and num_tenants>=50:
                 flash('Maximum number of tenants is reached', 'error')
@@ -4850,7 +4851,7 @@ def download():
                 flash('Company not found', 'error')
                 return redirect('/')
             
-            is_manager = db.managers.find_one({'manager_email': company['email']})
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
             if is_manager is None:
                 user_query = {'username': login_data, 'company_name': company['company_name'], 'date_last_paid': {'$gte': startdate, '$lte': enddate}}
             else:
@@ -4987,7 +4988,7 @@ def manage_contracts():
                 dp_str = company['dp']
             else:
                 dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email']})
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
             ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
             if is_manager is None:
                 user_querry = {'username': login_data, 'company_name': company['company_name']}
@@ -5044,7 +5045,7 @@ def upload_contract_page():
                 dp_str = company['dp']
             else:
                 dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email']})
+            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
             ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
             if is_manager is None:
                 user_querry = {'username': login_data, 'company_name': company['company_name']}
@@ -5564,18 +5565,21 @@ def view_audit_logs():
     else:
         company = db.registered_managers.find_one({'username': username})
         dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
-        # is_manager = db.managers.find_one({'manager_email': company['email']}) is not None
         usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
         renamed_logs = []
-        for user in usernames:
-            audit_logs = db.audit_logs.find({'user': user['username']})
-            for log in audit_logs:
-                renamed_log = rename_fourth_field(log)
-                timestamp = log.get('timestamp')
-                log['timestamp'] = convert_to_eat(timestamp)
-                renamed_logs.append(renamed_log)
-        sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
-        logs_first_40 = sorted_logs[:40]
+        is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
+        if is_manager:
+            for user in usernames:
+                audit_logs = db.audit_logs.find({'user': user['username']})
+                for log in audit_logs:
+                    renamed_log = rename_fourth_field(log)
+                    timestamp = log.get('timestamp')
+                    log['timestamp'] = convert_to_eat(timestamp)
+                    renamed_logs.append(renamed_log)
+            sorted_logs = sorted(renamed_logs, key=lambda x: x["timestamp"], reverse=True)
+            logs_first_40 = sorted_logs[:40]
+        else:
+            renamed_logs = []
         return render_template('audit logs.html', audit_logs=logs_first_40, dp=dp_str)
 
 # Function to rename the fourth field to 'details'
@@ -5597,15 +5601,19 @@ def view_login_history():
         dp_str = base64.b64encode(base64.b64decode(company.get('dp', ''))).decode() if 'dp' in company else None
         usernames = db.registered_managers.find({'company_name': company['company_name']}, {'username': 1})
         logindata = []
-        for user in usernames:
-            login_info = db.logged_in_data.find({'username': user['username']})
-            for login in login_info:
-                formated_time = format_time(login)
-                timestamp = login.get('timestamp')
-                login['timestamp'] = convert_to_eat(timestamp)
-                logindata.append(formated_time)
-        sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
-        logindata_first_40 = sorted_logins[:40]
+        is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
+        if is_manager:
+            for user in usernames:
+                login_info = db.logged_in_data.find({'username': user['username']})
+                for login in login_info:
+                    formated_time = format_time(login)
+                    timestamp = login.get('timestamp')
+                    login['timestamp'] = convert_to_eat(timestamp)
+                    logindata.append(formated_time)
+            sorted_logins = sorted(logindata, key=lambda x: x["timestamp"], reverse=True)
+            logindata_first_40 = sorted_logins[:40]
+        else:
+            logindata = []
         return render_template('login history.html', logindata=logindata_first_40, dp=dp_str)
 
 ###DOANLOAD AUDIT DATA   
