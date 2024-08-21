@@ -1320,13 +1320,12 @@ def userlogin():
                       'view_finance_dashboard','add_new_finance_account','update_finance_account','view_finance','edit_finance',
                       'delete_finance']
             
-            for field in fields:
-                value = manager.get(field)
-                if value is not None:
-                    session[field] = value
-            
             is_manager = db.managers.find_one({'manager_email': manager['email'], 'name':manager['company_name']})
             if is_manager:
+                for field in fields:
+                    value = manager.get(field)
+                    if value is not None:
+                        session[field] = value
                 session['is_manager'] = 'is_manager'
                 account_type = subscription['account_type']
                 # Remove any empty strings from the list
@@ -1350,6 +1349,13 @@ def userlogin():
                 #     session['account_type'] = 'all_accounts'
                 #     return redirect('/all-accounts-overview')
             else:
+                for field in fields:
+                    if field in manager:
+                        value = manager.get(field)
+                        if value is not None:
+                            session[field] = value
+                    else:
+                        session[field] = "no"
                 other_manager = db.other_managers.find_one({'company_name': manager['company_name'], 'manager_email': manager['email']})
                 if other_manager:
                     account_type = other_manager['account_type']
@@ -7563,10 +7569,21 @@ def notifications():
                       'update_sales','inhouse','view_stock_info','view_revenue','view_sales','system_selling_price','point_of_sale',
                       'view_finance_dashboard','add_new_finance_account','update_finance_account','view_finance','edit_finance',
                       'delete_finance']
-        for field in fields:
-            value = manager_account.get(field)
-            if value is not None:
-                session[field] = value
+        
+        is_manager = db.managers.find_one({'manager_email': manager_account['email'], 'name':manager_account['company_name']})
+        if is_manager:
+            for field in fields:
+                value = manager_account.get(field)
+                if value is not None:
+                    session[field] = value
+        else:
+            for field in fields:
+                if field in manager_account:
+                    value = manager_account.get(field)
+                    if value is not None:
+                        session[field] = value
+                else:
+                    session[field] = "no"
 
         account_type = manager_account.get('account_type')
         if account_type is None:
