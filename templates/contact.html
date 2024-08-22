@@ -72,10 +72,15 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('manager_login_page') }}" id="login">Manager Login</a>
+                <a href="{{ url_for('tenant_login_page') }}" id="tenant-login">Tenant Login</a>
+                <a href="{{ url_for('manager_register_page') }}" id="signup">Manager Sign Up</a>
+                <a href="{{ url_for('tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
                 <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
                 <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
                 <a href="{{ url_for('about') }}">About</a>
                 <a href="{{ url_for('contact') }}">Contact Us</a>
+                <a href="{{ url_for('download_apk') }}" id="install-link" style="display: none;">Install App</a>
               </div>
             </div>
           </div>

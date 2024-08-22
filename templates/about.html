@@ -70,10 +70,15 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('manager_login_page') }}" id="login">Manager Login</a>
+                <a href="{{ url_for('tenant_login_page') }}" id="tenant-login">Tenant Login</a>
+                <a href="{{ url_for('manager_register_page') }}" id="signup">Manager Sign Up</a>
+                <a href="{{ url_for('tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
                 <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
                 <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
                 <a href="{{ url_for('about') }}">About</a>
                 <a href="{{ url_for('contact') }}">Contact Us</a>
+                <a href="{{ url_for('download_apk') }}" id="install-link" style="display: none;">Install App</a>
               </div>
             </div>
           </div>
@@ -91,6 +96,24 @@
             About Us
           </h2>
         </div>
+        <div class="timeline-container">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="year">Feb-2024</div>
+              <div class="content">Launched the first version of our product<br>as a property management system</div>
+            </div>
+            <div class="timeline-item">
+              <div class="year">May-2024</div>
+              <div class="content">Launched a new module<br>inventory management system</div>
+            </div>
+            <!-- <div class="timeline-item">
+                                                      <div class="year">2022</div>
+                                                      <div class="content">Introduced AI-driven features to enhance user experience.</div>
+                                                    </div> -->
+            <!-- Add more timeline items as needed -->
+          </div>
+        </div>
+
         <p>
           Mich Manage revolutionizes property management with its intuitive and efficient platform, designed to cater to landlords, property managers, and tenants alike. Our comprehensive suite of tools simplifies every aspect of property management, from listing properties to resolving tenant complaints. Here's what sets us apart:
         </p>
