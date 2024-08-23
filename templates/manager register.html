@@ -74,7 +74,6 @@
                 <a href="{{ url_for('index') }}">Home</a>
                 <a href="{{ url_for('manager_login_page') }}" id="login">Manager Login</a>
                 <a href="{{ url_for('tenant_login_page') }}" id="tenant-login">Tenant Login</a>
-                <a href="{{ url_for('manager_register_page') }}" id="signup">Manager Sign Up</a>
                 <a href="{{ url_for('tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
                 <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
                 <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
@@ -104,19 +103,14 @@
       <div class="container-fluid-form" style="margin-top: -8rem;">
         <form id="myForm" class="property_forn" action="{{url_for('register_account')}}" method="POST">
           <h6>Manager account</h6>
+          <p>Company Name: {{company_name}}</p>
+          <input type="hidden" name="company_name" value="{{company_name}}">
           <label class="input_labels" for="">Name</label>
           <input class="property_inputs" type="text" name="name" required><br>
           <label class="input_labels" class="input_labels" for="">Email</label>
           <input class="property_inputs" type="email" name="email" required><br>
           <label class="input_labels" for="">Phone Number</label>
           <input class="property_inputs" type="tel" name="phone_number" required><br>
-          <label class="input_labels" for="">Your Company</label>
-          <select class="property_inputs" name="company_name" id="property" required>
-            <option value="" disabled selected>Select company</option>
-            {% for name in company_names %}
-            <option value="{{ name }}">{{ name }}</option>
-            {% endfor %}
-          </select><br>
           <label class="input_labels" for="">Desired Username</label>
           <input class="property_inputs" type="text" name="username" 
            oninput="this.value = this.value.replace(/[^a-zA-Z]/g, '').toLowerCase()" 

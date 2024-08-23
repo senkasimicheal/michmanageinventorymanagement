@@ -535,15 +535,8 @@ def tenant_login_page():
 
 @app.route('/manager_register')
 def manager_register_page():
-    db, fs = get_db_and_fs()
-    companies = db.managers.find({}, {"name": 1})
-    company_names = [company['name'] for company in companies]
-    
-    cursor = db.property_managed.find({}, {'propertyName': 1, '_id': 0})
-    property_data = [item['propertyName'] for item in cursor if 'propertyName' in item]
-    
-    resp = make_response(render_template("manager register.html", property_data=property_data, company_names=company_names))
-    return resp
+    company_name = request.args.get('company_name')
+    return render_template("manager register.html", company_name=company_name)
 
 @app.route('/tenant_register')
 def tenant_register_page():
@@ -567,12 +560,16 @@ def add_properties():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('add_properties') == "no":
+                flash("You do not have rights to add properties","error")
+                return redirect("/load-dashboard-page")
             else:
-                dp_str = None
-            return render_template('add property page.html', dp=dp_str)
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                return render_template('add property page.html', dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -587,33 +584,37 @@ def add_tenants():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('add_tenants') == "no":
+                flash("You do not have rights to add tenants","error")
+                return redirect("/load-dashboard-page")
             else:
-                dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})        
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})        
 
-            if is_manager is None:
-                user_query  = {'username': login_data, 'company_name': company['company_name']}
-            else:
-                user_query  = {'company_name': company['company_name']}
+                if is_manager is None:
+                    user_query  = {'username': login_data, 'company_name': company['company_name']}
+                else:
+                    user_query  = {'company_name': company['company_name']}
 
-            property_data_list = list(db.property_managed.find(user_query,{'propertyName':1,'sections':1,'_id':0}))
-            tenant_data_cursor = db.tenants.find(user_query,{'propertyName':1,'selected_section':1,'_id':0})
-                    
-            property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
-            for tenant_exists in tenant_data_cursor:
-                tenant_property_name = tenant_exists.get('propertyName', '').strip()
-                selected_section = tenant_exists.get('selected_section', '').strip()
-                # Check if the property exists in updated_property_data and the section is in the property's sections
-                if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
-                    # Remove the section
-                    property_data_dict[tenant_property_name].remove(selected_section)
-                    # If there are no more sections for this property, remove the property
-                    if not property_data_dict[tenant_property_name]:
-                        del property_data_dict[tenant_property_name]
-            return render_template('add tenants page.html', dp=dp_str, property_data=property_data_dict)
+                property_data_list = list(db.property_managed.find(user_query,{'propertyName':1,'sections':1,'_id':0}))
+                tenant_data_cursor = db.tenants.find(user_query,{'propertyName':1,'selected_section':1,'_id':0})
+                        
+                property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
+                for tenant_exists in tenant_data_cursor:
+                    tenant_property_name = tenant_exists.get('propertyName', '').strip()
+                    selected_section = tenant_exists.get('selected_section', '').strip()
+                    # Check if the property exists in updated_property_data and the section is in the property's sections
+                    if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
+                        # Remove the section
+                        property_data_dict[tenant_property_name].remove(selected_section)
+                        # If there are no more sections for this property, remove the property
+                        if not property_data_dict[tenant_property_name]:
+                            del property_data_dict[tenant_property_name]
+                return render_template('add tenants page.html', dp=dp_str, property_data=property_data_dict)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -648,12 +649,16 @@ def add_new_stock_page():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('add_stock') == "no":
+                flash("You do not have rights to add stock","error")
+                return redirect('/stock-overview')
             else:
-                dp_str = None
-            return render_template('add new stock.html', dp=dp_str)
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                return render_template('add new stock.html', dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -668,26 +673,30 @@ def update_existing_stock():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if not company:
-                flash('Company not found', 'error')
-                return redirect('/')
-            
-            dp_str = company.get('dp')
-            items_to_update = []
-            available_items = db.inventories.find({'company_name': company['company_name']})
-            for item in available_items:
-                item_details = {
-                    'itemName': item['itemName'],
-                    'available_quantity': item.get('available_quantity', ''),
-                    'unitOfMeasurement': item.get('unitOfMeasurement', ''),
-                    'unitPrice': item.get('unitPrice','')
-                }
-                items_to_update.append(item_details)
-            
-            items_to_update = sorted(items_to_update, key=lambda x: x['itemName'])
+            if session.get('update_stock') == "no":
+                flash("You do not have rights to update stock","error")
+                return redirect('/stock-overview')
+            else:
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if not company:
+                    flash('Company not found', 'error')
+                    return redirect('/')
+                
+                dp_str = company.get('dp')
+                items_to_update = []
+                available_items = db.inventories.find({'company_name': company['company_name']})
+                for item in available_items:
+                    item_details = {
+                        'itemName': item['itemName'],
+                        'available_quantity': item.get('available_quantity', ''),
+                        'unitOfMeasurement': item.get('unitOfMeasurement', ''),
+                        'unitPrice': item.get('unitPrice','')
+                    }
+                    items_to_update.append(item_details)
+                
+                items_to_update = sorted(items_to_update, key=lambda x: x['itemName'])
 
-            return render_template('update existing stock.html', dp=dp_str, items_to_update=items_to_update)
+                return render_template('update existing stock.html', dp=dp_str, items_to_update=items_to_update)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -702,33 +711,37 @@ def update_sales_page():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
-            if not company:
-                flash('Company not found', 'error')
-                return redirect('/')
-            
-            dp_str = company.get('dp')
-            available_itemNames = []
-            available_items = db.inventories.find({'company_name': company['company_name']})
-            for item in available_items:
-                if item.get('available_quantity', 0) > 0:
-                    item_dict = {
-                        'itemName': item.get('itemName', ''),
-                        'available_quantity': item.get('available_quantity', ''),
-                        'unitOfMeasurement': item.get('unitOfMeasurement', '')
-                    }
-                    
-                    # Add the 'sellingPrice' field if it exists in the item
-                    if 'selling_price' in item:
-                        item_dict['selling_price'] = item['selling_price']
+            if session.get('update_sales') == "no":
+                flash("You do not have rights to update sales","error")
+                return redirect('/stock-overview')
+            else:
+                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+                if not company:
+                    flash('Company not found', 'error')
+                    return redirect('/')
+                
+                dp_str = company.get('dp')
+                available_itemNames = []
+                available_items = db.inventories.find({'company_name': company['company_name']})
+                for item in available_items:
+                    if item.get('available_quantity', 0) > 0:
+                        item_dict = {
+                            'itemName': item.get('itemName', ''),
+                            'available_quantity': item.get('available_quantity', ''),
+                            'unitOfMeasurement': item.get('unitOfMeasurement', '')
+                        }
+                        
+                        # Add the 'sellingPrice' field if it exists in the item
+                        if 'selling_price' in item:
+                            item_dict['selling_price'] = item['selling_price']
 
-                    # Append the item_dict to the available_itemNames list
-                    available_itemNames.append(item_dict)
+                        # Append the item_dict to the available_itemNames list
+                        available_itemNames.append(item_dict)
 
-            # Sort the available_itemNames list in alphabetical order by 'itemName'
-            available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+                # Sort the available_itemNames list in alphabetical order by 'itemName'
+                available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
-            return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
+                return render_template('update sales page.html', dp=dp_str, available_itemNames=available_itemNames)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -743,14 +756,18 @@ def scan_bar_code_page():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
-            if not company:
-                flash('Company not found', 'error')
-                return redirect('/')
-            
-            dp_str = company.get('dp')
-            
-            return render_template('scan bar code.html', dp=dp_str)
+            if session.get('update_sales') == "no":
+                flash("You do not have rights to update sales","error")
+                return redirect('/stock-overview')
+            else:
+                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+                if not company:
+                    flash('Company not found', 'error')
+                    return redirect('/')
+                
+                dp_str = company.get('dp')
+                
+                return render_template('scan bar code.html', dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -765,23 +782,27 @@ def generate_bar_codes():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
-            if not company:
-                flash('Company not found', 'error')
-                return redirect('/')
-            
-            dp_str = company.get('dp')
-            available_itemNames = []
-            available_items = db.inventories.find({'company_name': company['company_name']})
-            for item in available_items:
-                available_itemNames.append({
-                    'itemName': item.get('itemName', '')
-                })
+            if session.get('update_stock') == "no":
+                flash("You do not have rights to update stock","error")
+                return redirect('/stock-overview')
+            else:
+                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'address': 0, 'password': 0, 'auth': 0, 'dark_mode': 0})
+                if not company:
+                    flash('Company not found', 'error')
+                    return redirect('/')
+                
+                dp_str = company.get('dp')
+                available_itemNames = []
+                available_items = db.inventories.find({'company_name': company['company_name']})
+                for item in available_items:
+                    available_itemNames.append({
+                        'itemName': item.get('itemName', '')
+                    })
 
-            # Sort the available_itemNames list in alphabetical order by 'itemName'
-            available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+                # Sort the available_itemNames list in alphabetical order by 'itemName'
+                available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
-            return render_template('generate barcodes.html', dp=dp_str, available_itemNames=available_itemNames)
+                return render_template('generate barcodes.html', dp=dp_str, available_itemNames=available_itemNames)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -796,24 +817,28 @@ def update_production_activity():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('inhouse') == "no":
+                flash("You do not have rights to update inhouse information","error")
+                return redirect('/stock-overview')
             else:
-                dp_str = None
-            
-            available_itemNames = []
-            available_items = db.inventories.find({'company_name': company['company_name']})
-            for item in available_items:
-                if item.get('available_quantity', 0) > 0:
-                    available_itemNames.append({
-                        'itemName': item.get('itemName', ''),  # Provide a default value
-                        'available_quantity': item.get('available_quantity', ''),
-                        'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
-                    })
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
                 
-            available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
-            return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
+                available_itemNames = []
+                available_items = db.inventories.find({'company_name': company['company_name']})
+                for item in available_items:
+                    if item.get('available_quantity', 0) > 0:
+                        available_itemNames.append({
+                            'itemName': item.get('itemName', ''),  # Provide a default value
+                            'available_quantity': item.get('available_quantity', ''),
+                            'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
+                        })
+                    
+                available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+                return render_template('update production.html', dp=dp_str, available_itemNames=available_itemNames)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -828,24 +853,28 @@ def update_inhouse_use_page():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('inhouse') == "no":
+                flash("You do not have rights to update inhouse information","error")
+                return redirect('/stock-overview')
             else:
-                dp_str = None
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
 
-            available_itemNames = []
-            available_items = db.inventories.find({'company_name': company['company_name']})
-            for item in available_items:
-                if item.get('available_quantity', 0) > 0:
-                    available_itemNames.append({
-                        'itemName': item.get('itemName', ''),  # Provide a default value
-                        'available_quantity': item.get('available_quantity', ''),
-                        'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
-                    })
+                available_itemNames = []
+                available_items = db.inventories.find({'company_name': company['company_name']})
+                for item in available_items:
+                    if item.get('available_quantity', 0) > 0:
+                        available_itemNames.append({
+                            'itemName': item.get('itemName', ''),  # Provide a default value
+                            'available_quantity': item.get('available_quantity', ''),
+                            'unitOfMeasurement': item.get('unitOfMeasurement', '')  # Provide a default value
+                        })
 
-            available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
-            return render_template('update inhouse use.html', dp=dp_str, available_itemNames=available_itemNames)
+                available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
+                return render_template('update inhouse use.html', dp=dp_str, available_itemNames=available_itemNames)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -912,21 +941,21 @@ def register_account():
     # Check if passwords match
     if password != confirm_password:
         flash('Passwords do not match', 'error')
-        return redirect('/manager_register')
+        return render_template("manager register.html", company_name=company_name)
 
     # Check if user is a manager
     company = db.managers.find_one({'name': company_name})
     if company and email not in company.get('managers', []):  # Check if the user is a manager
         flash('Not a manager in the registered companies', 'error')
-        return redirect('/manager_register')
+        return render_template("manager register.html", company_name=company_name)
 
     # Check if username or email already exists
     if db.registered_managers.find_one({'username': username}):
         flash('Username already taken', 'error')
-        return redirect('/manager_register')
+        return render_template("manager register.html", company_name=company_name)
     if db.registered_managers.find_one({'email': email, 'company_name': company_name}):
         flash('User already registered', 'error')
-        return redirect('/manager_register')
+        return render_template("manager register.html", company_name=company_name)
 
     # Generate verification code
     code = generate_code()
@@ -3534,9 +3563,29 @@ def update_new_manager_email():
             else:
                 exists = 1
         if exists == 1:
-            db.managers.update_one({'name': manager_found['company_name']}, {'$push': {'managers': email}})
-            db.other_managers.insert_one({'company_name': manager_found['company_name'], 'manager_email': email, 'account_type': account_type})
+            company_name = manager_found['company_name']
+            db.managers.update_one({'name': company_name}, {'$push': {'managers': email}})
+            db.other_managers.insert_one({'company_name': company_name, 'manager_email': email, 'account_type': account_type})
             db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new manager', 'email':email, 'timestamp': datetime.now()})
+            send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
+            if send_emails is not None:
+                msg = Message('Account Creation Invitation from Mich Manage', 
+                            sender='michmanage@outlook.com', 
+                            recipients=email)
+                msg.html = f"""
+                <html>
+                <body>
+                <p>Dear Manager,</p>
+                <p>You have been granted permission to create an account with Mich Manage. Please click the link below to register:</p>
+                <p><b style="font-size: 20px;"><a href="https://michmanagement.onrender.com/manager_register?company_name={company_name}">Register</a></b></p>
+                <p>Best Regards,</p>
+                <p>Mich Manage</p>
+                </body>
+                </html>
+                """
+                thread = threading.Thread(target=send_async_email, args=[app, msg])
+                thread.start()
+                
             flash('New manager email was successfully added', 'success')
         return redirect('/add-new-manager-email')
 
@@ -4277,7 +4326,7 @@ def add_property_manager():
                 <body>
                 <p>Dear Manager,</p>
                 <p>You have been granted permission to create an account with Mich Manage. Please click the link below to register:</p>
-                <p><b style="font-size: 20px;"><a href="https://michmanagement.onrender.com//manager%20register">Register Now</a></b></p>
+                <p><b style="font-size: 20px;"><a href="https://michmanagement.onrender.com/manager_register?company_name={name}">Register</a></b></p>
                 <p>Best Regards,</p>
                 <p>Mich Manage</p>
                 </body>
@@ -4652,218 +4701,224 @@ def load_dashboard_page():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
-
-            if send_emails is None:
-                session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
-                    
-            startdate_on_str = request.form.get("startdate")
-            enddate_on_str = request.form.get("enddate")
-
-            month_mapping = {
-                'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
-                'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12,
-                'Quarter 1': 3, 'Quarter 2': 6, 'Quarter 3': 9, 'Quarter 4': 12,
-                '2024': 12, '2025': 12, '2026': 12
-            }
-
-            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
-
-            subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
-            account_type = subscription['account_type']
-            # Remove any empty strings from the list
-            account_type = [atype for atype in account_type if atype]
-
-            if 'dp' in company:
-                dp_str = company['dp']
-            else:
-                dp_str = None
-
-            if subscription['manager_email'] == company['email']:
-                user_query  = {'company_name': company['company_name']}
-            else:
-                user_query  = {'username': login_data, 'company_name': company['company_name']}
-                
-            projection = {'payment_receipt': 0, 'username': 0, 'company_name': 0, 'tenantEmail': 0, 'tenantPhone': 0, 'payment_mode': 0,
-                        'gender': 0, 'household_size': 0, 'payment_type': 0, 'payment_completion': 0, 'currency': 0, 'payment_status': 0,
-                        '_id': 0}
-            property_data_list = list(db.property_managed.find(user_query))
-            if len(property_data_list) == 0:
-                flash('No property data found', 'error')
+            if session.get('is_manager') != "is_manager":
+                flash("You do not have rights to view the dashboard","error")
+                dp = company.get('dp')
+                dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
             else:
-                if startdate_on_str and enddate_on_str:
-                    startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
-                    enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
-                    latest_year = enddate.year
+                send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
 
-                    date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
-                    date_query.update(user_query)
+                if send_emails is None:
+                    session['send_emails_message'] = "Our email service is currently unavailable. We apologize for any inconvenience. Our team is working hard to fix the issue and we expect the service to be back soon."
+                        
+                startdate_on_str = request.form.get("startdate")
+                enddate_on_str = request.form.get("enddate")
 
-                    current_tenant_data = list(db.tenants.find(date_query, projection))
+                month_mapping = {
+                    'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+                    'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12,
+                    'Quarter 1': 3, 'Quarter 2': 6, 'Quarter 3': 9, 'Quarter 4': 12,
+                    '2024': 12, '2025': 12, '2026': 12
+                }
 
-                    old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
+                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
 
-                    tenant_data_stats = list(db.tenants.find({}, projection))
+                subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
+                account_type = subscription['account_type']
+                # Remove any empty strings from the list
+                account_type = [atype for atype in account_type if atype]
 
-                    month_name = f"{startdate_on_str} to {enddate_on_str}"
+                if 'dp' in company:
+                    dp_str = company['dp']
                 else:
-                    latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
-                    if latest_document is None:
-                        latest_document_old = db.old_tenant_data.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
-                        if latest_document_old is None:
-                            flash('No tenant data found', 'error')
-                            return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
-                        else:
-                            latest_year = latest_document_old['date_last_paid'].year
-                    else:    
-                        latest_year = latest_document['date_last_paid'].year
+                    dp_str = None
 
-                    startdate = datetime(latest_year, 1, 1)
-                    enddate = datetime(latest_year, 12, 31, 23, 59, 59)
-
-                    date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
-                    date_query.update(user_query)
-
-                    current_tenant_data = list(db.tenants.find(date_query, projection))
-
-                    old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
-
-                    tenant_data_stats = list(db.tenants.find({}, projection))
-
-                    month_name = f"{startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}"
-                
-                overdue_tenants = []
-                count_current_tenants = 0
-                if len(tenant_data_stats) != 0:
-                    for count_tenant in tenant_data_stats:
-                        if count_tenant['status'] != 'deleted':
-                            count_current_tenants += 1
-
-                            last_payment_month = month_mapping.get(count_tenant['months_paid'], 0)
-                            last_payment_date = datetime(year=count_tenant['year'], month=last_payment_month, day=1)
-                            next_payment_date = last_payment_date + timedelta(days=30)
-                            remaining_days = (next_payment_date - datetime.now()).days
-                            if remaining_days < 0:
-                                overdue = True
-                                remaining_days = abs(remaining_days)
-                                if remaining_days < 7:
-                                    time_unit = 'day(s)'
-                                elif remaining_days < 30:
-                                    remaining_days = round(remaining_days / 7)
-                                    time_unit = 'week(s)'
-                                elif remaining_days < 365:
-                                    remaining_days = round(remaining_days / 30)
-                                    time_unit = 'month(s)'
-                                else:
-                                    remaining_days = round(remaining_days / 365)
-                                    time_unit = 'year(s)'
-
-                                overdue_status = 'overdue' if overdue else 'due in'
-                                overdue_tenants.append((count_tenant['tenantName'], count_tenant['propertyName'],count_tenant['selected_section'], remaining_days, time_unit, overdue_status))
-
-                    overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
-
-                doc_query = {'status': {'$ne': 'deleted'}}
-                doc_query.update(user_query)
-                tenant_data_cursor = db.tenants.find(doc_query, projection)
-                
-                property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
-                property_occupancy = {doc['propertyName']: {'total': len(doc['sections']), 'occupied': 0} for doc in property_data_list}
-                for tenant_exists in tenant_data_cursor:
-                    tenant_property_name = tenant_exists.get('propertyName', '').strip()
-                    selected_section = tenant_exists.get('selected_section', '').strip()
-                    # Check if the property exists in updated_property_data and the section is in the property's sections
-                    if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
-                        # Remove the section
-                        property_data_dict[tenant_property_name].remove(selected_section)
-                        # Increase the count of occupied sections
-                        property_occupancy[tenant_property_name]['occupied'] += 1
-                        # If there are no more sections for this property, remove the property
-                        if not property_data_dict[tenant_property_name]:
-                            del property_data_dict[tenant_property_name]
-
-                if current_tenant_data or old_tenant_data:  # Check if data is available
-                    combined_data = current_tenant_data + old_tenant_data
-
-                    # Create a mapping of property values
-                    property_value_dict = {item['propertyName']: item['property_value'] for item in property_data_list}
-
-                    # Initialize dictionaries to hold data
-                    property_performance = defaultdict(lambda: {
-                        'available_amount': 0,
-                        'months_paid': set(),
-                        'property_value': 0,
-                        'demanded_amount': 0
-                    })
-                    
-                    # Process combined_data
-                    for item in combined_data:
-                        prop_name = item['propertyName']
-                        if prop_name in property_value_dict:
-                            property_value = property_value_dict[prop_name]
-                            property_performance[prop_name]['available_amount'] += item.get('available_amount', 0)
-                            property_performance[prop_name]['months_paid'].add(item.get('months_paid', ''))
-                            property_performance[prop_name]['property_value'] = property_value
-                    
-                    # Compute months_paid_count and total_property_value
-                    for prop_name, data in property_performance.items():
-                        data['months_paid_count'] = len(data['months_paid'])
-                        data['total_property_value'] = data['months_paid_count'] * data['property_value']
-                        data['demanded_amount'] = data['total_property_value'] - data['available_amount']
-                    
-                    # Initialize for property_performance_line
-                    property_performance_line = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
-                    for item in combined_data:
-                        year = item.get('year')
-                        month = item.get('months_paid')
-                        prop_name = item['propertyName']
-                        property_performance_line[year][month][prop_name] += item.get('available_amount', 0)
-                    
-                    # Prepare data for property_performance_line for the chart
-                    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-                    labels = month_order
-                    datasets = {prop_name: [property_performance_line[year].get(month, {}).get(prop_name, 0) for month in month_order] for prop_name in property_performance.keys()}
-
-                    chart_property_performance_trended_data = {
-                        'labels': labels,
-                        'datasets': [{'label': prop_name, 'data': datasets[prop_name]} for prop_name in property_performance.keys()]
-                    }
-
-                    chart_property_performance_data = {
-                        'labels': list(property_performance.keys()),
-                        'available_amount': [data['available_amount'] for data in property_performance.values()],
-                        'demanded_amount': [data['demanded_amount'] for data in property_performance.values()]
-                    }
-
-                    # Count properties and available amount
-                    count_property = len(property_data_list)
-                    available_amount = sum(item.get('available_amount', 0) for item in combined_data)
-
-                    # Group property data
-                    property_type_counts = defaultdict(int)
-                    for item in property_data_list:
-                        property_type_counts[item['type']] += 1
-                    
-                    chart_property_type_data = {
-                        'labels': list(property_type_counts.keys()),
-                        'values': list(property_type_counts.values())
-                    }
-
-                    return render_template('dashboard.html', 
-                                        chart_property_performance_trended_data=chart_property_performance_trended_data,
-                                        chart_property_performance_data=chart_property_performance_data,
-                                        chart_property_type_data=chart_property_type_data, 
-                                        count_property=count_property,
-                                        available_amount=available_amount,
-                                        overdue_tenants=overdue_tenants,
-                                        property_occupancy=property_occupancy,
-                                        count_current_tenants=count_current_tenants,
-                                        month_name=month_name, dp=dp_str)
+                if subscription['manager_email'] == company['email']:
+                    user_query  = {'company_name': company['company_name']}
                 else:
-                    flash('No tenant data found', 'error')
+                    user_query  = {'username': login_data, 'company_name': company['company_name']}
+                    
+                projection = {'payment_receipt': 0, 'username': 0, 'company_name': 0, 'tenantEmail': 0, 'tenantPhone': 0, 'payment_mode': 0,
+                            'gender': 0, 'household_size': 0, 'payment_type': 0, 'payment_completion': 0, 'currency': 0, 'payment_status': 0,
+                            '_id': 0}
+                property_data_list = list(db.property_managed.find(user_query))
+                if len(property_data_list) == 0:
+                    flash('No property data found', 'error')
                     return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
+                else:
+                    if startdate_on_str and enddate_on_str:
+                        startdate = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+                        enddate = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+                        latest_year = enddate.year
+
+                        date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
+                        date_query.update(user_query)
+
+                        current_tenant_data = list(db.tenants.find(date_query, projection))
+
+                        old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
+
+                        tenant_data_stats = list(db.tenants.find({}, projection))
+
+                        month_name = f"{startdate_on_str} to {enddate_on_str}"
+                    else:
+                        latest_document = db.tenants.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
+                        if latest_document is None:
+                            latest_document_old = db.old_tenant_data.find_one(sort=[('date_last_paid', -1)], projection={'date_last_paid': 1, '_id': 0})
+                            if latest_document_old is None:
+                                flash('No tenant data found', 'error')
+                                return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
+                            else:
+                                latest_year = latest_document_old['date_last_paid'].year
+                        else:    
+                            latest_year = latest_document['date_last_paid'].year
+
+                        startdate = datetime(latest_year, 1, 1)
+                        enddate = datetime(latest_year, 12, 31, 23, 59, 59)
+
+                        date_query = {'date_last_paid': {'$gte': startdate, '$lte': enddate}, 'status': {'$ne': 'deleted'}}
+                        date_query.update(user_query)
+
+                        current_tenant_data = list(db.tenants.find(date_query, projection))
+
+                        old_tenant_data = list(db.old_tenant_data.find(date_query, projection))
+
+                        tenant_data_stats = list(db.tenants.find({}, projection))
+
+                        month_name = f"{startdate.strftime('%Y-%m-%d')} to {enddate.strftime('%Y-%m-%d')}"
+                    
+                    overdue_tenants = []
+                    count_current_tenants = 0
+                    if len(tenant_data_stats) != 0:
+                        for count_tenant in tenant_data_stats:
+                            if count_tenant['status'] != 'deleted':
+                                count_current_tenants += 1
+
+                                last_payment_month = month_mapping.get(count_tenant['months_paid'], 0)
+                                last_payment_date = datetime(year=count_tenant['year'], month=last_payment_month, day=1)
+                                next_payment_date = last_payment_date + timedelta(days=30)
+                                remaining_days = (next_payment_date - datetime.now()).days
+                                if remaining_days < 0:
+                                    overdue = True
+                                    remaining_days = abs(remaining_days)
+                                    if remaining_days < 7:
+                                        time_unit = 'day(s)'
+                                    elif remaining_days < 30:
+                                        remaining_days = round(remaining_days / 7)
+                                        time_unit = 'week(s)'
+                                    elif remaining_days < 365:
+                                        remaining_days = round(remaining_days / 30)
+                                        time_unit = 'month(s)'
+                                    else:
+                                        remaining_days = round(remaining_days / 365)
+                                        time_unit = 'year(s)'
+
+                                    overdue_status = 'overdue' if overdue else 'due in'
+                                    overdue_tenants.append((count_tenant['tenantName'], count_tenant['propertyName'],count_tenant['selected_section'], remaining_days, time_unit, overdue_status))
+
+                        overdue_tenants = sorted(overdue_tenants, key=lambda x: x[3], reverse=True)
+
+                    doc_query = {'status': {'$ne': 'deleted'}}
+                    doc_query.update(user_query)
+                    tenant_data_cursor = db.tenants.find(doc_query, projection)
+                    
+                    property_data_dict = {doc['propertyName']: doc['sections'] for doc in property_data_list}
+                    property_occupancy = {doc['propertyName']: {'total': len(doc['sections']), 'occupied': 0} for doc in property_data_list}
+                    for tenant_exists in tenant_data_cursor:
+                        tenant_property_name = tenant_exists.get('propertyName', '').strip()
+                        selected_section = tenant_exists.get('selected_section', '').strip()
+                        # Check if the property exists in updated_property_data and the section is in the property's sections
+                        if tenant_property_name in property_data_dict and selected_section in property_data_dict[tenant_property_name]:
+                            # Remove the section
+                            property_data_dict[tenant_property_name].remove(selected_section)
+                            # Increase the count of occupied sections
+                            property_occupancy[tenant_property_name]['occupied'] += 1
+                            # If there are no more sections for this property, remove the property
+                            if not property_data_dict[tenant_property_name]:
+                                del property_data_dict[tenant_property_name]
+
+                    if current_tenant_data or old_tenant_data:  # Check if data is available
+                        combined_data = current_tenant_data + old_tenant_data
+
+                        # Create a mapping of property values
+                        property_value_dict = {item['propertyName']: item['property_value'] for item in property_data_list}
+
+                        # Initialize dictionaries to hold data
+                        property_performance = defaultdict(lambda: {
+                            'available_amount': 0,
+                            'months_paid': set(),
+                            'property_value': 0,
+                            'demanded_amount': 0
+                        })
+                        
+                        # Process combined_data
+                        for item in combined_data:
+                            prop_name = item['propertyName']
+                            if prop_name in property_value_dict:
+                                property_value = property_value_dict[prop_name]
+                                property_performance[prop_name]['available_amount'] += item.get('available_amount', 0)
+                                property_performance[prop_name]['months_paid'].add(item.get('months_paid', ''))
+                                property_performance[prop_name]['property_value'] = property_value
+                        
+                        # Compute months_paid_count and total_property_value
+                        for prop_name, data in property_performance.items():
+                            data['months_paid_count'] = len(data['months_paid'])
+                            data['total_property_value'] = data['months_paid_count'] * data['property_value']
+                            data['demanded_amount'] = data['total_property_value'] - data['available_amount']
+                        
+                        # Initialize for property_performance_line
+                        property_performance_line = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+                        for item in combined_data:
+                            year = item.get('year')
+                            month = item.get('months_paid')
+                            prop_name = item['propertyName']
+                            property_performance_line[year][month][prop_name] += item.get('available_amount', 0)
+                        
+                        # Prepare data for property_performance_line for the chart
+                        month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                        labels = month_order
+                        datasets = {prop_name: [property_performance_line[year].get(month, {}).get(prop_name, 0) for month in month_order] for prop_name in property_performance.keys()}
+
+                        chart_property_performance_trended_data = {
+                            'labels': labels,
+                            'datasets': [{'label': prop_name, 'data': datasets[prop_name]} for prop_name in property_performance.keys()]
+                        }
+
+                        chart_property_performance_data = {
+                            'labels': list(property_performance.keys()),
+                            'available_amount': [data['available_amount'] for data in property_performance.values()],
+                            'demanded_amount': [data['demanded_amount'] for data in property_performance.values()]
+                        }
+
+                        # Count properties and available amount
+                        count_property = len(property_data_list)
+                        available_amount = sum(item.get('available_amount', 0) for item in combined_data)
+
+                        # Group property data
+                        property_type_counts = defaultdict(int)
+                        for item in property_data_list:
+                            property_type_counts[item['type']] += 1
+                        
+                        chart_property_type_data = {
+                            'labels': list(property_type_counts.keys()),
+                            'values': list(property_type_counts.values())
+                        }
+
+                        return render_template('dashboard.html', 
+                                            chart_property_performance_trended_data=chart_property_performance_trended_data,
+                                            chart_property_performance_data=chart_property_performance_data,
+                                            chart_property_type_data=chart_property_type_data, 
+                                            count_property=count_property,
+                                            available_amount=available_amount,
+                                            overdue_tenants=overdue_tenants,
+                                            property_occupancy=property_occupancy,
+                                            count_current_tenants=count_current_tenants,
+                                            month_name=month_name, dp=dp_str)
+                    else:
+                        flash('No tenant data found', 'error')
+                        return render_template('dashboard.html', chart_property_performance_trended_data=[],chart_property_performance_data=[],chart_property_type_data=[],dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -5022,49 +5077,53 @@ def manage_contracts():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('manage_contracts') == "no":
+                flash("You do not have rights to manage contracts","error")
+                return redirect("/load-dashboard-page")
             else:
-                dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
-            ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
-            if is_manager is None:
-                user_querry = {'username': login_data, 'company_name': company['company_name']}
-            else:
-                user_querry = {'company_name': company['company_name']}
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
+                ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
+                if is_manager is None:
+                    user_querry = {'username': login_data, 'company_name': company['company_name']}
+                else:
+                    user_querry = {'company_name': company['company_name']}
 
-            contracts = list(db.contracts.find(user_querry))
-            if len(contracts)==0:
-                flash('You are not managing any contracts!', 'error')
-                return redirect('/load-dashboard-page')
-            else:
-                tenant_contracts = []
-                for contract in contracts:
-                    end_date = contract['end_date']
-                    now = datetime.now()
-                    # Calculate the remaining period from now
-                    remaining_seconds = int((end_date - now).total_seconds())
-                    remaining_minutes, remaining_seconds = divmod(remaining_seconds, 60)
-                    remaining_hours, remaining_minutes = divmod(remaining_minutes, 60)
-                    remaining_days, remaining_hours = divmod(remaining_hours, 24)
-                    remaining_days += 1
+                contracts = list(db.contracts.find(user_querry))
+                if len(contracts)==0:
+                    flash('You are not managing any contracts!', 'error')
+                    return redirect('/load-dashboard-page')
+                else:
+                    tenant_contracts = []
+                    for contract in contracts:
+                        end_date = contract['end_date']
+                        now = datetime.now()
+                        # Calculate the remaining period from now
+                        remaining_seconds = int((end_date - now).total_seconds())
+                        remaining_minutes, remaining_seconds = divmod(remaining_seconds, 60)
+                        remaining_hours, remaining_minutes = divmod(remaining_minutes, 60)
+                        remaining_days, remaining_hours = divmod(remaining_hours, 24)
+                        remaining_days += 1
 
-                    if remaining_days < 0:
-                        contract['remaining'] = 'Expired'
-                    elif remaining_days < 7:
-                        contract['remaining'] = f"In {remaining_days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
-                    elif 7 <= remaining_days < 30:
-                        weeks, days = divmod(remaining_days, 7)
-                        contract['remaining'] = f"In {weeks} weeks, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
-                    elif 30 <= remaining_days < 365:
-                        months, days = divmod(remaining_days, 30)
-                        contract['remaining'] = f"In {months} months, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
-                    else:
-                        years, days = divmod(remaining_days, 365)
-                        contract['remaining'] = f"In {years} years, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
-                    tenant_contracts.append(contract)
-                return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp=dp_str)
+                        if remaining_days < 0:
+                            contract['remaining'] = 'Expired'
+                        elif remaining_days < 7:
+                            contract['remaining'] = f"In {remaining_days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                        elif 7 <= remaining_days < 30:
+                            weeks, days = divmod(remaining_days, 7)
+                            contract['remaining'] = f"In {weeks} weeks, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                        elif 30 <= remaining_days < 365:
+                            months, days = divmod(remaining_days, 30)
+                            contract['remaining'] = f"In {months} months, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                        else:
+                            years, days = divmod(remaining_days, 365)
+                            contract['remaining'] = f"In {years} years, {days} days, {remaining_hours} hours, and {remaining_minutes} minutes"
+                        tenant_contracts.append(contract)
+                    return render_template('manage contracts.html', tenant_contracts=tenant_contracts, dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -5079,28 +5138,32 @@ def upload_contract_page():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('manage_contracts') == "no":
+                flash("You do not have rights to add contracts","error")
+                return redirect("/load-dashboard-page")
             else:
-                dp_str = None
-            is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
-            ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
-            if is_manager is None:
-                user_querry = {'username': login_data, 'company_name': company['company_name']}
-            else:
-                user_querry = {'company_name': company['company_name']}
-            
-            tenants = list(db.tenants.find(user_querry))
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
+                ####CHECK IS LOGEDIN MANAGER HAS FULL RIGHTS
+                if is_manager is None:
+                    user_querry = {'username': login_data, 'company_name': company['company_name']}
+                else:
+                    user_querry = {'company_name': company['company_name']}
+                
+                tenants = list(db.tenants.find(user_querry))
 
-            if len(tenants) == 0:
-                flash('No tenant data found', 'error')
-                return redirect('/load-dashboard-page')
-            else:
-                tenant_names = []
-                for tenant in tenants:
-                    tenant_names.append(tenant['tenantName'])
-            return render_template('add contracts.html',tenant_names=tenant_names, dp=dp_str)
+                if len(tenants) == 0:
+                    flash('No tenant data found', 'error')
+                    return redirect('/load-dashboard-page')
+                else:
+                    tenant_names = []
+                    for tenant in tenants:
+                        tenant_names.append(tenant['tenantName'])
+                return render_template('add contracts.html',tenant_names=tenant_names, dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -5115,36 +5178,40 @@ def upload_contract():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            if 'contract_document' not in request.files:
-                flash("No file part", 'error')
-                return redirect('/upload-contract-page')
-            file = request.files['contract_document']
-            if file.filename == '':
-                flash("No file selected", 'error')
-                return redirect('/upload-contract-page')
-            if file:
-                filename = secure_filename(file.filename)
-                content_type = file.content_type
-                file_id = fs.put(file.read(), filename=filename, content_type=content_type)
-                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-                receiver = request.form.get('receiver')
-                start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
-                end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
+            if session.get('manage_contracts') == "no":
+                flash("You do not have rights to add contracts","error")
+                return redirect("/load-dashboard-page")
+            else:
+                if 'contract_document' not in request.files:
+                    flash("No file part", 'error')
+                    return redirect('/upload-contract-page')
+                file = request.files['contract_document']
+                if file.filename == '':
+                    flash("No file selected", 'error')
+                    return redirect('/upload-contract-page')
+                if file:
+                    filename = secure_filename(file.filename)
+                    content_type = file.content_type
+                    file_id = fs.put(file.read(), filename=filename, content_type=content_type)
+                    company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                    receiver = request.form.get('receiver')
+                    start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
+                    end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
 
-                contract = {
-                    'username': login_data,
-                    'company_name': company['company_name'],
-                    'file_id': file_id,
-                    'issuer': company['name'],
-                    'receiver': receiver,
-                    'start_date': start_date,
-                    'end_date': end_date
-                }
+                    contract = {
+                        'username': login_data,
+                        'company_name': company['company_name'],
+                        'file_id': file_id,
+                        'issuer': company['name'],
+                        'receiver': receiver,
+                        'start_date': start_date,
+                        'end_date': end_date
+                    }
 
-                db.contracts.insert_one(contract)
-                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new contract', 'file_id': file_id, 'timestamp': datetime.now()})
-                flash("Contract was uploaded successfully", 'success')
-                return redirect('/upload-contract-page')
+                    db.contracts.insert_one(contract)
+                    db.audit_logs.insert_one({'user': login_data, 'Activity': 'Add new contract', 'file_id': file_id, 'timestamp': datetime.now()})
+                    flash("Contract was uploaded successfully", 'success')
+                    return redirect('/upload-contract-page')
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -5160,14 +5227,18 @@ def delete_contract(contractID):
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            contract = db.contracts.find_one({'_id': ObjectId(contractID)})
-            # Remove the _id field
-            if '_id' in contract:
-                del contract['_id']
-            db.old_contracts.insert_one(contract)
-            db.contracts.delete_one({'_id': ObjectId(contractID)})
-            db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete contract', 'contractID':contractID, 'timestamp': datetime.now()})
-            return redirect('/manage-contracts')
+            if session.get('manage_contracts') == "no":
+                flash("You do not have rights to delete contracts","error")
+                return redirect("/load-dashboard-page")
+            else:
+                contract = db.contracts.find_one({'_id': ObjectId(contractID)})
+                # Remove the _id field
+                if '_id' in contract:
+                    del contract['_id']
+                db.old_contracts.insert_one(contract)
+                db.contracts.delete_one({'_id': ObjectId(contractID)})
+                db.audit_logs.insert_one({'user': login_data, 'Activity': 'Delete contract', 'contractID':contractID, 'timestamp': datetime.now()})
+                return redirect('/manage-contracts')
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -5183,12 +5254,16 @@ def selected_contract(contractID, company_name, receiver):
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
-            if 'dp' in company:
-                dp_str = company['dp']
+            if session.get('manage_contracts') == "no":
+                flash("You do not have rights to update contracts","error")
+                return redirect("/load-dashboard-page")
             else:
-                dp_str = None
-            return render_template('update contract.html',contractID=contractID,company_name=company_name,receiver=receiver,dp=dp_str)
+                company = db.registered_managers.find_one({'username': login_data},{'_id':0,'createdAt':0,'code':0,'address':0,'password':0,'auth':0,'dark_mode':0})
+                if 'dp' in company:
+                    dp_str = company['dp']
+                else:
+                    dp_str = None
+                return render_template('update contract.html',contractID=contractID,company_name=company_name,receiver=receiver,dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -5203,34 +5278,38 @@ def updated_contract():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
-            if 'contract_document' not in request.files:
-                flash("No file part", 'error')
-                return redirect('/manage-contracts')
-            file = request.files['contract_document']
-            if file.filename == '':
-                flash("No file selected", 'error')
-                return redirect('/manage-contracts')
-            if file:
-                filename = secure_filename(file.filename)
-                content_type = file.content_type
-                file_id = fs.put(file.read(), filename=filename, content_type=content_type)
-                end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
-                contractID = request.form.get('contractID')
+            if session.get('manage_contracts') == "no":
+                flash("You do not have rights to update contracts","error")
+                return redirect("/load-dashboard-page")
+            else:
+                if 'contract_document' not in request.files:
+                    flash("No file part", 'error')
+                    return redirect('/manage-contracts')
+                file = request.files['contract_document']
+                if file.filename == '':
+                    flash("No file selected", 'error')
+                    return redirect('/manage-contracts')
+                if file:
+                    filename = secure_filename(file.filename)
+                    content_type = file.content_type
+                    file_id = fs.put(file.read(), filename=filename, content_type=content_type)
+                    end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
+                    contractID = request.form.get('contractID')
 
-                contract = db.contracts.find_one({'_id': ObjectId(contractID)})
-                if contract:
-                    # If a contract exists, update the document and end date
-                    fs.delete(contract['file_id'])
-                    db.contracts.update_one(
-                        {'_id': ObjectId(contractID)},
-                        {'$set': {'file_id': file_id, 'end_date': end_date}}
-                    )
-                    db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update contract', 'file_id': file_id, 'timestamp': datetime.now()})
-                    flash("Contract was updated successfully", 'success')
-                    return redirect('/manage-contracts')
-                else:
-                    flash("Contract was not found", 'error')
-                    return redirect('/manage-contracts')
+                    contract = db.contracts.find_one({'_id': ObjectId(contractID)})
+                    if contract:
+                        # If a contract exists, update the document and end date
+                        fs.delete(contract['file_id'])
+                        db.contracts.update_one(
+                            {'_id': ObjectId(contractID)},
+                            {'$set': {'file_id': file_id, 'end_date': end_date}}
+                        )
+                        db.audit_logs.insert_one({'user': login_data, 'Activity': 'Update contract', 'file_id': file_id, 'timestamp': datetime.now()})
+                        flash("Contract was updated successfully", 'success')
+                        return redirect('/manage-contracts')
+                    else:
+                        flash("Contract was not found", 'error')
+                        return redirect('/manage-contracts')
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -6416,77 +6495,81 @@ def revenue_details():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
-            
-            subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
-            account_type = subscription['account_type']
-            # Remove any empty strings from the list
-            account_type = [atype for atype in account_type if atype]
+            if session.get('view_revenue') == "no":
+                flash("You do not have rights to view profits","error")
+                return redirect('/stock-overview')
+            else:
+                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+                
+                subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
+                account_type = subscription['account_type']
+                # Remove any empty strings from the list
+                account_type = [atype for atype in account_type if atype]
 
-            if 'Enterprise Resource Planning' in account_type:
-                company_name = company['company_name']
-                twelve_months_ago = datetime.now() - timedelta(days=365)
-                pipeline = [
-                    {
-                        '$match': {
-                            'company_name': company_name,
-                            'stockDate': {'$gte': twelve_months_ago}
-                        }
-                    },
-                    {
-                        '$group': {
-                            '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
-                            'totalRevenue': {'$sum': '$revenue'},
-                            'quantitysold': {'$sum': '$quantity'}
-                        }
-                    },
-                    {
-                        '$lookup': {
-                            'from': 'inventories',
-                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
-                            'pipeline': [
-                                {
-                                    '$match': {
-                                        '$expr': {
-                                            '$and': [
-                                                {'$eq': ['$itemName', '$$itemName']},
-                                                {'$eq': ['$company_name', company_name]},
-                                                {'$gte': ['$stockDate', twelve_months_ago]}
-                                            ]
+                if 'Enterprise Resource Planning' in account_type:
+                    company_name = company['company_name']
+                    twelve_months_ago = datetime.now() - timedelta(days=365)
+                    pipeline = [
+                        {
+                            '$match': {
+                                'company_name': company_name,
+                                'stockDate': {'$gte': twelve_months_ago}
+                            }
+                        },
+                        {
+                            '$group': {
+                                '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
+                                'totalRevenue': {'$sum': '$revenue'},
+                                'quantitysold': {'$sum': '$quantity'}
+                            }
+                        },
+                        {
+                            '$lookup': {
+                                'from': 'inventories',
+                                'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                                'pipeline': [
+                                    {
+                                        '$match': {
+                                            '$expr': {
+                                                '$and': [
+                                                    {'$eq': ['$itemName', '$$itemName']},
+                                                    {'$eq': ['$company_name', company_name]},
+                                                    {'$gte': ['$stockDate', twelve_months_ago]}
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        '$project': {
+                                            '_id': 0,
+                                            'quantity': 1,
+                                            'unitPrice': 1,
+                                            'stockDate': 1,
+                                            'totalPrice': {
+                                                '$add': [
+                                                    '$totalPrice',
+                                                    {'$ifNull': ['$oldTotalPrice', 0]}
+                                                ]
+                                            }
                                         }
                                     }
-                                },
-                                {
-                                    '$project': {
-                                        '_id': 0,
-                                        'quantity': 1,
-                                        'unitPrice': 1,
-                                        'stockDate': 1,
-                                        'totalPrice': {
-                                            '$add': [
-                                                '$totalPrice',
-                                                {'$ifNull': ['$oldTotalPrice', 0]}
-                                            ]
-                                        }
-                                    }
-                                }
-                            ],
-                            'as': 'inventoryDetails'
+                                ],
+                                'as': 'inventoryDetails'
+                            }
+                        },
+                        {
+                            '$match': {
+                                'inventoryDetails': {'$ne': []}
+                            }
                         }
-                    },
-                    {
-                        '$match': {
-                            'inventoryDetails': {'$ne': []}
-                        }
-                    }
-                ]
+                    ]
 
-                revenue_info = list(db.stock_sales.aggregate(pipeline))
-                revenue_info.sort(key=lambda x: x['inventoryDetails'][0]['stockDate'], reverse=True)
-                dp = company.get('dp')
-                dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-                return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
+                    revenue_info = list(db.stock_sales.aggregate(pipeline))
+                    revenue_info.sort(key=lambda x: x['inventoryDetails'][0]['stockDate'], reverse=True)
+                    dp = company.get('dp')
+                    dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+                    return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -6501,15 +6584,13 @@ def sales_details():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
-            
-            subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
-            account_type = subscription['account_type']
-            # Remove any empty strings from the list
-            account_type = [atype for atype in account_type if atype]
+            if session.get('view_sales') == "no":
+                flash("You do not have rights to view sales","error")
+                return redirect('/stock-overview')
+            else:
+                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
 
-            if 'Enterprise Resource Planning' in account_type:
                 company_name = company['company_name']
 
                 twelve_months_ago = datetime.now() - timedelta(days=365)
@@ -6632,282 +6713,295 @@ def stock_overview():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            # Clear sessions
-            session.pop("profits_chart", None)
-            session.pop("loss_chart", None)
-            session.pop("revenue_and_qty_chart", None)
-            session.pop("monthly_profits_chart", None)
-            session.pop("inhouse_costs_chart", None)
-            session.pop("inhouse_revenue_chart", None)
-
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
 
             company_name = company['company_name']
-
-            startdate_on_str = request.form.get("startdate")
-            enddate_on_str = request.form.get("enddate")
-
-            if startdate_on_str and enddate_on_str:
-                start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
-                first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
+            
+            if session.get('is_manager') != "is_manager":
+                flash("You do not have rights to view the dashboard","error")
+                dp = company.get('dp')
+                dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+                return render_template('stock dashboard.html', 
+                       profits_chart=None,  # Or you can use an empty string, list, or dict depending on your needs
+                       Losses_chart=None,
+                       revenue=None,
+                       quantity_sold_stocked=None,
+                       trended_profit=None,
+                       start_of_previous_month=None,
+                       first_day_of_current_month=None,dp=dp_str)
             else:
-                # Get today's date
-                today = datetime.today()
+                # Clear sessions
+                session.pop("profits_chart", None)
+                session.pop("loss_chart", None)
+                session.pop("revenue_and_qty_chart", None)
+                session.pop("monthly_profits_chart", None)
+                session.pop("inhouse_costs_chart", None)
+                session.pop("inhouse_revenue_chart", None)
 
-                # Get the first day of the current month
-                start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                startdate_on_str = request.form.get("startdate")
+                enddate_on_str = request.form.get("enddate")
 
-                # Calculate the first day of the next month
-                if today.month == 12:  # If it's December, the next month is January of the next year
-                    first_day_of_current_month = today.replace(year=today.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                if startdate_on_str and enddate_on_str:
+                    start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
+                    first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
                 else:
-                    first_day_of_current_month = today.replace(month=today.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                    # Get today's date
+                    today = datetime.today()
 
-            pipeline = [
-                {
-                    '$match': {
-                        'company_name': company_name,
-                        'stockDate': {
-                            '$gte': start_of_previous_month,
-                            '$lt': first_day_of_current_month
+                    # Get the first day of the current month
+                    start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+                    # Calculate the first day of the next month
+                    if today.month == 12:  # If it's December, the next month is January of the next year
+                        first_day_of_current_month = today.replace(year=today.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                    else:
+                        first_day_of_current_month = today.replace(month=today.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+                pipeline = [
+                    {
+                        '$match': {
+                            'company_name': company_name,
+                            'stockDate': {
+                                '$gte': start_of_previous_month,
+                                '$lt': first_day_of_current_month
+                            }
+                        }
+                    },
+                    {
+                        '$group': {
+                            '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
+                            'totalRevenue': {'$sum': '$revenue'},
+                            'quantitysold': {'$sum': '$quantity'}
+                        }
+                    },
+                    {
+                        '$lookup': {
+                            'from': 'inventories',
+                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'pipeline': [
+                                {
+                                    '$match': {
+                                        '$expr': {
+                                            '$and': [
+                                                {'$eq': ['$itemName', '$$itemName']},
+                                                {'$eq': ['$company_name', company_name]},
+                                                { '$gte': ['$stockDate', start_of_previous_month] },
+                                                { '$lt': ['$stockDate', first_day_of_current_month] }
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    '$project': {
+                                        '_id': 0,
+                                        'quantity': 1,
+                                        'unitPrice': 1,
+                                        'stockDate': 1,
+                                        'totalPrice': {
+                                            '$add': [
+                                                '$totalPrice',
+                                                {'$ifNull': ['$oldTotalPrice', 0]}
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            'as': 'inventoryDetails'
                         }
                     }
-                },
-                {
-                    '$group': {
-                        '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
-                        'totalRevenue': {'$sum': '$revenue'},
-                        'quantitysold': {'$sum': '$quantity'}
-                    }
-                },
-                {
-                    '$lookup': {
-                        'from': 'inventories',
-                        'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
-                        'pipeline': [
-                            {
-                                '$match': {
-                                    '$expr': {
-                                        '$and': [
-                                            {'$eq': ['$itemName', '$$itemName']},
-                                            {'$eq': ['$company_name', company_name]},
-                                            { '$gte': ['$stockDate', start_of_previous_month] },
-                                            { '$lt': ['$stockDate', first_day_of_current_month] }
-                                        ]
-                                    }
-                                }
-                            },
-                            {
-                                '$project': {
-                                    '_id': 0,
-                                    'quantity': 1,
-                                    'unitPrice': 1,
-                                    'stockDate': 1,
-                                    'totalPrice': {
-                                        '$add': [
-                                            '$totalPrice',
-                                            {'$ifNull': ['$oldTotalPrice', 0]}
-                                        ]
-                                    }
-                                }
-                            }
-                        ],
-                        'as': 'inventoryDetails'
-                    }
+                ]
+
+                revenue_info = list(db.stock_sales.aggregate(pipeline))
+                item_names = []
+                quantities_sold = []
+                quantities_stocked = []
+                total_revenues = []
+                total_prices = []
+                profits = []
+
+                for record in revenue_info:
+                    item_names.append(record['_id']['itemName'])
+                    quantities_sold.append(record['quantitysold'])
+                    total_revenues.append(record['totalRevenue'])
+
+                    # Initialize variables for each iteration
+                    quantities_stocked_iter = 0
+                    total_price_iter = 0
+                    profit_iter = 0
+
+                    # Check if 'inventoryDetails' is in record and has the necessary structure
+                    if 'inventoryDetails' in record and record['inventoryDetails']:
+                        quantity_stocked = record['inventoryDetails'][0].get('quantity', 0)
+                        quantities_stocked_iter = quantity_stocked
+                        unitPrice = record['inventoryDetails'][0].get('unitPrice', 0)
+                        quantitysold = record['quantitysold']
+                        total_price_iter = unitPrice * quantitysold
+                        profit_iter = record['totalRevenue'] - total_price_iter
+
+                    # Append values for this iteration to the lists
+                    quantities_stocked.append(quantities_stocked_iter)
+                    total_prices.append(total_price_iter)
+                    profits.append(profit_iter)
+
+                # Create the DataFrame
+                df_ungrouped = pd.DataFrame({
+                    'Item Name': item_names,
+                    'Quantity Sold': quantities_sold,
+                    'Quantity Stocked': quantities_stocked,
+                    'Total Revenue': total_revenues,
+                    'Total Price': total_prices,
+                    'Profit': profits
+                })
+
+                # Group by 'Item Name' and aggregate using sum
+                df = df_ungrouped.groupby('Item Name', as_index=False).agg({
+                    'Quantity Sold': 'sum',
+                    'Quantity Stocked': 'sum',
+                    'Total Revenue': 'sum',
+                    'Total Price': 'sum',
+                    'Profit': 'sum'
+                })
+
+                #####PLOTS
+                #profits and losses
+                # Filter positive profits
+                positive_profits_df = df[df['Profit'] > 0]
+                if not positive_profits_df.empty:
+                    session['profits_chart'] = 'profits_chart'
+                
+                profits_chart = {
+                    'labels': positive_profits_df['Item Name'].tolist(),
+                    'values': positive_profits_df['Profit'].tolist()
                 }
-            ]
 
-            revenue_info = list(db.stock_sales.aggregate(pipeline))
-            item_names = []
-            quantities_sold = []
-            quantities_stocked = []
-            total_revenues = []
-            total_prices = []
-            profits = []
+                # Filter negative profits
+                negative_profits_df = df[df['Profit'] < 0]
+                if not negative_profits_df.empty:
+                    session['loss_chart'] = 'loss_chart'
+                negative_profits_df['Profit'] = -1*negative_profits_df['Profit']
 
-            for record in revenue_info:
-                item_names.append(record['_id']['itemName'])
-                quantities_sold.append(record['quantitysold'])
-                total_revenues.append(record['totalRevenue'])
-
-                # Initialize variables for each iteration
-                quantities_stocked_iter = 0
-                total_price_iter = 0
-                profit_iter = 0
-
-                # Check if 'inventoryDetails' is in record and has the necessary structure
-                if 'inventoryDetails' in record and record['inventoryDetails']:
-                    quantity_stocked = record['inventoryDetails'][0].get('quantity', 0)
-                    quantities_stocked_iter = quantity_stocked
-                    unitPrice = record['inventoryDetails'][0].get('unitPrice', 0)
-                    quantitysold = record['quantitysold']
-                    total_price_iter = unitPrice * quantitysold
-                    profit_iter = record['totalRevenue'] - total_price_iter
-
-                # Append values for this iteration to the lists
-                quantities_stocked.append(quantities_stocked_iter)
-                total_prices.append(total_price_iter)
-                profits.append(profit_iter)
-
-            # Create the DataFrame
-            df_ungrouped = pd.DataFrame({
-                'Item Name': item_names,
-                'Quantity Sold': quantities_sold,
-                'Quantity Stocked': quantities_stocked,
-                'Total Revenue': total_revenues,
-                'Total Price': total_prices,
-                'Profit': profits
-            })
-
-            # Group by 'Item Name' and aggregate using sum
-            df = df_ungrouped.groupby('Item Name', as_index=False).agg({
-                'Quantity Sold': 'sum',
-                'Quantity Stocked': 'sum',
-                'Total Revenue': 'sum',
-                'Total Price': 'sum',
-                'Profit': 'sum'
-            })
-
-            #####PLOTS
-            #profits and losses
-            # Filter positive profits
-            positive_profits_df = df[df['Profit'] > 0]
-            if not positive_profits_df.empty:
-                session['profits_chart'] = 'profits_chart'
-            
-            profits_chart = {
-                'labels': positive_profits_df['Item Name'].tolist(),
-                'values': positive_profits_df['Profit'].tolist()
-            }
-
-            # Filter negative profits
-            negative_profits_df = df[df['Profit'] < 0]
-            if not negative_profits_df.empty:
-                session['loss_chart'] = 'loss_chart'
-            negative_profits_df['Profit'] = -1*negative_profits_df['Profit']
-
-            Losses_chart = {
-                'labels': negative_profits_df['Item Name'].tolist(),
-                'values': negative_profits_df['Profit'].tolist()
-            }
-
-            ##total revenue
-            if not df.empty:
-                session['revenue_and_qty_chart'] = 'revenue_and_qty_chart'
-
-            revenue = {
-                'labels': df['Item Name'].tolist(),
-                'values': df['Total Revenue'].tolist()
-            }
-
-            ##Quantity sold
-
-            quantity_sold_stocked = {
-                'labels': df['Item Name'].tolist(),
-                'values': df['Quantity Sold'].tolist()
-            }
-
-            ###PROFIT TRENDS
-            twelve_months_ago = datetime.now() - timedelta(days=365)
-            pipeline_profits = [
-                {
-                    '$match': {
-                        'company_name': company_name,
-                        'stockDate': {'$gte': twelve_months_ago}
-                    }
-                },
-                {
-                    '$group': {
-                        '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
-                        'totalRevenue': {'$sum': '$revenue'},
-                        'quantitysold': {'$sum': '$quantity'}
-                    }
-                },
-                {
-                    '$lookup': {
-                        'from': 'inventories',
-                        'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
-                        'pipeline': [
-                            {
-                                '$match': {
-                                    '$expr': {
-                                        '$and': [
-                                            {'$eq': ['$itemName', '$$itemName']},
-                                            {'$eq': ['$company_name', company_name]},
-                                            {'$gte': ['$stockDate', twelve_months_ago]}
-                                        ]
-                                    }
-                                }
-                            },
-                            {
-                                '$project': {
-                                    '_id': 0,
-                                    'quantity': 1,
-                                    'unitPrice': 1,
-                                    'stockDate': 1,
-                                    'totalPrice': {
-                                        '$add': [
-                                            '$totalPrice',
-                                            {'$ifNull': ['$oldTotalPrice', 0]}
-                                        ]
-                                    }
-                                }
-                            }
-                        ],
-                        'as': 'inventoryDetails'
-                    }
+                Losses_chart = {
+                    'labels': negative_profits_df['Item Name'].tolist(),
+                    'values': negative_profits_df['Profit'].tolist()
                 }
-            ]
-            profit_info = list(db.stock_sales.aggregate(pipeline_profits))
 
-            profit_item_names = []
-            profit_data = []
-            profit_stock_dates = []
+                ##total revenue
+                if not df.empty:
+                    session['revenue_and_qty_chart'] = 'revenue_and_qty_chart'
+
+                revenue = {
+                    'labels': df['Item Name'].tolist(),
+                    'values': df['Total Revenue'].tolist()
+                }
+
+                ##Quantity sold
+
+                quantity_sold_stocked = {
+                    'labels': df['Item Name'].tolist(),
+                    'values': df['Quantity Sold'].tolist()
+                }
+
+                ###PROFIT TRENDS
+                twelve_months_ago = datetime.now() - timedelta(days=365)
+                pipeline_profits = [
+                    {
+                        '$match': {
+                            'company_name': company_name,
+                            'stockDate': {'$gte': twelve_months_ago}
+                        }
+                    },
+                    {
+                        '$group': {
+                            '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
+                            'totalRevenue': {'$sum': '$revenue'},
+                            'quantitysold': {'$sum': '$quantity'}
+                        }
+                    },
+                    {
+                        '$lookup': {
+                            'from': 'inventories',
+                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'pipeline': [
+                                {
+                                    '$match': {
+                                        '$expr': {
+                                            '$and': [
+                                                {'$eq': ['$itemName', '$$itemName']},
+                                                {'$eq': ['$company_name', company_name]},
+                                                {'$gte': ['$stockDate', twelve_months_ago]}
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    '$project': {
+                                        '_id': 0,
+                                        'quantity': 1,
+                                        'unitPrice': 1,
+                                        'stockDate': 1,
+                                        'totalPrice': {
+                                            '$add': [
+                                                '$totalPrice',
+                                                {'$ifNull': ['$oldTotalPrice', 0]}
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            'as': 'inventoryDetails'
+                        }
+                    }
+                ]
+                profit_info = list(db.stock_sales.aggregate(pipeline_profits))
+
+                profit_item_names = []
+                profit_data = []
+                profit_stock_dates = []
 
 
-            for profit_record in profit_info:
-                if 'inventoryDetails' in profit_record and profit_record['inventoryDetails']:
-                    profit_item_names.append(profit_record['_id']['itemName'])
-                    profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
-                    profit_stock_dates.append(profit_record['_id']['stockDate'])
+                for profit_record in profit_info:
+                    if 'inventoryDetails' in profit_record and profit_record['inventoryDetails']:
+                        profit_item_names.append(profit_record['_id']['itemName'])
+                        profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
+                        profit_stock_dates.append(profit_record['_id']['stockDate'])
 
-            # Create the DataFrame
-            profit_info_df = pd.DataFrame({
-                'Item Name': profit_item_names,
-                'Profit': profit_data,
-                'Stock Date': profit_stock_dates
-            })
+                # Create the DataFrame
+                profit_info_df = pd.DataFrame({
+                    'Item Name': profit_item_names,
+                    'Profit': profit_data,
+                    'Stock Date': profit_stock_dates
+                })
 
-            # Convert 'Stock Date' to datetime
-            profit_info_df['Stock Date'] = pd.to_datetime(profit_info_df['Stock Date'])
+                # Convert 'Stock Date' to datetime
+                profit_info_df['Stock Date'] = pd.to_datetime(profit_info_df['Stock Date'])
 
-            # Group by month and calculate the sum of profits
-            monthly_profits = profit_info_df.groupby(profit_info_df['Stock Date'].dt.to_period('M'))['Profit'].sum()
+                # Group by month and calculate the sum of profits
+                monthly_profits = profit_info_df.groupby(profit_info_df['Stock Date'].dt.to_period('M'))['Profit'].sum()
 
-            # Create a DataFrame with month names
-            monthly_profits_df = pd.DataFrame({
-                'Month': monthly_profits.index.to_timestamp().strftime('%B'),
-                'Monthly Profit': monthly_profits
-            })
+                # Create a DataFrame with month names
+                monthly_profits_df = pd.DataFrame({
+                    'Month': monthly_profits.index.to_timestamp().strftime('%B'),
+                    'Monthly Profit': monthly_profits
+                })
 
-            # Create the line chart
-            if not monthly_profits_df.empty:
-                session['monthly_profits_chart'] = 'monthly_profits_chart'
+                # Create the line chart
+                if not monthly_profits_df.empty:
+                    session['monthly_profits_chart'] = 'monthly_profits_chart'
 
-            trended_profit = {
-                'labels': monthly_profits_df['Month'].tolist(),
-                'values': monthly_profits_df['Monthly Profit'].tolist()
-            }
+                trended_profit = {
+                    'labels': monthly_profits_df['Month'].tolist(),
+                    'values': monthly_profits_df['Monthly Profit'].tolist()
+                }
 
-            del df_ungrouped, df, positive_profits_df, negative_profits_df, profit_info_df, monthly_profits, monthly_profits_df
-            gc.collect()
-            dp = company.get('dp')
-            dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('stock dashboard.html',profits_chart=profits_chart,Losses_chart=Losses_chart,revenue=revenue,
-                                quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit,
-                                start_of_previous_month=start_of_previous_month,
-                                first_day_of_current_month=first_day_of_current_month, dp=dp_str)
+                del df_ungrouped, df, positive_profits_df, negative_profits_df, profit_info_df, monthly_profits, monthly_profits_df
+                gc.collect()
+                dp = company.get('dp')
+                dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
+                return render_template('stock dashboard.html',profits_chart=profits_chart,Losses_chart=Losses_chart,revenue=revenue,
+                                    quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit,
+                                    start_of_previous_month=start_of_previous_month,
+                                    first_day_of_current_month=first_day_of_current_month, dp=dp_str)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
