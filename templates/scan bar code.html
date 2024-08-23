@@ -373,21 +373,63 @@
                 </div>
 
                 <div class="update-sales-form content-wrapper">
-                    <form id="myForm" class="property_forn content-pannel" action="{{ url_for('check_bar_code') }}"
-                        method="POST">
-                        <br><input class="property_inputs" type="text" name="product_id" id="codeInput" required>
-                        <input hidden style="margin-top: 10px; margin-bottom: 10px;" required type="submit" class="btn"
-                            value="Verify"><br>
+                    <form id="myForm" class="property_forn content-pannel" action="{{ url_for('check_bar_code') }}" method="POST">
+                        <br><input class="property_inputs" type="text" name="product_id" id="codeInput" required><br>
+                        <!-- Hidden input to store the list of scanned items -->
+                        <input type="hidden" name="scanned_items" id="scannedItemsInput">
+                        <button type="button" id="addButton" class="btn" style="display: none; margin-top: 10px;">Add Item</button>
+                        <button type="submit" class="btn" style="margin-top: 10px; margin-bottom: 10px;">Submit</button>
                     </form>
+                <!-- List to display scanned items -->
+                <ul id="scannedItemsList"></ul>
                 </div>
+                
                 <script>
                     document.addEventListener('DOMContentLoaded', function () {
                         var codeInput = document.getElementById('codeInput');
                         var form = document.getElementById('myForm');
-                        // Check the code input length and submit form automatically
+                        var addButton = document.getElementById('addButton');
+                        var scannedItemsInput = document.getElementById('scannedItemsInput');
+                        var scannedItemsList = document.getElementById('scannedItemsList');
+                        var scannedItems = [];
+
+                        // Function to add item to the list
+                        function addItem() {
+                            var code = codeInput.value.trim();
+                            if (code.length === 8) {
+                                scannedItems.push(code);
+
+                                // Update the hidden input with the JSON string of scanned items
+                                scannedItemsInput.value = JSON.stringify(scannedItems);
+
+                                // Display scanned items in the list
+                                var li = document.createElement('li');
+                                li.textContent = code;
+                                scannedItemsList.appendChild(li);
+
+                                // Clear the input field for the next scan
+                                codeInput.value = '';
+                                codeInput.focus();
+
+                                // Check if there is at least one scanned item
+                                if (scannedItems.length > 0) {
+                                    codeInput.required = false; // Remove the required attribute
+                                }
+                            }
+                        }
+
+                        // Automatically add item when 8 characters are typed
                         codeInput.addEventListener('input', function () {
                             if (this.value.length === 8) {
-                                form.submit();
+                                addItem();
+                            }
+                        });
+
+                        // Revalidate the form submission
+                        form.addEventListener('submit', function (event) {
+                            if (scannedItems.length === 0 && codeInput.value.trim() === '') {
+                                event.preventDefault(); // Prevent form submission if no items and input is empty
+                                alert('Please scan at least one item or enter a product ID.');
                             }
                         });
                     });

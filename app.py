@@ -6167,7 +6167,7 @@ def update_sale():
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
-    
+
 @app.route('/check bar code', methods=['POST'])
 def check_bar_code():
     db, fs = get_db_and_fs()
@@ -6181,22 +6181,40 @@ def check_bar_code():
         if account_type == 'Enterprise Resource Planning':
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                     'password': 0, 'auth': 0, 'dark_mode': 0})
-            product_id = request.form.get('product_id')
-            product = db.inventories.find_one({'company_name': company['company_name'],'product_id': product_id})
-            if product:
-                item_name = product.get('itemName', None)
-                available_quantity = product.get('available_quantity', None)
-                selling_price = product.get('selling_price', None)
-                dp_str = company.get('dp')
-                return render_template("product information.html",dp=dp_str,item_name=item_name,available_quantity=available_quantity,selling_price=selling_price,product_id=product_id)
-            else:
-                flash('Scanned Product does not exist in current stock','error')
-                return redirect('/scan bar code page')
+            product_ids = request.form.get('scanned_items')
+            # Convert the JSON string of product IDs to a Python list
+            product_ids = json.loads(product_ids)
+
+            available_products = []
+            unavailable_products = []
+            
+            for product_id in product_ids:
+                # Query the database for the product with the specified product_id and company_name
+                product = db.inventories.find_one({'company_name': company['company_name'], 'product_id': product_id})
+
+                if product:
+                    # If the product is found, extract the details
+                    item_name = product.get('itemName', None)
+                    available_quantity = product.get('available_quantity', None)
+                    selling_price = product.get('selling_price', None)
+                    
+                    # Add the available product information to the list
+                    available_products.append({
+                        'product_id': product_id,
+                        'item_name': item_name,
+                        'available_quantity': available_quantity,
+                        'selling_price': selling_price
+                    })
+                else:
+                    # If the product is not found, add the product_id to the unavailable products list
+                    unavailable_products.append(product_id)
+            dp_str = company.get('dp')
+            return render_template("product information.html",dp=dp_str,available_products=available_products,unavailable_products=unavailable_products)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
-     
-@app.route('/store scanned sale', methods=['GET', 'POST'])
+
+@app.route('/store_scanned_sale', methods=['GET', 'POST'])
 def store_scanned_sale():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
@@ -6204,39 +6222,46 @@ def store_scanned_sale():
     if login_data is None:
         flash('Login first', 'error')
         return redirect('/')
-    else:
-        product_id = request.form.get('product_id')
-        selling_price = request.form.get('selling_price')
+    
+    company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                        'password': 0, 'auth': 0, 'dark_mode': 0})
+
+    product_ids = request.form.getlist('product_ids[]')
+    selling_prices = request.form.getlist('selling_prices[]')
+    quantities_sold = request.form.getlist('quantities_sold[]')
+    
+    success_messages = []
+    error_messages = []
+    
+    # Process each product's sale data
+    for product_id, selling_price, quantity_sold in zip(product_ids, selling_prices, quantities_sold):
         selling_price = float(selling_price)
-        update_sale_quantity = request.form.get('update_sale_quantity')
-        update_sale_quantity = float(update_sale_quantity)
-
-        company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
-
-        existing_item = db.inventories.find_one({'company_name': company['company_name'],'product_id': product_id})
+        quantity_sold = float(quantity_sold)
+        
+        existing_item = db.inventories.find_one({'company_name': company['company_name'], 'product_id': product_id})
 
         if existing_item:
             timestamp = datetime.now()
             if 'available_quantity' in existing_item:
-                if existing_item['available_quantity'] >= update_sale_quantity:
-                    available_quantity = existing_item['available_quantity'] - update_sale_quantity
+                if existing_item['available_quantity'] >= quantity_sold:
+                    available_quantity = existing_item['available_quantity'] - quantity_sold
                     stockDate = existing_item['stockDate']
                 else:
-                    flash('Item is out of stock, enter some small quantity', 'error')
-                    return redirect('/scan bar code page')
+                    error_messages.append(f'Item {existing_item["itemName"]} has insufficient stock.')
+                    continue
             else:
-                if existing_item['quantity'] >= update_sale_quantity:  
-                    available_quantity = existing_item['quantity'] - update_sale_quantity
+                if existing_item['quantity'] >= quantity_sold:  
+                    available_quantity = existing_item['quantity'] - quantity_sold
                     stockDate = existing_item['stockDate']
                 else:
-                    flash('Item is out of stock, enter some small quantity', 'error')
-                    return redirect('/scan bar code page')
+                    error_messages.append(f'Item {existing_item["itemName"]} has insufficient stock.')
+                    continue
+            
             stock_id = existing_item['_id']
-            revenue = update_sale_quantity*selling_price
+            revenue = quantity_sold * selling_price
             data = {
                 'itemName': existing_item['itemName'],
-                'quantity': update_sale_quantity,
+                'quantity': quantity_sold,
                 'unitPrice': selling_price,
                 'saleDate': timestamp,
                 'company_name': company['company_name'],
@@ -6253,12 +6278,20 @@ def store_scanned_sale():
                 'Item': existing_item['itemName'],
                 'timestamp': datetime.now()
             })
-            db.inventories.update_one({'company_name': company['company_name'],'itemName': existing_item['itemName']}, {'$set': {'available_quantity': available_quantity}})
-            flash(f'Sale for {existing_item["itemName"]} was successful', 'success')
-            return redirect('/scan bar code page')
+            db.inventories.update_one({'company_name': company['company_name'], 'itemName': existing_item['itemName']}, {'$set': {'available_quantity': available_quantity}})
+            success_messages.append(f'Sale for {existing_item["itemName"]} was successful')
         else:
-            flash('Scanned item does not exist','error')
-            return redirect('/scan bar code page')
+            error_messages.append(f'Scanned item {product_id} does not exist')
+    
+    # Flash success messages if any
+    if success_messages:
+        flash(' | '.join(success_messages), 'success')
+    
+    # Flash error messages if any
+    if error_messages:
+        flash(' | '.join(error_messages), 'error')
+
+    return redirect('/scan bar code page')
     
 @app.route('/in-house-use', methods=['POST'])
 def inhouse():

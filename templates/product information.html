@@ -371,51 +371,76 @@
         </div>
 
         <div class="update-sales-form content-wrapper">
-          <form id="myForm" class="property_forn content-panel" action="{{ url_for('store_scanned_sale') }}"
-            method="POST">
-            <label for="">Item: {{item_name}}</label>
-            <label for="">Available Quantity: {{available_quantity}}</label>
-            <label for="">Selling Price: {{selling_price}}</label>
-            <input type="hidden" name="product_id" value="{{product_id}}">
-            <input type="hidden" name="selling_price" value="{{selling_price}}">
-            <label class="input_labels" for="">Quantity Sold</label>
-            <input class="property_inputs" type="number" name="update_sale_quantity" id="update_sale_quantity" min="1">
-            <div id="quantity_warning" style="display: none; color: red;">Quantity sold exceeds available stock.</div>
-            <input type="submit" class="btn" id="submitButton" value="Submit">
+          <form id="myForm" class="property_forn content-panel" action="{{ url_for('store_scanned_sale') }}" method="POST">
+            {% for product in available_products %}
+            <div class="product-item">
+              <label for="">Item: {{ product.item_name }}</label><br>
+              <label for="">Available Quantity: {{ product.available_quantity }}</label><br>
+              <label for="">Selling Price: {{ product.selling_price }}</label><br>
+              <input type="hidden" name="product_ids[]" value="{{ product.product_id }}">
+              <input type="hidden" name="selling_prices[]" value="{{ product.selling_price }}">
+              <label class="input_labels" for="">Quantity Sold</label>
+              <input class="property_inputs" type="number" name="quantities_sold[]" min="1" max="{{ product.available_quantity }}"
+                data-available-quantity="{{ product.available_quantity }}">
+              <div class="quantity_warning" style="display: none; color: red;">Quantity sold exceeds available stock.</div><br>
+              </div><br>
+              {% endfor %}
+              <input type="submit" class="btn" id="submitButton" value="Submit" disabled>
             <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
           </form>
         </div>
-
+        
         <script>
           document.addEventListener('DOMContentLoaded', function () {
-            const availableQuantity = parseInt('{{ available_quantity }}', 10);
-            const quantityInput = document.getElementById('update_sale_quantity');
+            const form = document.getElementById('myForm');
+            const quantityInputs = form.querySelectorAll('input[name="quantities_sold[]"]');
             const submitButton = document.getElementById('submitButton');
-            const quantityWarning = document.getElementById('quantity_warning');
+            const waitMessage = document.getElementById('wait-message');
 
-            // Check the quantity input value on every change
-            quantityInput.addEventListener('input', function () {
-              const enteredQuantity = parseInt(quantityInput.value, 10);
+            function checkQuantities() {
+              let allValid = true;
+              let allFilled = true;
 
-              if (enteredQuantity > availableQuantity) {
-                quantityWarning.style.display = 'block'; // Show warning
-                submitButton.disabled = true; // Disable submit button
-              } else {
-                quantityWarning.style.display = 'none'; // Hide warning
-                submitButton.disabled = false; // Enable submit button
-              }
+              quantityInputs.forEach(input => {
+                const enteredQuantity = parseInt(input.value, 10);
+                const availableQuantity = parseInt(input.dataset.availableQuantity, 10);
+                const warning = input.nextElementSibling;
+            
+                if (isNaN(enteredQuantity) || enteredQuantity <= 0) {
+                  allFilled = false;
+                }
+
+                if (enteredQuantity > availableQuantity) {
+                  warning.style.display = 'block'; // Show warning
+                  allValid = false;
+                } else {
+                  warning.style.display = 'none'; // Hide warning
+                }
+              });
+
+              submitButton.disabled = !(allValid && allFilled); // Enable only if all fields are valid and filled
+              return allValid && allFilled;
+            }
+
+            // Check quantity inputs on every change
+            quantityInputs.forEach(input => {
+              input.addEventListener('input', checkQuantities);
             });
 
             // Handle form submission
-            document.getElementById("myForm").addEventListener("submit", function (event) {
+            form.addEventListener('submit', function (event) {
+              if (!checkQuantities()) {
+                event.preventDefault(); // Prevent form submission if quantities are invalid or not filled
+                return;
+              }
+            
               // Disable the submit button
               submitButton.disabled = true;
 
               // Show the wait message
-              var waitMessage = document.getElementById("wait-message");
               waitMessage.style.display = "inline";
 
-              // Optionally, you can also change the text of the submit button
+              // Optionally, change the text of the submit button
               submitButton.value = "Updating Sale...";
             });
           });
