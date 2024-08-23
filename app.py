@@ -83,6 +83,10 @@ def generate_file_password(length=12):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
+def generate_random_product_id(length=8):
+    characters = string.ascii_letters + string.digits  # a-z, A-Z, 0-9
+    return ''.join(random.choice(characters) for _ in range(length))
+
 def convert_docx_to_pdf(docx_path):
     convert(docx_path)
     pdf_path = docx_path.replace('.docx', '.pdf')
@@ -5916,6 +5920,7 @@ def add_new_stock():
             skipped_items = []  # List to hold names of items that were not added
             added_items = []  # List to hold names of items that were successfully added
             timestamp = datetime.now()
+            generated_ids = set()
 
             for item in all_items:
                 item['itemName'] = item.get('itemName', '').strip()
@@ -5939,6 +5944,13 @@ def add_new_stock():
                     item['timestamp'] = timestamp
                     item['oldTotalPrice'] = item['totalPrice']
                     item['cumulativeOldPrices'] = item['totalPrice']
+                    
+                    new_product_id = generate_random_product_id()
+                    while new_product_id in generated_ids or db.inventories.find_one({'company_name': item['company_name'],'product_id': new_product_id}):
+                        new_product_id = generate_random_product_id()
+                    # Add the new unique product_id to the set
+                    generated_ids.add(new_product_id)
+                    item['product_id'] = new_product_id
 
                     # Check if the item already exists in the database
                     existing_item = db.inventories.find_one({
@@ -6155,14 +6167,6 @@ def update_sale():
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
-
-def is_valid_object_id(id_str):
-    """ Check if a string is a valid ObjectId """
-    try:
-        ObjectId(id_str)
-        return True
-    except Exception:
-        return False
     
 @app.route('/check bar code', methods=['POST'])
 def check_bar_code():
@@ -6178,20 +6182,16 @@ def check_bar_code():
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                     'password': 0, 'auth': 0, 'dark_mode': 0})
             product_id = request.form.get('product_id')
-            if not is_valid_object_id(product_id):
-                flash('Invalid product ID', 'error')
-                return redirect('/scan bar code page')
+            product = db.inventories.find_one({'company_name': company['company_name'],'product_id': product_id})
+            if product:
+                item_name = product.get('itemName', None)
+                available_quantity = product.get('available_quantity', None)
+                selling_price = product.get('selling_price', None)
+                dp_str = company.get('dp')
+                return render_template("product information.html",dp=dp_str,item_name=item_name,available_quantity=available_quantity,selling_price=selling_price,product_id=product_id)
             else:
-                product = db.inventories.find_one({'_id': ObjectId(product_id)})
-                if product:
-                    item_name = product.get('itemName', None)
-                    available_quantity = product.get('available_quantity', None)
-                    selling_price = product.get('selling_price', None)
-                    dp_str = company.get('dp')
-                    return render_template("product information.html",dp=dp_str,item_name=item_name,available_quantity=available_quantity,selling_price=selling_price,product_id=product_id)
-                else:
-                    flash('Scanned Product does not exist in current stock','error')
-                    return redirect('/scan bar code page')
+                flash('Scanned Product does not exist in current stock','error')
+                return redirect('/scan bar code page')
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/')
@@ -6214,7 +6214,7 @@ def store_scanned_sale():
         company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                     'password': 0, 'auth': 0, 'dark_mode': 0})
 
-        existing_item = db.inventories.find_one({'_id': ObjectId(product_id)})
+        existing_item = db.inventories.find_one({'company_name': company['company_name'],'product_id': product_id})
 
         if existing_item:
             timestamp = datetime.now()
@@ -6253,7 +6253,7 @@ def store_scanned_sale():
                 'Item': existing_item['itemName'],
                 'timestamp': datetime.now()
             })
-            db.inventories.update_one({'itemName': existing_item['itemName']}, {'$set': {'available_quantity': available_quantity}})
+            db.inventories.update_one({'company_name': company['company_name'],'itemName': existing_item['itemName']}, {'$set': {'available_quantity': available_quantity}})
             flash(f'Sale for {existing_item["itemName"]} was successful', 'success')
             return redirect('/scan bar code page')
         else:
@@ -7849,6 +7849,9 @@ def apply_item_edits():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+            
             item_id = request.form.get("item_id")
             item_name = request.form.get("item_name")
             quantity = request.form.get("quantity")
@@ -7861,12 +7864,12 @@ def apply_item_edits():
             applied = 0
             if selected_item:
                 if item_name:
-                    db.inventories.update_one({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
-                    db.old_inventories.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
-                    db.stock_sales.update_many({'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                    db.inventories.update_one({'company_name': company['company_name'],'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                    db.old_inventories.update_many({'company_name': company['company_name'],'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
+                    db.stock_sales.update_many({'company_name': company['company_name'],'itemName': selected_item['itemName']}, {'$set': {'itemName': item_name}})
                     applied = 1
                 if unit_of_measurement:
-                    db.inventories.update_one({'itemName': selected_item['itemName']}, {'$set': {'unitOfMeasurement': unit_of_measurement}})
+                    db.inventories.update_one({'company_name': company['company_name'],'itemName': selected_item['itemName']}, {'$set': {'unitOfMeasurement': unit_of_measurement}})
                     applied = 1
                 if quantity:
                     quantity = float(quantity)
@@ -7970,10 +7973,10 @@ def delete_sale(item_id):
                         else:
                             flash('Unable to delete: No stock available', 'error')
                     else:
-                        stock_to_undo = db.inventories.find_one({'itemName': sale_to_delete['itemName']})
+                        stock_to_undo = db.inventories.find_one({'company_name': manager['company_name'],'itemName': sale_to_delete['itemName']})
                         if stock_to_undo:
                             available_quantity = stock_to_undo['available_quantity'] + sale_to_delete['quantity']
-                            db.inventories.update_one({'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
+                            db.inventories.update_one({'company_name': manager['company_name'],'itemName': sale_to_delete['itemName']}, {'$set': {'available_quantity': available_quantity}})
                             db.stock_sales.delete_one({'_id': ObjectId(item_id)})
                             db.audit_logs.insert_one({'user': login_data,'Activity': 'Sale deletion','Item': item_id,'timestamp': datetime.now()})
                             flash('Sale was deleted', 'success')
@@ -9473,29 +9476,25 @@ def store_bar_code():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
+            
             product_name = request.form.get('typed_input')
-            product_id = db.inventories.find_one({'itemName': product_name})
-            product_id_string = str(product_id['_id'])
+            product_id = db.inventories.find_one({'company_name': company['company_name'],'itemName': product_name})
+            product_id_string = product_id['product_id']
 
-            # Generate the barcode
+            # Generate the barcode using the default options
             CODE128 = barcode.get_barcode_class('code128')
             writer = ImageWriter()
 
-            # Set the writer options
+            # Set writer options to disable default text and reduce bar height
             options = {
-                'module_width': 0.3,        # Width of individual bars
-                'module_height': 15.0,      # Height of the bars
-                'font_size': 10,            # Size of the text below the barcode
-                'text_distance': 5.0,       # Distance between the barcode and the text
-                'quiet_zone': 6.5,          # Quiet zone around the barcode
-                'dpi': 300,                 # DPI for better quality
-                'write_text': False         # Temporarily disable text writing
+                'write_text': False,   # Disable the default text below the barcode
+                'module_height': 10.0  # Set the height of the bars to a smaller value
             }
 
-            # Generate the barcode image
+            # Generate the barcode image with the custom options
             barcode_image = CODE128(product_id_string, writer=writer)
-            
-            # Save the barcode to an in-memory image
             barcode_img = barcode_image.render(writer_options=options)
 
             # Convert to Pillow Image to add text
@@ -9504,25 +9503,24 @@ def store_bar_code():
             # Use a default font from Pillow
             font = ImageFont.load_default()
 
-            # Get text size using textbbox
-            text_bbox = draw.textbbox((0, 0), product_id_string, font=font)
-            text_width = text_bbox[2] - text_bbox[0]
-            text_height = text_bbox[3] - text_bbox[1]
-
+            # Add custom text below the barcode
             img_width, img_height = barcode_img.size
-            text_position = ((img_width - text_width) // 2, img_height - text_height - int(options['text_distance']))
+            text_width, text_height = draw.textbbox((0, 0), product_id_string, font=font)[2:]  # Corrected line using textbbox
+            text_position = ((img_width - text_width) // 2, img_height - text_height)
 
             draw.text(text_position, product_id_string, font=font, fill="black")
 
-            # Expand the image to add more quiet zone if needed
-            new_height = img_height + text_height + int(options['text_distance']) + int(options['quiet_zone'])
-            new_img = Image.new("RGB", (img_width, new_height), "white")
-            new_img.paste(barcode_img, (0, 0))
-
-            # Save the barcode as a PNG file
+            # Create filename and filepath
             filename = f'{product_name}.png'
             filepath = os.path.join('.', filename)
-            new_img.save(filepath, dpi=(options['dpi'], options['dpi']))
+
+            # Save the barcode image to a file
+            barcode_img.save(filepath, 'PNG')
+
+            # Convert the image to bytes for response
+            img_io = io.BytesIO()
+            barcode_img.save(img_io, 'PNG')
+            img_io.seek(0)
 
             # Flash success message
             flash(f'Barcode for {product_name} was generated and downloaded to your device', 'success')
