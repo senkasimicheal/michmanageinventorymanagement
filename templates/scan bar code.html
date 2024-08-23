@@ -374,14 +374,15 @@
 
                 <div class="update-sales-form content-wrapper">
                     <form id="myForm" class="property_forn content-pannel" action="{{ url_for('check_bar_code') }}" method="POST">
-                        <br><input class="property_inputs" type="text" name="product_id" id="codeInput" required><br>
+                        <br><input class="property_inputs" type="text" name="product_id" id="codeInput" placeholder="Scan barcode"
+                            autofocus><br>
                         <!-- Hidden input to store the list of scanned items -->
                         <input type="hidden" name="scanned_items" id="scannedItemsInput">
                         <button type="button" id="addButton" class="btn" style="display: none; margin-top: 10px;">Add Item</button>
                         <button type="submit" class="btn" style="margin-top: 10px; margin-bottom: 10px;">Submit</button>
                     </form>
-                <!-- List to display scanned items -->
-                <ul id="scannedItemsList"></ul>
+                    <!-- List to display scanned items -->
+                    <ul id="scannedItemsList"></ul>
                 </div>
                 
                 <script>
@@ -413,27 +414,30 @@
 
                                 // Check if there is at least one scanned item
                                 if (scannedItems.length > 0) {
-                                    codeInput.required = false; // Remove the required attribute
+                                    addButton.style.display = 'none'; // Show the add button
                                 }
                             }
                         }
 
                         // Automatically add item when 8 characters are typed
-                        codeInput.addEventListener('input', function () {
-                            if (this.value.length === 8) {
-                                addItem();
+                        codeInput.addEventListener('keydown', function (event) {
+                            // Check if Enter key is pressed
+                            if (event.key === 'Enter') {
+                                event.preventDefault(); // Prevent form submission
+                                addItem(); // Add the item
                             }
                         });
 
-                        // Revalidate the form submission
+                        // Handle the form submission
                         form.addEventListener('submit', function (event) {
-                            if (scannedItems.length === 0 && codeInput.value.trim() === '') {
-                                event.preventDefault(); // Prevent form submission if no items and input is empty
-                                alert('Please scan at least one item or enter a product ID.');
+                            // Prevent the form submission if no items are scanned
+                            if (scannedItems.length === 0) {
+                                event.preventDefault(); // Prevent form submission
+                                alert('Please scan at least one item before submitting.');
                             }
                         });
                     });
-                </script>
+</script>
                 <!-- content-wrapper ends -->
                 <!-- partial:partials/_footer.html -->
                 <footer class="footer">
