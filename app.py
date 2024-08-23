@@ -4701,6 +4701,8 @@ def load_dashboard_page():
     else:
         account_type = session.get('account_type')
         if account_type == 'Property Management':
+            company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
+                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
             if session.get('is_manager') != "is_manager":
                 flash("You do not have rights to view the dashboard","error")
                 dp = company.get('dp')
@@ -4722,13 +4724,7 @@ def load_dashboard_page():
                     '2024': 12, '2025': 12, '2026': 12
                 }
 
-                company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
-
                 subscription = db.managers.find_one({'name': company['company_name']}, {'account_type': 1, 'manager_email': 1, '_id': 0})
-                account_type = subscription['account_type']
-                # Remove any empty strings from the list
-                account_type = [atype for atype in account_type if atype]
 
                 if 'dp' in company:
                     dp_str = company['dp']
