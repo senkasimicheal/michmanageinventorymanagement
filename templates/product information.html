@@ -380,7 +380,7 @@
               <input type="hidden" name="product_ids[]" value="{{ product.product_id }}">
               <input type="hidden" name="selling_prices[]" value="{{ product.selling_price }}">
               <label class="input_labels" for="">Quantity Sold</label>
-              <input class="property_inputs" type="number" name="quantities_sold[]" min="1" max="{{ product.available_quantity }}"
+              <input class="property_inputs" type="number" name="quantities_sold[]" min="0" max="{{ product.available_quantity }}"
                 data-available-quantity="{{ product.available_quantity }}">
               <div class="quantity_warning" style="display: none; color: red;">Quantity sold exceeds available stock.</div><br>
               </div><br>
@@ -406,7 +406,7 @@
                 const availableQuantity = parseInt(input.dataset.availableQuantity, 10);
                 const warning = input.nextElementSibling;
             
-                if (isNaN(enteredQuantity) || enteredQuantity <= 0) {
+                if (isNaN(enteredQuantity) || enteredQuantity < 0) {
                   allFilled = false;
                 }
 

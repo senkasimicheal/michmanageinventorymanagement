@@ -6195,8 +6195,8 @@ def check_bar_code():
                 if product:
                     # If the product is found, extract the details
                     item_name = product.get('itemName', None)
-                    available_quantity = product.get('available_quantity', None)
-                    selling_price = product.get('selling_price', None)
+                    available_quantity = product.get('available_quantity', 0)
+                    selling_price = product.get('selling_price', 0)
                     
                     # Add the available product information to the list
                     available_products.append({
@@ -6243,9 +6243,13 @@ def store_scanned_sale():
         if existing_item:
             timestamp = datetime.now()
             if 'available_quantity' in existing_item:
-                if existing_item['available_quantity'] >= quantity_sold:
-                    available_quantity = existing_item['available_quantity'] - quantity_sold
-                    stockDate = existing_item['stockDate']
+                if existing_item['available_quantity'] > 0:
+                    if existing_item['available_quantity'] >= quantity_sold:
+                        available_quantity = existing_item['available_quantity'] - quantity_sold
+                        stockDate = existing_item['stockDate']
+                    else:
+                        error_messages.append(f'Item {existing_item["itemName"]} has insufficient stock.')
+                        continue
                 else:
                     error_messages.append(f'Item {existing_item["itemName"]} has insufficient stock.')
                     continue
