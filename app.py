@@ -6233,13 +6233,15 @@ def store_scanned_sale():
                 
                 stock_id = existing_item['_id']
                 if 'selling_price' in existing_item:
+                    selling_price = existing_item['selling_price']
                     revenue = sold_quantity * existing_item['selling_price']
                 else:
+                    selling_price = 0
                     revenue = 0
                 data = {
                     'itemName': existing_item['itemName'],
                     'quantity': sold_quantity,
-                    'unitPrice': existing_item['selling_price'],
+                    'unitPrice': selling_price,
                     'saleDate': timestamp,
                     'company_name': company['company_name'],
                     'timestamp': timestamp,
