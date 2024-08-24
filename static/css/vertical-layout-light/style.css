@@ -26245,3 +26245,6 @@ table td {
   margin-right: 10px;
   vertical-align: middle;
 }
+.quantity_warning {
+  color: red;
+}

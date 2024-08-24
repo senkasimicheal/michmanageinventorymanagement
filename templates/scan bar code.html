@@ -371,9 +371,8 @@
                     {% endif %}
                     {% endwith %}
                 </div>
-
                 <div class="update-sales-form content-wrapper">
-                    <form id="myForm" class="property_forn content-pannel" action="{{ url_for('check_bar_code') }}" method="POST">
+                    <form id="myForm" class="property_forn content-pannel" action="{{ url_for('store_scanned_sale') }}" method="POST">
                         <br><input class="property_inputs" type="text" name="product_id" id="codeInput" placeholder="Scan barcode"
                             autofocus><br>
                         <!-- Hidden input to store the list of scanned items -->
@@ -381,47 +380,133 @@
                         <button type="button" id="addButton" class="btn" style="display: none; margin-top: 10px;">Add Item</button>
                         <button type="submit" class="btn" style="margin-top: 10px; margin-bottom: 10px;">Submit</button>
                     </form>
-                    <!-- List to display scanned items -->
-                    <ul id="scannedItemsList"></ul>
+                    <!-- Container to display scanned items in a table -->
+                    <div id="scannedItemsContainer" style="width: 100%; height: 100%; overflow: auto;">
+                        <h6>Scanned Items</h6>
+                        <table id="scannedItemsTable" class="tenant_table">
+                            <thead>
+                                <tr>
+                                    <th>Product ID</th>
+                                    <th>Item Name</th>
+                                    <th>Available Quantity</th>
+                                    <th>Selling Price</th>
+                                    <th>Quantity Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scannedItemsTableBody">
+                                <!-- Scanned items will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                
                 <script>
                     document.addEventListener('DOMContentLoaded', function () {
                         var codeInput = document.getElementById('codeInput');
                         var form = document.getElementById('myForm');
                         var addButton = document.getElementById('addButton');
                         var scannedItemsInput = document.getElementById('scannedItemsInput');
-                        var scannedItemsList = document.getElementById('scannedItemsList');
+                        var scannedItemsTableBody = document.getElementById('scannedItemsTableBody');
                         var scannedItems = [];
 
-                        // Function to add item to the list
+                        // Retrieve available item names from the server-side template
+                        var availableItemNames = {{ available_itemNames | tojson | safe
+                    }};
+
+                            // Populate itemDetails for quick lookup
+                            var itemDetails = {};
+                            availableItemNames.forEach(item => {
+                                itemDetails[item.product_id] = item;
+                            });
+
+                            // Function to add item to the table
                         function addItem() {
                             var code = codeInput.value.trim();
                             if (code.length === 8) {
-                                scannedItems.push(code);
+                                var item = itemDetails[code];
+                                if (item) {
+                                    // Create a new row for the table
+                                    var row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td>${code}</td>
+                                        <td>${item.itemName}</td>
+                                        <td>${item.available_quantity}</td>
+                                        <td>${item.selling_price || 'N/A'}</td>
+                                        <td>
+                                            <input type="number" id="quantity_${code}" min="1" max="${item.available_quantity}" required>
+                                            <div id="warning_${code}" class="quantity_warning" style="display: none;">Quantity sold exceeds available stock.</div>
+                                            <div id="zero_warning_${code}" class="quantity_warning" style="display: none;">Quantity cannot be zero.</div>
+                                            <div id="empty_warning_${code}" class="quantity_warning" style="display: none;">Quantity cannot be empty.</div>
+                                        </td>
+                                    `;
+                                    scannedItemsTableBody.appendChild(row);
 
-                                // Update the hidden input with the JSON string of scanned items
-                                scannedItemsInput.value = JSON.stringify(scannedItems);
+                                    // Initialize the scanned item entry with default values
+                                    scannedItems.push({ product_id: code, sold_quantity: 0 });
+                                    scannedItemsInput.value = JSON.stringify(scannedItems);
 
-                                // Display scanned items in the list
-                                var li = document.createElement('li');
-                                li.textContent = code;
-                                scannedItemsList.appendChild(li);
+                                    // Clear the input field for the next scan
+                                    codeInput.value = '';
+                                    codeInput.focus();
 
-                                // Clear the input field for the next scan
-                                codeInput.value = '';
-                                codeInput.focus();
+                                    // Show the add button if there are items
+                                    if (scannedItems.length > 0) {
+                                                            addButton.style.display = 'none';
+                                                        }
 
-                                // Check if there is at least one scanned item
-                                if (scannedItems.length > 0) {
-                                    addButton.style.display = 'none'; // Show the add button
-                                }
+                                                        // Add event listener to the quantity input for real-time validation
+                                                        var quantityInput = document.getElementById(`quantity_${code}`);
+                                                        quantityInput.addEventListener('input', function () {
+                                                            validateQuantity(code);
+                                                            updateScannedItems(code, quantityInput.value.trim());
+                                                        });
+                                                    } else {
+                                                        alert('Item not found.');
+                                                    }
+                                                }
+                                            }
+
+                                            // Function to validate quantity and show warning if needed
+                                            function validateQuantity(productId) {
+                                                var quantityInput = document.getElementById(`quantity_${productId}`);
+                                                var warning = document.getElementById(`warning_${productId}`);
+                                                var zeroWarning = document.getElementById(`zero_warning_${productId}`);
+                                                var emptyWarning = document.getElementById(`empty_warning_${productId}`);
+                                                var quantity = quantityInput.value.trim();
+                                                var availableQuantity = itemDetails[productId].available_quantity;
+
+                                                if (quantity === '') {
+                                                    emptyWarning.style.display = 'block';
+                                                    warning.style.display = 'none';
+                                                    zeroWarning.style.display = 'none';
+                                                } else {
+                                                    quantity = parseInt(quantity, 10);
+                                                    if (quantity > availableQuantity) {
+                                                        warning.style.display = 'block';
+                                                        zeroWarning.style.display = 'none';
+                                                        emptyWarning.style.display = 'none';
+                                                    } else if (quantity <= 0) {
+                                                        zeroWarning.style.display = 'block';
+                                                        warning.style.display = 'none';
+                                                        emptyWarning.style.display = 'none';
+                                                    } else {
+                                                        warning.style.display = 'none';
+                                                        zeroWarning.style.display = 'none';
+                                                        emptyWarning.style.display = 'none';
+                                                    }
+                                                }
+                                            }
+
+    // Update the sold_quantity in scannedItems array
+    function updateScannedItems(productId, quantity) {
+        var item = scannedItems.find(item => item.product_id === productId);
+        if (item) {
+            item.sold_quantity = parseInt(quantity, 10) || 0; // Ensure to handle empty input
+            scannedItemsInput.value = JSON.stringify(scannedItems);
                             }
                         }
 
                         // Automatically add item when 8 characters are typed
-                        codeInput.addEventListener('keydown', function (event) {
-                            // Check if Enter key is pressed
+                            codeInput.addEventListener('keydown', function (event) {
                             if (event.key === 'Enter') {
                                 event.preventDefault(); // Prevent form submission
                                 addItem(); // Add the item
@@ -430,10 +515,34 @@
 
                         // Handle the form submission
                         form.addEventListener('submit', function (event) {
-                            // Prevent the form submission if no items are scanned
-                            if (scannedItems.length === 0) {
+                            var allValid = true;
+                            var anyItemScanned = scannedItems.length > 0;
+                            var allQuantitiesEntered = true;
+
+                            scannedItems.forEach(item => {
+                                var quantityInput = document.getElementById(`quantity_${item.product_id}`);
+                                if (quantityInput) {
+                                    var quantity = quantityInput.value.trim();
+                                    var availableQuantity = itemDetails[item.product_id].available_quantity;
+                                    if (quantity === '' || isNaN(quantity) || quantity <= 0 || quantity > availableQuantity) {
+                                        allValid = false;
+                                    } else {
+                                        item.sold_quantity = parseInt(quantity, 10); // Update the sold quantity
+                                    }
+                                } else {
+                                    allQuantitiesEntered = false;
+                                }
+                            });
+
+                            if (!anyItemScanned) {
                                 event.preventDefault(); // Prevent form submission
                                 alert('Please scan at least one item before submitting.');
+                            } else if (!allValid) {
+                                event.preventDefault(); // Prevent form submission
+                                alert('Please correct the quantities before submitting.');
+                            } else if (!allQuantitiesEntered) {
+                                event.preventDefault(); // Prevent form submission
+                                alert('Please enter quantities for all scanned items.');
                             }
                         });
                     });

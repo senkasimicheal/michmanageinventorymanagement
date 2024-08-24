@@ -34,19 +34,6 @@
     <div class="spinner" id="spinner">0%</div>
   </div>
 
-  <script>
-    // hide preloader when document is ready
-    jQuery(document).ready(function () {
-      // add a delay of 1 second
-      setTimeout(function () {
-        // fade out the preloader
-        jQuery(".preloader").fadeOut("slow");
-        // show the hero area
-        jQuery(".hero_area1").addClass('visible');
-      }, 1000);
-    });
-  </script>
-
   <div class="hero_area1">
     <!-- header section strats -->
     <header class="header_section">
@@ -227,23 +214,10 @@
     </div>
   </section>
   <!-- end  footer section -->
-
-  <script>
-    let counter = 0;
-    const spinner = document.getElementById('spinner');
-  
-    const intervalId = setInterval(() => {
-      counter++;
-      spinner.textContent = `${counter}%`;
-  
-      if (counter === 100) {
-        clearInterval(intervalId);
-      }
-    }, 100); // Adjust this value to control the speed of the counter
-  </script>
   
   <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
   <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+  <script src="{{ url_for('static', filename='site_js/preloader.js') }}"></script>
 
 </body>
 </body>
