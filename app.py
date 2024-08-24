@@ -6232,7 +6232,10 @@ def store_scanned_sale():
                         continue
                 
                 stock_id = existing_item['_id']
-                revenue = sold_quantity * existing_item['selling_price']
+                if 'selling_price' in existing_item:
+                    revenue = sold_quantity * existing_item['selling_price']
+                else:
+                    revenue = 0
                 data = {
                     'itemName': existing_item['itemName'],
                     'quantity': sold_quantity,

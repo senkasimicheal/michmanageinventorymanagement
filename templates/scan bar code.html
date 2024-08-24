@@ -430,7 +430,7 @@
                                         <td>${code}</td>
                                         <td>${item.itemName}</td>
                                         <td>${item.available_quantity}</td>
-                                        <td>${item.selling_price || 'N/A'}</td>
+                                        <td>${item.selling_price || '0'}</td>
                                         <td>
                                             <input type="number" id="quantity_${code}" min="1" max="${item.available_quantity}" required>
                                             <div id="warning_${code}" class="quantity_warning" style="display: none;">Quantity sold exceeds available stock.</div>
