@@ -375,11 +375,11 @@
                     <form id="myForm" class="property_forn content-pannel" action="{{url_for('apply_expense_edits')}}"
                         method="POST">
                         <input type="hidden" name="item_id" value="{{item_id}}">
-                        <label class="input_labels" for="">Expense Name (Optional)</label>
+                        <label class="input_labels" for="">Expense Name (Optional) [<span style="color: red;">{{selected_item["expenseName"]}}</span>]</label>
                         <input class="property_inputs" type="text" name="expense_name">
-                        <label class="input_labels" for="">Amount (Optional)</label>
+                        <label class="input_labels" for="">Amount (Optional) [<span style="color: red;">{{selected_item["amount"]}}</span>]</label>
                         <input class="property_inputs" type="number" name="amount" min="1">
-                        <label class="input_labels" for="">Date (Optional)</label>
+                        <label class="input_labels" for="">Date (Optional) [<span style="color: red;">{{selected_item["expenseDate"].strftime('%Y-%m-%d')}}</span>]</label>
                         <input class="property_inputs" type="date" name="expensedate" id="expensedate"
                             placeholder="enter date"><br>
                         <input type="submit" class="btn" id="submit-button" value="Edit">

@@ -6116,40 +6116,37 @@ def update_sale():
                     })
 
                     if existing_item:
-                        if item['saleDate'] >= existing_item['stockDate']:
-                            updates = 1
-                            if 'available_quantity' in existing_item:
-                                if existing_item['available_quantity'] <= 0:
-                                    out_of_stock_items.append(item['itemName'])
-                                    continue
-                                if item['quantity'] > existing_item['available_quantity']:
-                                    over_quantified.append(item['itemName'])
-                                    continue
-                                revenue = item['quantity'] * item['unitPrice']
-                                available_quantity = existing_item['available_quantity'] - item['quantity']
-                                item['revenue'] = revenue
-                                item['stockDate'] = existing_item['stockDate']
-                            else:
-                                if item['quantity'] > existing_item['quantity']:
-                                    over_quantified.append(item['itemName'])
-                                    continue
-                                revenue = item['quantity'] * item['unitPrice']
-                                available_quantity = existing_item['quantity'] - item['quantity']
-                                item['revenue'] = revenue
-                                item['stockDate'] = existing_item['stockDate']
-                            
-                            item['stock_id'] = existing_item['_id']
-
-                            db.stock_sales.insert_one(item)
-                            db.audit_logs.insert_one({
-                                'user': login_data,
-                                'Activity': 'Added a new sale',
-                                'Item': item['itemName'],
-                                'timestamp': datetime.now()
-                            })
-                            db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
+                        updates = 1
+                        if 'available_quantity' in existing_item:
+                            if existing_item['available_quantity'] <= 0:
+                                out_of_stock_items.append(item['itemName'])
+                                continue
+                            if item['quantity'] > existing_item['available_quantity']:
+                                over_quantified.append(item['itemName'])
+                                continue
+                            revenue = item['quantity'] * item['unitPrice']
+                            available_quantity = existing_item['available_quantity'] - item['quantity']
+                            item['revenue'] = revenue
+                            item['stockDate'] = existing_item['stockDate']
                         else:
-                            flash(f"Sales date must be newer than stock date for {item['itemName']}.", 'error')
+                            if item['quantity'] > existing_item['quantity']:
+                                over_quantified.append(item['itemName'])
+                                continue
+                            revenue = item['quantity'] * item['unitPrice']
+                            available_quantity = existing_item['quantity'] - item['quantity']
+                            item['revenue'] = revenue
+                            item['stockDate'] = existing_item['stockDate']
+                        
+                        item['stock_id'] = existing_item['_id']
+
+                        db.stock_sales.insert_one(item)
+                        db.audit_logs.insert_one({
+                            'user': login_data,
+                            'Activity': 'Added a new sale',
+                            'Item': item['itemName'],
+                            'timestamp': datetime.now()
+                        })
+                        db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
                     else:
                         flash(f"Item {item['itemName']} does not exist.", 'error')
                 except (ValueError, TypeError) as e:
@@ -7834,7 +7831,7 @@ def edit_item(item_id):
                         dp_str = company['dp']
                     else:
                         dp_str = None
-                    return render_template('edit-stock.html',item_id=item_id,dp=dp_str)
+                    return render_template('edit-stock.html',item_id=item_id,dp=dp_str,selected_item=selected_item)
                 else:
                     flash('Please select an up-to-date item', 'error')
                     return redirect('/stock-details')
@@ -8187,7 +8184,8 @@ def edit_expense(item_id):
                     dp_str = company['dp']
                 else:
                     dp_str = None
-                return render_template('edit-expense.html',item_id=item_id,dp=dp_str)
+                selected_item = db.stock_expenses.find_one({'_id': ObjectId(item_id)})
+                return render_template('edit-expense.html',item_id=item_id,dp=dp_str,selected_item=selected_item)
             else:
                 flash('You do not have rights to edit', 'error')
                 return redirect('/stock-details')

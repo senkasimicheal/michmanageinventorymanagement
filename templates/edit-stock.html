@@ -375,9 +375,9 @@
                     <form id="myForm" class="property_forn content-pannel" action="{{url_for('apply_item_edits')}}"
                         method="POST">
                         <input type="hidden" name="item_id" value="{{item_id}}">
-                        <label class="input_labels" for="">Item Name (Optional)</label>
+                        <label class="input_labels" for="">Item Name (Optional) [<span style="color: red;">{{selected_item["itemName"]}}</span>]</label>
                         <input class="property_inputs" type="text" name="item_name">
-                        <label class="input_labels" for="">Unit Of Measurement (Optional)</label>
+                        <label class="input_labels" for="">Unit Of Measurement (Optional) [<span style="color: red;">{{selected_item["unitOfMeasurement"]}}</span>]</label>
                         <select name="unit_of_measurement" id="">
                             <option value="" disabled selected>Select one</option>
                             <option value="Kg">Kilogram</option>
@@ -397,11 +397,11 @@
                             <option value="Packet">Packet</option>
                             <option value="Tray">Tray</option>
                         </select>
-                        <label class="input_labels" for="">Quantity (Optional)</label>
+                        <label class="input_labels" for="">Quantity (Optional) [<span style="color: red;">{{selected_item["quantity"]}}</span>]</label>
                         <input class="property_inputs" type="number" name="quantity" min="1">
-                        <label class="input_labels" for="">Unit Price (Optional)</label>
+                        <label class="input_labels" for="">Unit Price (Optional) [<span style="color: red;">{{selected_item["unitPrice"]}}</span>]</label>
                         <input class="property_inputs" type="number" name="unit_price" min="0">
-                        <label class="input_labels" for="">Stock Date (Optional)</label>
+                        <label class="input_labels" for="">Stock Date (Optional) [<span style="color: red;">{{selected_item["stockDate"].strftime('%Y-%m-%d')}}</span>]</label>
                         <input class="property_inputs" type="date" name="stockdatee" id="stockdatee"
                             placeholder="enter date"><br>
                         <input type="submit" class="btn" id="submit-button" value="Edit">
