@@ -4008,13 +4008,13 @@ def add_tenant():
 
             is_manager = db.managers.find_one({'manager_email': company['email'], 'name':company['company_name']})
             num_tenants = db.tenants.count_documents({'company_name': company['company_name']})
-            if is_manager['amount_per_month'] == 100000 and num_tenants>=50:
+            if is_manager['amount_per_month'] == 70000 and num_tenants>=50:
                 flash('Maximum number of tenants is reached', 'error')
                 return redirect('/load-dashboard-page')
-            elif is_manager['amount_per_month'] == 150000 and num_tenants>=100:
+            elif is_manager['amount_per_month'] == 100000 and num_tenants>=100:
                 flash('Maximum number of tenants is reached', 'error')
                 return redirect('/load-dashboard-page')
-            elif is_manager['amount_per_month'] == 200000 and num_tenants>=200:
+            elif is_manager['amount_per_month'] == 150000 and num_tenants>=200:
                 flash('Maximum number of tenants is reached', 'error')
                 return redirect('/load-dashboard-page')
             else:
@@ -4318,16 +4318,8 @@ def add_property_manager():
         subscribed_days = request.form.get('subscribed_days')
         subscribed_days = int(subscribed_days)
         amount_per_month_form_data = request.form.get('amount_per_month')
-        amount_per_month = 0
-        if amount_per_month_form_data == "100000":
-            amount_per_month = 100000
-        elif amount_per_month_form_data == "150000":
-            amount_per_month = 150000
-        elif amount_per_month_form_data == "200000":
-            amount_per_month = 200000
-        elif amount_per_month_form_data == "400000":
-            amount_per_month = 400000
-        
+        amount_per_month = int(amount_per_month_form_data)
+           
         account_type = request.form.getlist('account_type')
         if 'All Types' in account_type:
             account_type = ['Property Management', 'Enterprise Resource Planning']
@@ -4672,7 +4664,7 @@ def new_subscription_initiated():
                 flash('Enter a newer subscription date', 'error')
             else:
                 fields_to_update['last_subscribed_on'] = last_subscribed_on
-                flash('New Subscription was added')
+                flash('New Subscription was added', 'success')
         if subscribed_days:
             subscribed_days = int(subscribed_days)
             if remaining_days <= 0:
@@ -4685,16 +4677,7 @@ def new_subscription_initiated():
                     subscribed_days = subscribed_days + remaining_days
                     fields_to_update['subscribed_days'] = subscribed_days
         if amount_per_month_form_data:
-            amount_per_month = 0
-            if amount_per_month_form_data == "100000":
-                amount_per_month = 100000
-            elif amount_per_month_form_data == "150000":
-                amount_per_month = 150000
-            elif amount_per_month_form_data == "200000":
-                amount_per_month = 200000
-            elif amount_per_month_form_data == "400000":
-                amount_per_month = 400000
-            fields_to_update['amount_per_month'] = amount_per_month
+            fields_to_update['amount_per_month'] = int(amount_per_month_form_data)
             flash('New Subscription plan was set', 'success')
         if account_type:
             if 'All Types' in account_type:
@@ -6302,6 +6285,7 @@ def inhouse():
             if all_items:
                 productName = all_items[0].get('productName', '')
                 productQuantity = float(all_items[0].get('productQuantity', 0))
+                productUnitOfMeasurement = all_items[0].get('unitOfMeasurement', '')
                 productPrice = float(all_items[0].get('productPrice', 0))
                 useDate = datetime.strptime(all_items[0].get('useDate', ''), '%Y-%m-%d')
                 company_name = company.get('company_name', '')
@@ -6364,6 +6348,7 @@ def inhouse():
                     document = {
                         'productName': productName,
                         'productQuantity': productQuantity,
+                        'productUnitOfMeasurement': productUnitOfMeasurement,
                         'productPrice': productPrice,
                         'useDate': useDate,
                         'itemName': itemNames,
@@ -7321,6 +7306,7 @@ def view_production_info():
 
             inhouse_product_ids = []
             inhouse_productName = []
+            inhouse_productUnitOfMeasurement = []
             inhouse_productQuantity = []
             inhouse_productPrice = []
             inhouse_useDate = []
@@ -7333,6 +7319,7 @@ def view_production_info():
                 productID = record['_id']
                 productName = record['productName']
                 productQuantity = record['productQuantity']
+                productMeasure = record['productUnitOfMeasurement']
                 productPrice = record['productPrice']
                 useDate = record['useDate']
                 item_name = record['itemName']
@@ -7343,6 +7330,7 @@ def view_production_info():
                 inhouse_product_ids.append(productID)
                 inhouse_productName.append(productName)
                 inhouse_productQuantity.append(productQuantity)
+                inhouse_productUnitOfMeasurement.append(productMeasure)
                 inhouse_productPrice.append(productPrice)
                 inhouse_useDate.append(useDate)
                 inhouse_itemName.append(item_name)
@@ -7355,6 +7343,7 @@ def view_production_info():
                 'Product ID': inhouse_product_ids,
                 'Product Name': inhouse_productName,
                 'Product Quantity': inhouse_productQuantity,
+                'Product Measurement': inhouse_productUnitOfMeasurement,
                 'Product Unit Price': inhouse_productPrice,
                 'Date Produced': inhouse_useDate,
                 'Item Used': inhouse_itemName,
@@ -7363,13 +7352,15 @@ def view_production_info():
                 'Item Stock Date': inhouse_itemStockDates
             })
 
-            # Ensure calculate_total_cost returns a single value
+            # Define total production cost calculation
             def calculate_total_cost(row):
-                return row['Product Quantity'] * row['Item Unit Price']
+                total_cost = sum(qty * price for qty, price in zip(row['Item Quantity'], row['Item Unit Price']))
+                return total_cost
 
             # Apply the function to each row to calculate 'Total Production Cost'
             inhouse_df['Total Production Cost'] = inhouse_df.apply(calculate_total_cost, axis=1)
             inhouse_df_sorted = inhouse_df.sort_values(by='Date Produced')
+            print(inhouse_df_sorted)
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('production info.html', inhouse_df=inhouse_df_sorted, dp=dp_str)

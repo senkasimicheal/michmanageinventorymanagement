@@ -376,6 +376,26 @@
             <input class="property_inputs" type="text" name="product_name">
             <label class="input_labels" for="">Product Quantity</label>
             <input class="property_inputs" type="number" name="product_quantity" min="1">
+            <label class="input_labels" for="">Measurement</label>
+            <select name="unit_of_measurement" id="">
+              <option value="" disabled selected>Select one</option>
+              <option value="Kg">Kilogram</option>
+              <option value="Gram">Gram</option>
+              <option value="Ltr">Litre</option>
+              <option value="Mls">Milliliters</option>
+              <option value="Meter">Meter</option>
+              <option value="Pcs">Pieces</option>
+              <option value="Bxs">Boxes</option>
+              <option value="Tns">Tins</option>
+              <option value="Ctns">Cartons</option>
+              <option value="Bts">Bottles</option>
+              <option value="Set">Set</option>
+              <option value="Pair">Pair</option>
+              <option value="Dozen">Dozen</option>
+              <option value="Kit">Kit</option>
+              <option value="Packet">Packet</option>
+              <option value="Tray">Tray</option>
+            </select>
             <label class="input_labels" for="">Product Price</label>
             <input class="property_inputs" type="number" name="product_price" min="500">
             <label class="input_labels" for="">Item Used</label>
@@ -576,13 +596,14 @@
         // Get the form values
         const productName = document.querySelector('input[name="product_name"]').value;
         const productQuantity = document.querySelector('input[name="product_quantity"]').value;
+        const unitOfMeasurement = document.querySelector('select[name="unit_of_measurement"]').value;
         const productPrice = document.querySelector('input[name="product_price"]').value;
         const itemName = document.querySelector('input[name="typed_input"]').value;
         const itemQuantity = document.querySelector('input[name="inhouse_quantity"]').value;
         const useDate = document.querySelector('input[name="inhouse_date"]').value;
 
         // Check if any of the fields are empty
-        if (!productName || !productQuantity || !productPrice || !itemName || !itemQuantity || !useDate) {
+        if (!productName || !productQuantity || !unitOfMeasurement || !productPrice || !itemName || !itemQuantity || !useDate) {
           alert("Please fill in all fields before updating a sale.");
           return; // Stop here if any field is empty
         }
@@ -591,6 +612,7 @@
         const itemObject = {
           productName,
           productQuantity,
+          unitOfMeasurement,
           productPrice,
           itemName,
           itemQuantity,
@@ -616,6 +638,7 @@
 
         document.querySelector('input[name="product_name"]').value = '';
         document.querySelector('input[name="product_quantity"]').value = '';
+        document.querySelector('select[name="unit_of_measurement"]').value = '';
         document.querySelector('input[name="product_price"]').value = '';
         document.querySelector('input[name="inhouse_date"]').value = '';
 
