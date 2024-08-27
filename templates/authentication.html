@@ -80,7 +80,7 @@
     </script>
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
-        <form id="myForm" action="{{url_for('authentication')}}" method="POST">
+        <form id="myForm" action="{{url_for('login_route.authentication')}}" method="POST">
           <h3>Verify Your Identity</h3>
           {% if session['no_send_emails_code'] %}
           <ul class="code">
@@ -93,7 +93,7 @@
           <input class="property_inputs verification-code" type="number" placeholder="××××××" name="code" id="codeInput" required><br>
           <input hidden style="margin-top: 10px; margin-bottom: 10px;" required type="submit" class="btn" value="Verify"><br>
           <br>
-          <a id="resendLink" href="{{ url_for('resend_auth_code', username=username) }}" class="disabled">Resend Code</a>
+          <a id="resendLink" href="{{ url_for('login_route.resend_auth_code', username=username) }}" class="disabled">Resend Code</a>
           <div id="countdownTimer"></div>
         </form>
       </div>

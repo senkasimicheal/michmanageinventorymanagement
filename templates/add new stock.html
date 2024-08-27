@@ -101,7 +101,7 @@
               <span class="nav-profile-name">{{ session['user_message1'] }}</span>
             </a>
             <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
-              <a class="dropdown-item" href="{{url_for('account_setup_page')}}">
+              <a class="dropdown-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
                 <i class="typcn typcn-cog-outline text-primary"></i>
                 Settings
               </a>
@@ -124,7 +124,7 @@
             </a>
             <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="messageDropdown">
               <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
-              <a class="dropdown-item preview-item" href="{{url_for('account_setup_page')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Settings
                   </h6>
@@ -134,7 +134,7 @@
                 </div>
               </a>
               {% if session['is_manager'] == 'is_manager' %}
-              <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
                   </h6>
@@ -143,7 +143,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('add_new_manager_email')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.add_new_manager_email')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Add User
                   </h6>
@@ -152,7 +152,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('manage_user_rights')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('userRights_route.manage_user_rights')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">User rights
                   </h6>
@@ -161,7 +161,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_audit_logs')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
                   </h6>
@@ -170,7 +170,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('view_login_history')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_login_history')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Login history
                   </h6>
@@ -235,7 +235,7 @@
 
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_overview') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
@@ -243,7 +243,7 @@
           {% endif %}
           {% if session.get('add_stock') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('add_new_stock_page') }}" id="new-stock">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.add_new_stock_page') }}" id="new-stock">
               <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">New Stock</span>
             </a>
@@ -251,13 +251,13 @@
           {% endif %}
           {% if session.get('update_stock') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_existing_stock') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.update_existing_stock') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Update Stock</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('generate_bar_codes') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.generate_bar_codes') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Generate Bar Codes</span>
             </a>
@@ -265,13 +265,13 @@
           {% endif %}
           {% if session.get('update_sales') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_sales_page') }}" id="update-sale">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.update_sales_page') }}" id="update-sale">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Update Sales</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('scan_bar_code_page') }}" id="update-sale">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.scan_bar_code_page') }}" id="update-sale">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Scan Bar Code</span>
             </a>
@@ -279,7 +279,7 @@
           {% endif %}
           {% if session.get('update_sales') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('expenses_page') }}" id="update-sale">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.expenses_page') }}" id="update-sale">
               <i class="typcn typcn-calculator menu-icon"></i>
               <span class="menu-title">Record Expenses</span>
             </a>
@@ -287,13 +287,13 @@
           {% endif %}
           {% if session.get('view_stock_info') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
               <i class="typcn typcn-cloud-storage menu-icon"></i>
               <span class="menu-title">Current Stock</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_history_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.stock_history_details') }}">
               <i class="typcn typcn-cloud-storage menu-icon"></i>
               <span class="menu-title">Stock History</span>
             </a>
@@ -301,7 +301,7 @@
           {% endif %}
           {% if session.get('view_revenue') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('revenue_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
               <i class="typcn typcn-business-card menu-icon"></i>
               <span class="menu-title">Profits</span>
             </a>
@@ -309,7 +309,7 @@
           {% endif %}
           {% if session.get('view_sales') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('sales_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
               <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
               <span class="menu-title">Sales</span>
             </a>
@@ -317,7 +317,7 @@
           {% endif %}
           {% if session.get('view_sales') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_expenses') }}" id="update-sale">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.view_expenses') }}" id="update-sale">
               <i class="typcn typcn-calculator menu-icon"></i>
               <span class="menu-title">View Expenses</span>
             </a>
@@ -325,25 +325,25 @@
           {% endif %}
           {% if session.get('inhouse') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_production_activity') }}" id="inhouse">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.update_production_activity') }}" id="inhouse">
               <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">Production</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_inhouse_use_page') }}" id="inhouse-use">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.update_inhouse_use_page') }}" id="inhouse-use">
               <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">In-House Use</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('inhouse_items_use_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.inhouse_items_use_details') }}">
               <i class="typcn typcn-calculator menu-icon"></i>
               <span class="menu-title">In-House Info</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_production_info') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.view_production_info') }}">
               <i class="typcn typcn-calculator menu-icon"></i>
               <span class="menu-title">Production Info</span>
             </a>
@@ -369,7 +369,7 @@
         </div>
 
         <div class="new-stock-form content-wrapper" id="stock-form">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('add_new_stock')}}" method="POST">
+          <form id="myForm" class="property_forn content-pannel" action="{{url_for('stockManagement_route.add_new_stock')}}" method="POST">
             <label class="input_labels" for="">Item Name</label>
             <input class="property_inputs" type="text" name="item_name">
             <label class="input_labels" for="">Quantity</label>
@@ -523,7 +523,7 @@
         submitButton.value = "Submitting...";
 
         // Send the itemsArray to your Flask app using fetch or another method
-        fetch('{{url_for('add_new_stock')}}', {
+        fetch('{{url_for('stockManagement_route.add_new_stock')}}', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

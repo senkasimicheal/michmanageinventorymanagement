@@ -72,14 +72,14 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('manager_login_page') }}" id="login">Manager Login</a>
-                <a href="{{ url_for('tenant_login_page') }}" id="tenant-login">Tenant Login</a>
-                <a href="{{ url_for('tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
-                <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
-                <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
-                <a href="{{ url_for('about') }}">About</a>
-                <a href="{{ url_for('contact') }}">Contact Us</a>
-                <a href="{{ url_for('download_apk') }}" id="install-link" style="display: none;">Install App</a>
+                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Manager Login</a>
+                <a href="{{ url_for('login_route.tenant_login_page') }}" id="tenant-login">Tenant Login</a>
+                <a href="{{ url_for('registration_route.tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
+                <a href="{{ url_for('documentation_route.privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('documentation_route.about') }}">About</a>
+                <a href="{{ url_for('documentation_route.contact') }}">Contact Us</a>
+                <a href="{{ url_for('documentation_route.download_apk') }}" id="install-link" style="display: none;">Install App</a>
               </div>
             </div>
           </div>
@@ -101,7 +101,7 @@
     <!-- slider section -->
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
-        <form id="myForm" class="property_form" action="{{url_for('userlogin')}}" method="POST">
+        <form id="myForm" class="property_form" action="{{url_for('login_route.userlogin')}}" method="POST">
           <h6>Login</h6>
           <label class="input_labels" for="loginUsername">Username</label>
           <input class="property_inputs" type="text" name="username" id="loginUsername"
@@ -117,7 +117,7 @@
           <br>
           <input type="submit" class="btn" value="Login" id="submitButton" disabled>
           <span id="wait-message" style="color: green; display: none;">Please wait, we are signing you in...</span><br>
-          <span><a href="{{ url_for('verify_username') }}">Forgot Password</a></span>
+          <span><a href="{{ url_for('login_route.verify_username') }}">Forgot Password</a></span>
         </form>                
       </div>
     </section>

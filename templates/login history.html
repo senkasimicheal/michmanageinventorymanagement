@@ -100,7 +100,7 @@
               <span class="nav-profile-name">{{ session['user_message1'] }}</span>
             </a>
             <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
-              <a class="dropdown-item" href="{{url_for('account_setup_page')}}">
+              <a class="dropdown-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
                 <i class="typcn typcn-cog-outline text-primary"></i>
                 Settings
               </a>
@@ -122,7 +122,7 @@
             </a>
             <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="messageDropdown">
               <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
-              <a class="dropdown-item preview-item" href="{{url_for('account_setup_page')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Settings
                   </h6>
@@ -132,7 +132,7 @@
                 </div>
               </a>
               {% if session['is_manager'] == 'is_manager' %}
-              <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
                   </h6>
@@ -141,7 +141,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('add_new_manager_email')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.add_new_manager_email')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Add User
                   </h6>
@@ -150,7 +150,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('manage_user_rights')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('userRights_route.manage_user_rights')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">User rights
                   </h6>
@@ -159,7 +159,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_audit_logs')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
                   </h6>
@@ -168,7 +168,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('view_login_history')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_login_history')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Login history
                   </h6>
@@ -233,7 +233,7 @@
           {% if session['account_type'] == 'Property Management' %}
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('load_dashboard_page') }}">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.load_dashboard_page') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
@@ -241,7 +241,7 @@
           {% endif %}
           {% if session.get('add_properties') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('add_properties') }}" id="add-property">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.add_properties') }}" id="add-property">
               <i class="typcn typcn-document-text menu-icon"></i>
               <span class="menu-title">Add property</span>
               
@@ -250,7 +250,7 @@
           {% endif %}
           {% if session.get('add_tenants') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('add_tenants') }}" id="add-tenant">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.add_tenants') }}" id="add-tenant">
               <i class="typcn typcn-film menu-icon"></i>
               <span class="menu-title">Add Tenants</span>
             </a>
@@ -258,20 +258,20 @@
             {% endif %}
             {% if session.get('add_properties') != 'no' %}
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('property_expenses') }}" id="add-property">
+              <a class="nav-link" href="{{ url_for('propertyManagement_route.property_expenses') }}" id="add-property">
                 <i class="typcn typcn-document-text menu-icon"></i>
                 <span class="menu-title">Add Expenses</span>
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('view_property_expenses') }}" id="add-property">
+              <a class="nav-link" href="{{ url_for('propertyManagement_route.view_property_expenses') }}" id="add-property">
                 <i class="typcn typcn-document-text menu-icon"></i>
                 <span class="menu-title">View Expenses</span>
             </a>
           </li>
           {% endif %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_tenant_info') }}">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.update_tenant_info') }}">
               <i class="typcn typcn-chart-pie-outline menu-icon"></i>
               <span class="menu-title">Tenants</span>
               
@@ -279,7 +279,7 @@
           </li>
           {% if session.get('add_properties') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_property_info') }}">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.view_property_info') }}">
               <i class="typcn typcn-th-small-outline menu-icon"></i>
               <span class="menu-title">Properties</span>
               
@@ -287,7 +287,7 @@
           </li>
           {% endif %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('resolve_complaints') }}">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.resolve_complaints') }}">
               <i class="typcn typcn-compass menu-icon"></i>
               <span class="menu-title">Complaints</span>
               
@@ -295,14 +295,14 @@
           </li>
           {% if session.get('manage_contracts') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('manage_contracts') }}">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.manage_contracts') }}">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Contracts</span>
               
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('upload_contract_page') }}">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.upload_contract_page') }}">
               <i class="typcn typcn-book menu-icon"></i>
               <span class="menu-title">Add Contracts</span>
               
@@ -311,14 +311,14 @@
           {% endif %}
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('view_file_passwords') }}">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.view_file_passwords') }}">
               <i class="typcn typcn-key menu-icon"></i>
               <span class="menu-title">Passwords</span>
               
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('export_tenant_data') }}" id="export">
+            <a class="nav-link" href="{{ url_for('propertyManagement_route.export_tenant_data') }}" id="export">
               <i class="typcn typcn-mortar-board menu-icon"></i>
               <span class="menu-title">Export</span>
             </a>
@@ -329,7 +329,7 @@
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_overview') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
@@ -337,7 +337,7 @@
           {% endif %}
           {% if session.get('view_stock_info') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stock_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
               <i class="typcn typcn-cloud-storage menu-icon"></i>
               <span class="menu-title">Stock Info</span>
             </a>
@@ -345,7 +345,7 @@
           {% endif %}
           {% if session.get('view_revenue') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('revenue_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
               <i class="typcn typcn-business-card menu-icon"></i>
               <span class="menu-title">Revenues</span>
             </a>
@@ -353,7 +353,7 @@
           {% endif %}
           {% if session.get('view_sales') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('sales_details') }}">
+            <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
               <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
               <span class="menu-title">Sales</span>
             </a>
@@ -362,14 +362,14 @@
           {% endif %}
           {% if session['account_type'] == 'Accounting' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.accounts_overview') }}" id="new-stock">
               <i class="typcn typcn-credit-card menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
           </li>
           {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('new_accounts_page') }}" id="new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.new_accounts_page') }}" id="new-stock">
               <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">New Accounts</span>
             </a>
@@ -377,7 +377,7 @@
           {% endif %}
           {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_existing_account') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.update_existing_account') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Update Accounts</span>
             </a>
@@ -385,13 +385,13 @@
           {% endif %}
           {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('current_accounts') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.current_accounts') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Current Accounts</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('accounts_history') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.accounts_history') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Accounts History</span>
             </a>
@@ -416,7 +416,7 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
-          <form class="dashboard-form-form content-pannel" action="{{url_for('download_login_data')}}" method="POST">
+          <form class="dashboard-form-form content-pannel" action="{{url_for('logs_route.download_login_data')}}" method="POST">
             <label class="dashboard-form" for="">From</label>
             <input class="dashboard-form" type="date" name="startdate" required>
             <label class="dashboard-form" for="">To</label>

@@ -71,13 +71,13 @@
             </div>
             <div id="myNav" class="overlay">
               <div class="overlay-content">
-                <a href="{{ url_for('new_subscription') }}">Update Subscriptions</a>
-                <a href="{{ url_for('add_property_manager_page') }}">Add New Company</a>
-                <a href="{{ url_for('registered_clients') }}">Clients</a>
+                <a href="{{ url_for('admin_route.new_subscription') }}">Update Subscriptions</a>
+                <a href="{{ url_for('admin_route.add_property_manager_page') }}">Add New Company</a>
+                <a href="{{ url_for('admin_route.registered_clients') }}">Clients</a>
                 {% if session.get('send_emails') == 'yes' %}
-                <a href="{{ url_for('activate_send_emails', send_emails='no') }}">Turn off emails</a>
+                <a href="{{ url_for('admin_route.activate_send_emails', send_emails='no') }}">Turn off emails</a>
                 {% else %}
-                <a href="{{ url_for('activate_send_emails', send_emails='yes') }}">Turn on emails</a>
+                <a href="{{ url_for('admin_route.activate_send_emails', send_emails='yes') }}">Turn on emails</a>
                 {% endif %}
                 <a href="{{ url_for('logout_admin')}}">Logout</a>
               </div>
@@ -102,7 +102,7 @@
     </div>
 
     <div class="container-fluid-form">
-      <form id="myForm" class="property_forn" action="{{url_for('new_subscription_initiated')}}" method="POST">
+      <form id="myForm" class="property_forn" action="{{url_for('admin_route.new_subscription_initiated')}}" method="POST">
           <h6>Add New Subscription</h6>
           <label class="input_labels" for="">Select Company</label>
           <select class="property_inputs" name="company_name" id="property" required>

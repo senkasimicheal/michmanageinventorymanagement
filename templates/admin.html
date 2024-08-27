@@ -71,9 +71,6 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
-                <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
-                <a href="{{ url_for('about') }}">About</a>
               </div>
             </div>
           </div>
@@ -96,7 +93,7 @@
   </div>
 
   <div class="container-fluid-form">
-    <form class="property_forn" action="{{url_for('adminlogin')}}" method="POST">
+    <form class="property_forn" action="{{url_for('admin_route.adminlogin')}}" method="POST">
       <h6>LogIn</h6>
       <label class="input_labels" for="">Email</label>
       <input class="property_inputs" type="text" name="email" required><br>

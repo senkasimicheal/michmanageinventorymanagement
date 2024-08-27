@@ -127,7 +127,7 @@
             <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
               aria-labelledby="messageDropdown">
               <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
-              <a class="dropdown-item preview-item" href="{{url_for('account_setup_page')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Settings
                   </h6>
@@ -137,7 +137,7 @@
                 </div>
               </a>
               {% if session['is_manager'] == 'is_manager' %}
-              <a class="dropdown-item preview-item" href="{{url_for('view_user_accounts')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.view_user_accounts')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Users
                   </h6>
@@ -146,7 +146,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('add_new_manager_email')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.add_new_manager_email')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Add User
                   </h6>
@@ -155,7 +155,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('manage_user_rights')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('userRights_route.manage_user_rights')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">User rights
                   </h6>
@@ -164,7 +164,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('view_audit_logs')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_audit_logs')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
                   </h6>
@@ -173,7 +173,7 @@
                   </p>
                 </div>
               </a>
-              <a class="dropdown-item preview-item" href="{{url_for('view_login_history')}}">
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_login_history')}}">
                 <div class="preview-item-content flex-grow">
                   <h6 class="preview-subject ellipsis font-weight-normal">Login history
                   </h6>
@@ -238,14 +238,14 @@
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('accounts_overview') }}" id="new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.accounts_overview') }}" id="new-stock">
               <i class="typcn typcn-credit-card menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
           </li>
           {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('new_accounts_page') }}" id="new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.new_accounts_page') }}" id="new-stock">
               <i class="typcn typcn-document-add menu-icon"></i>
               <span class="menu-title">New Accounts</span>
             </a>
@@ -253,7 +253,7 @@
           {% endif %}
           {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('update_existing_account') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.update_existing_account') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Update Accounts</span>
             </a>
@@ -261,13 +261,13 @@
           {% endif %}
           {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('current_accounts') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.current_accounts') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Current Accounts</span>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('accounts_history') }}" id="update-new-stock">
+            <a class="nav-link" href="{{ url_for('accounting_route.accounts_history') }}" id="update-new-stock">
               <i class="typcn typcn-briefcase menu-icon"></i>
               <span class="menu-title">Accounts History</span>
             </a>
@@ -302,7 +302,7 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
-          <form class="dashboard-form-form content-pannel" action="{{url_for('download_financial_data')}}"
+          <form class="dashboard-form-form content-pannel" action="{{url_for('accounting_route.download_financial_data')}}"
             method="POST">
             <label class="dashboard-form" for="">From</label>
             <input class="dashboard-form" type="date" name="startdate" required>
@@ -359,7 +359,7 @@
                   <td>{{ account['date_of_payment'].strftime('%Y-%m-%d') }}</td>
                   <td class="amount-demanded">{{ '{:,.0f}'.format(account['amount_demanded']) }}</td>
                   <td>
-                    <a href="{{ url_for('view_finance_receipt', id=account['_id']) }}" class="btn btn-primary">View</a>
+                    <a href="{{ url_for('accounting_route.view_finance_receipt', id=account['_id']) }}" class="btn btn-primary">View</a>
                   </td>
                 </tr>
                 {% endfor %}
