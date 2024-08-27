@@ -97,6 +97,10 @@ def after_request(response):
 def index():
     return render_template('index.html')
 
+@app.route("/rate_us")
+def rate_us():
+    return redirect('https://www.google.com/search?client=ms-android-transsion&sca_esv=033c270f53017be6&sxsrf=ADLYWILRhWsAAhDBzis_Uv0L4b0A9HFehA:1724743888012&q=mich+manage+kampala+reviews&uds=ADvngMgfPPaym3hQlwI19QyQZ3bfoUA6G3RfDiV_RezhubPzsBvD58rj02PtNO6qYPH6K_9RFI5-ZhN5v91U54cbknXUtJzjUgqxKE-3cpa9Vms2l6e0bv3ppik1dC3mvdYVH3ik3CpYoSoB0hEMAtxL3Cwn1EAx15RwHCoISeVaQpGnU3k1fwAIj-RTls2NpzCeBju4vsZQoiielCBsJpLKu_rMRxQG-n4wHnIFsEbC83jGq-Ub3MGyp0icXviM9j7DV4lLKjK7ADwR8xVRjdwRIfJFKYbFa-KVcgsBHngLB6lmE3FpIybfDEwqp2U5NJ7ITxSm3nf5HMlZIX6a2yGUZgOkVsS377_6GL6B2NWkv0rXPonn--9yHyYP7rS_yhAfV7D10slP0OctugY-Ceqo8A3cS5pV2BKeZF-tTrGiZtgtk9rpCitKqVs6mmYhBrQAae0G7Zjn&si=ACC90nwjPmqJHrCEt6ewASzksVFQDX8zco_7MgBaIawvaF4-7uH_XqoShGoDxiuBCUkUzWczFmimLaxlPIvUzNC0JYqo2RjwLk-dmlvITGroH7G62nlGKf4wXc5GWWRkcgQutIDlcU5lIbDDTqF6wP9HoxTvS79K-w%3D%3D&sa=X&ved=2ahUKEwj91pfW05SIAxWPBdsEHcSrI-gQk8gLegQIIBAB&ictx=1&biw=360&bih=680&dpr=2')
+
 @app.route('/logout')
 def logout():
     session.clear()
