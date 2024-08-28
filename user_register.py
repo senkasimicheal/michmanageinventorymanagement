@@ -4,8 +4,12 @@ from flask_mail import Message
 import threading
 import bcrypt
 from datetime import datetime, timedelta, timezone
+import random
 
 registration = Blueprint('registration_route', __name__)
+
+def generate_code(length=6):
+    return ''.join(random.choice('0123456789') for _ in range(length))
 
 @registration.route('/manager_register')
 def manager_register_page():
