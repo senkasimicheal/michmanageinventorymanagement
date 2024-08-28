@@ -463,7 +463,10 @@
                 {% endif %}
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('monthly_profits_chart') == 'monthly_profits_chart' %}block{% else %}none{% endif %}">
-                <canvas id="trended_profitChart"></canvas>
+                <p class="dashboardheadings">Monthly Profit Trends</p>
+                <div>
+                  <canvas id="trended_profitChart"></canvas>
+                </div>
               </div>
             </div>
           </div>
@@ -482,21 +485,6 @@
           </div>
           <p style="padding: 0 1.812rem 1.812rem;">You do not have rights to view the dashboard</p>
           {% endif %}
-        <!-- content-wrapper ends -->
-        <!-- partial:partials/_footer.html -->
-        <!-- <footer class="footer">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-sm-flex justify-content-center justify-content-sm-between">
-                      <p>
-                        &copy; <span id="displayYear"></span> All Rights Reserved By
-                        <a href="#">Mich Manage</a>
-                      </p>
-                    </div>
-                </div>    
-            </div>        
-        </footer> -->
-        <!-- partial -->
       </div>
       <!-- main-panel ends -->
     </div>
@@ -542,16 +530,6 @@
                   },
                   tooltip: {
                       enabled: true
-                  },
-                  title: {
-                      display: true,
-                      text: 'Sum of Profits by Month',
-                      font: {
-                          size: 12
-                      },
-                      padding: {
-                          bottom: 20
-                      }
                   }
               },
               layout: {
