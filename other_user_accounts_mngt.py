@@ -114,7 +114,7 @@ def update_new_manager_email():
             if send_emails is not None:
                 msg = Message('Account Creation Invitation from Mich Manage', 
                             sender='michmanage@outlook.com', 
-                            recipients=email)
+                            recipients=[email])
                 msg.html = f"""
                 <html>
                 <body>

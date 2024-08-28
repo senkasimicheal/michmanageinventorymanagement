@@ -1,11 +1,12 @@
-from flask import Blueprint, render_template, url_for, request, session, flash, redirect, make_response, jsonify, send_from_directory, current_app
-from pymongo import ASCENDING
-from datetime import datetime, timedelta
-import bcrypt
+from flask import Blueprint, render_template, url_for, send_from_directory, request, flash, redirect, session, make_response, jsonify, current_app
 from utils import get_mongo_client, get_db_and_fs, send_async_email
 from flask_mail import Message
 import threading
 from docx import Document
+from pymongo import MongoClient, ASCENDING, DESCENDING
+import secrets
+import bcrypt
+from datetime import datetime, timedelta, timezone
 import calendar
 import pytz
 import pandas as pd 
@@ -23,6 +24,7 @@ from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image
+from reportlab.platypus import Image as PDFImage
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from zipfile import ZipFile
@@ -35,7 +37,8 @@ import PyPDF2
 import gc
 from collections import defaultdict
 import barcode
-from PIL import Image, ImageDraw, ImageFont
+from PIL import ImageDraw, ImageFont
+from PIL import Image as PILImage
 from barcode.writer import ImageWriter
 
 accounting = Blueprint('accounting_route', __name__)
@@ -225,7 +228,7 @@ def add_new_account():
 
                         # Load your QR code image
                         qr_code_img = f'payment_receipt_qr_{receipt_id}.png'
-                        qr_code = Image(qr_code_img)
+                        qr_code = PDFImage(qr_code_img)
                         qr_code.hAlign = 'CENTER'
 
                         # Add the QR code image to the elements list before building the PDF
@@ -306,7 +309,7 @@ def add_new_account():
 
                         # Load your QR code image
                         qr_code_img = f'payment_receipt_qr_{receipt_id}.png'
-                        qr_code = Image(qr_code_img)
+                        qr_code = PDFImage(qr_code_img)
                         qr_code.hAlign = 'CENTER'
 
                         # Add the QR code image to the elements list before building the PDF
@@ -360,6 +363,7 @@ def add_new_account():
                 except (ValueError, TypeError) as e:
                     # Log or handle the exception as needed
                     flash(f"Error processing account {item.get('itemName', 'unknown')}: {e}", 'error')
+                    
                 receipt_number += 1
             if added == 1:
                 flash('Accounts were added','success')
@@ -518,7 +522,7 @@ def update_accounts():
 
                 # Load your QR code image
                 qr_code_img = f'payment_receipt_qr_{item["client_id"]}.png'
-                qr_code = Image(qr_code_img)
+                qr_code = PDFImage(qr_code_img)
                 qr_code.hAlign = 'CENTER'
 
                 # Add the QR code image to the elements list before building the PDF
@@ -774,7 +778,7 @@ def apply_finance_edits():
 
                         # Load your QR code image
                         qr_code_img = f'payment_receipt_qr_{item_id}.png'
-                        qr_code = Image(qr_code_img)
+                        qr_code = PDFImage(qr_code_img)
                         qr_code.hAlign = 'CENTER'
 
                         # Add the QR code image to the elements list before building the PDF

@@ -101,7 +101,7 @@
     <!-- slider section -->
     <section class="sale_section layout_padding">
       <div class="container-fluid-form" style="margin-top: -8rem;">
-        <form id="myForm" class="property_forn" action="{{url_for('register_account')}}" method="POST">
+        <form id="myForm" class="property_forn" action="{{url_for('registration_route.register_account')}}" method="POST">
           <h6>Manager account</h6>
           <p>Company Name: {{company_name}}</p>
           <input type="hidden" name="company_name" value="{{company_name}}">

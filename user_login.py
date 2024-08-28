@@ -134,11 +134,6 @@ def userlogin():
                     # If only 'Accounting' is present
                     session['account_type'] = 'Accounting'
                     return redirect("/accounts-overview")
-
-                # elif 'Enterprise Resource Planning' in account_type and 'Property Management' in account_type:
-                #     # If both are present
-                #     session['account_type'] = 'all_accounts'
-                #     return redirect('/all-accounts-overview')
             else:
                 for field in fields:
                     if field in manager:
