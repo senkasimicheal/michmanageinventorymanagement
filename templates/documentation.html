@@ -34,6 +34,19 @@
     <div class="spinner" id="spinner">0%</div>
   </div>
 
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".hero_area1").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
   <div class="hero_area1">
     <!-- header section strats -->
     <header class="header_section">
@@ -59,10 +72,14 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
-                <a href="{{ url_for('terms_of_service') }}">Terms Of Service</a>
-                <a href="{{ url_for('about') }}">About</a>
-                <a href="{{ url_for('contact') }}">Contact Us</a>
+                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Manager Login</a>
+                <a href="{{ url_for('login_route.tenant_login_page') }}" id="tenant-login">Tenant Login</a>
+                <a href="{{ url_for('registration_route.tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
+                <a href="{{ url_for('documentation_route.privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('documentation_route.about') }}">About</a>
+                <a href="{{ url_for('documentation_route.contact') }}">Contact Us</a>
+                <a href="{{ url_for('documentation_route.download_apk') }}" id="install-link" style="display: none;">Install App</a>
               </div>
             </div>
           </div>
@@ -210,10 +227,10 @@
                 <a href="{{ url_for('index') }}">Home</a>
               </li>
               <li>
-                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('documentation_route.about') }}">About</a>
               </li>
               <li>
-                <a href="{{url_for('documentation')}}">Documentation</a>
+                <a href="{{url_for('documentation_route.documentation')}}">Documentation</a>
               </li>
             </ul>
           </div>
@@ -247,6 +264,20 @@
     </div>
   </section>
   <!-- end  footer section -->
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
   
   <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
   <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
