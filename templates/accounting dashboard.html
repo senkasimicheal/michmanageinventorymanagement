@@ -305,16 +305,67 @@
           <div class="chart-container">
             <div class="row">
               <div class="col-md-6 segment">
-                <canvas id="currentProjectAmount"></canvas>
+                {% if top10CurrentAccounts %}
+                  <p class="dashboardheadings">Top 10 Current Account Payments</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, account in top10CurrentAccounts %}
+                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ account }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No current accounts found.</p>
+                {% endif %}
               </div>
               <div class="col-md-6 segment">
-                <canvas id="currentProjectAmountDemanded"></canvas>
+                {% if top10DemandedAccounts %}
+                  <p class="dashboardheadings">Top 10 Current Account Payments</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, demanded_account in top10DemandedAccounts %}
+                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ demanded_account }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No demanded accounts found.</p>
+                {% endif %}
               </div>
               <div class="col-md-6 segment">
-                <canvas id="clientPerProject"></canvas>
+                {% if top10ClientProject %}
+                  <p class="dashboardheadings">Top 10 Clients Per Project</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, count in top10ClientProject %}
+                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>{{ count }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No clients found.</p>
+                {% endif %}
               </div>
               <div class="col-md-6 segment">
-                <canvas id="trendedChart"></canvas>
+                <p class="dashboardheadings">Amount Paid Per Month</p>
+                <div>
+                  <canvas id="trendedChart"></canvas>
+                </div>
               </div>
             </div>
           </div>
@@ -357,192 +408,6 @@
 
     <!-- CHARTS JAVASCRIPTS -->
     <script>
-      var ctx = document.getElementById('currentProjectAmount').getContext('2d');
-      var chartData = {{ current_total_amount_paid_chart | tojson }};
-
-      // Combine labels and values into an array of objects
-      var dataArray = chartData.labels.map((label, index) => ({
-        label: label,
-        value: chartData.values[index]
-      }));
-
-      // Sort the array by value in descending order
-      dataArray.sort((a, b) => b.value - a.value);
-
-      // Extract the sorted labels and values
-      var sortedLabels = dataArray.map(item => item.label);
-      var sortedValues = dataArray.map(item => item.value);
-
-      var profitChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: sortedLabels,
-          datasets: [{
-            label: 'Total Amount Paid',
-            data: sortedValues,
-            backgroundColor: '#00c8bf'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Amount'
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'bottom',
-            },
-            tooltip: {
-              enabled: true
-            },
-            title: {
-              display: true,
-              text: 'Current Amount Per Project',
-              font: {
-                size: 12
-              },
-              padding: {
-                bottom: 20
-              }
-            }
-          }
-        }
-      });
-    </script>
-
-    <script>
-      var ctx = document.getElementById('currentProjectAmountDemanded').getContext('2d');
-      var chartData = {{ current_total_amount_demanded_chart | tojson }};
-
-      // Combine labels and values into an array of objects
-      var dataArray = chartData.labels.map((label, index) => ({
-        label: label,
-        value: chartData.values[index]
-      }));
-
-      // Sort the array by value in descending order
-      dataArray.sort((a, b) => b.value - a.value);
-
-      // Extract the sorted labels and values
-      var sortedLabels = dataArray.map(item => item.label);
-      var sortedValues = dataArray.map(item => item.value);
-
-      var profitChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: sortedLabels,
-          datasets: [{
-            label: 'Amount Demanded',
-            data: sortedValues,
-            backgroundColor: '#00c8bf'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Amount'
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'bottom',
-            },
-            tooltip: {
-              enabled: true
-            },
-            title: {
-              display: true,
-              text: 'Demanded Amount Per Project',
-              font: {
-                size: 12
-              },
-              padding: {
-                bottom: 20
-              }
-            }
-          }
-        }
-      });
-    </script>
-
-    <script>
-      var ctx = document.getElementById('clientPerProject').getContext('2d');
-      var chartData = {{ count_clients_by_project_chart | tojson }};
-
-      // Combine labels and values into an array of objects
-      var dataArray = chartData.labels.map((label, index) => ({
-        label: label,
-        value: chartData.values[index]
-      }));
-
-      // Sort the array by value in descending order
-      dataArray.sort((a, b) => b.value - a.value);
-
-      // Extract the sorted labels and values
-      var sortedLabels = dataArray.map(item => item.label);
-      var sortedValues = dataArray.map(item => item.value);
-
-      var profitChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: sortedLabels,
-          datasets: [{
-            label: 'Clients',
-            data: sortedValues,
-            backgroundColor: '#00c8bf'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Number'
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'bottom',
-            },
-            tooltip: {
-              enabled: true
-            },
-            title: {
-              display: true,
-              text: 'Clients Per Project',
-              font: {
-                size: 12
-              },
-              padding: {
-                bottom: 20
-              }
-            }
-          }
-        }
-      });
-    </script>
-
-    <script>
       var ctx = document.getElementById('trendedChart').getContext('2d');
       var chartData = {{ trended_chart | tojson }};
 
@@ -579,16 +444,6 @@
             },
             tooltip: {
               enabled: true
-            },
-            title: {
-              display: true,
-              text: 'Amount Paid Per Month',
-              font: {
-                size: 12
-              },
-              padding: {
-                bottom: 20
-              }
             }
           },
           layout: {

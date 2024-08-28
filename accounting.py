@@ -1015,7 +1015,7 @@ def accounts_overview():
                 'Amount Demanded': amount_demanded
             })
 
-            # Count of clients by project
+            # Aggregation for old accounts
             old_accounts_counts = db.old_transaction_finance_accounts.aggregate([
                 {
                     '$match': {
@@ -1026,17 +1026,20 @@ def accounts_overview():
                 {
                     '$group': {
                         '_id': '$project_name',
-                        'unique_clients': {'$addToSet': '$client_id'}
+                        'unique_clients': {'$addToSet': '$client_id'},
+                        'appearance_count': {'$sum': 1}  # Count appearances
                     }
                 },
                 {
                     '$project': {
                         '_id': 1,
-                        'unique_client_count': {'$size': '$unique_clients'}
+                        'unique_client_count': {'$size': '$unique_clients'},
+                        'appearance_count': 1  # Include appearance count
                     }
                 }
             ])
 
+            # Aggregation for current accounts
             current_accounts_counts = db.transaction_finance_accounts.aggregate([
                 {
                     '$match': {
@@ -1047,42 +1050,44 @@ def accounts_overview():
                 {
                     '$group': {
                         '_id': '$project_name',
-                        'unique_clients': {'$addToSet': '$_id'}
+                        'unique_clients': {'$addToSet': '$_id'},
+                        'appearance_count': {'$sum': 1}  # Count appearances
                     }
                 },
                 {
                     '$project': {
                         '_id': 1,
-                        'unique_client_count': {'$size': '$unique_clients'}
+                        'unique_client_count': {'$size': '$unique_clients'},
+                        'appearance_count': 1  # Include appearance count
                     }
                 }
             ])
 
-            old_accounts_dict = {item['_id']: item['unique_client_count'] for item in old_accounts_counts}
-            current_accounts_dict = {item['_id']: item['unique_client_count'] for item in current_accounts_counts}
+            # Convert aggregation results to dictionaries for easy lookup
+            old_accounts_dict = {item['_id']: {'unique_client_count': item['unique_client_count'], 'appearance_count': item['appearance_count']} for item in old_accounts_counts}
+            current_accounts_dict = {item['_id']: {'unique_client_count': item['unique_client_count'], 'appearance_count': item['appearance_count']} for item in current_accounts_counts}
 
             combined_counts = []
 
-            for project_name in set(old_accounts_dict.keys()).union(current_accounts_dict.keys()):
-                old_count = old_accounts_dict.get(project_name, 0)
-                current_count = current_accounts_dict.get(project_name, 0)
-                combined_count = old_count + current_count
+            # Combine keys from both dictionaries
+            all_project_names = set(old_accounts_dict.keys()).union(current_accounts_dict.keys())
+
+            for project_name in all_project_names:
+                old_data = old_accounts_dict.get(project_name, {'unique_client_count': 0, 'appearance_count': 0})
+                current_data = current_accounts_dict.get(project_name, {'unique_client_count': 0, 'appearance_count': 0})
+                
+                # Combine the counts
+                combined_count = old_data['unique_client_count'] + current_data['unique_client_count']
+                combined_appearance_count = old_data['appearance_count'] + current_data['appearance_count']
+                
+                # Append the results
                 combined_counts.append({
                     'Project Name': project_name,
-                    'Count': combined_count
+                    'Unique Client Count': combined_count,
+                    'Appearance Count': combined_appearance_count
                 })
 
             count_clients_per_project_df = pd.DataFrame(combined_counts)
-            default_count_labels = []
-            default_count_values = []
-            if not count_clients_per_project_df.empty:
-                count_clients_per_project_df = count_clients_per_project_df.sort_values(by='Count', ascending=False)
-                count_clients_per_project_df = count_clients_per_project_df.reset_index(drop=True) 
-                count_labels = count_clients_per_project_df['Project Name'].tolist()
-                count_values = count_clients_per_project_df['Count'].tolist()
-            else:
-                count_labels = default_count_labels
-                count_values = default_count_values
 
             ##PAYMENT TRENDS
             twelve_months_ago = datetime.now() - timedelta(days=365)
@@ -1161,20 +1166,36 @@ def accounts_overview():
             df_trended = df_trended[['Month_Name', 'Total Amount']].reset_index(drop=True)
 
             #####PLOTS
-            current_total_amount_paid_chart = {
-                'labels': current_accounts_info_df['Project Name'].tolist(),
-                'values': current_accounts_info_df['Total Amount Paid'].tolist()
-            }
+            projectName = []
+            amount = []
+            top_current_items = current_accounts_info_df.sort_values(by='Total Amount Paid', ascending=False).head(10)
 
-            current_total_amount_demanded_chart = {
-                'labels': current_accounts_info_df['Project Name'].tolist(),
-                'values': current_accounts_info_df['Amount Demanded'].tolist()
-            }
+            if not top_current_items.empty:
+                for index, row in top_current_items.iterrows():
+                    projectName.append(row['Project Name'])
+                    amount.append(row['Total Amount Paid'])
+            top10CurrentAccounts = list(zip(projectName, amount))
 
-            count_clients_by_project_chart = {
-                'labels': count_labels,
-                'values': count_values
-            }
+            projectNameDemanded = []
+            amountDemanded = []
+            top_demanded_items = current_accounts_info_df.sort_values(by='Amount Demanded', ascending=False).head(10)
+
+            if not top_demanded_items.empty:
+                for index, row in top_demanded_items.iterrows():
+                    projectNameDemanded.append(row['Project Name'])
+                    amountDemanded.append(row['Amount Demanded'])
+            top10DemandedAccounts = list(zip(projectNameDemanded, amountDemanded))
+
+            projectNameCount = []
+            clients = []
+
+            if not count_clients_per_project_df.empty:
+                count_clients_per_project_df = count_clients_per_project_df.sort_values(by='Appearance Count', ascending=False)
+                count_clients_per_project_df = count_clients_per_project_df.reset_index(drop=True) 
+                for index, row in count_clients_per_project_df.iterrows():
+                    projectNameCount.append(row['Project Name'])
+                    clients.append(row['Appearance Count'])
+            top10ClientProject = list(zip(projectNameCount, clients))
 
             trended_chart = {
                 'labels': df_trended['Month_Name'].tolist(),
@@ -1185,9 +1206,9 @@ def accounts_overview():
             gc.collect()
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-            return render_template('accounting dashboard.html',current_total_amount_paid_chart=current_total_amount_paid_chart,
-                                current_total_amount_demanded_chart=current_total_amount_demanded_chart,
-                                count_clients_by_project_chart=count_clients_by_project_chart,trended_chart=trended_chart,
+            return render_template('accounting dashboard.html',top10CurrentAccounts=top10CurrentAccounts,
+                                top10DemandedAccounts=top10DemandedAccounts,
+                                top10ClientProject=top10ClientProject,trended_chart=trended_chart,
                                 start_of_previous_month=start_of_previous_month,
                                 first_day_of_current_month=first_day_of_current_month, dp=dp_str)
         else:
