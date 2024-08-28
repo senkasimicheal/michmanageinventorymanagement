@@ -1261,7 +1261,6 @@ def stock_overview():
 
                     # Check if 'inventoryDetails' is in record and has the necessary structure
                     if 'inventoryDetails' in record and record['inventoryDetails']:
-                        print(record)
                         quantity_stocked = record['inventoryDetails'][0].get('quantity', 0)
                         total_price_iter = record['inventoryDetails'][0].get('totalPrice', 0)
                         profit_iter = record['totalRevenue'] - total_price_iter
@@ -1616,7 +1615,6 @@ def download_revenue_data():
             ]
 
             revenue_info = list(db.stock_sales.aggregate(pipeline))
-            print(revenue_info)
 
             data_rows = []
 
@@ -1816,7 +1814,6 @@ def view_production_info():
             # Apply the function to each row to calculate 'Total Production Cost'
             inhouse_df['Total Production Cost'] = inhouse_df.apply(calculate_total_cost, axis=1)
             inhouse_df_sorted = inhouse_df.sort_values(by='Date Produced')
-            print(inhouse_df_sorted)
             dp = company.get('dp')
             dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
             return render_template('production info.html', inhouse_df=inhouse_df_sorted, dp=dp_str)
