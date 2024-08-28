@@ -396,7 +396,7 @@
                                 <p>{{ item }}</p>
                             </div>
                             <div class="profitability-time">
-                                <span>UGX {{ profit }}</span>
+                                <span>UGX {{ '{:,.0f}'.format(profit) }}</span>
                             </div>
                         </a>
                     {% endfor %}
@@ -415,7 +415,7 @@
                                 <p>{{ item }}</p>
                             </div>
                             <div class="profitability-time">
-                                <span>UGX {{ loss }}</span>
+                                <span>UGX {{ '{:,.0f}'.format(loss) }}</span>
                             </div>
                         </a>
                     {% endfor %}
@@ -434,7 +434,7 @@
                                 <p>{{ item }}</p>
                             </div>
                             <div class="profitability-time">
-                                <span>UGX {{ revenue }}</span>
+                                <span>UGX {{ '{:,.0f}'.format(revenue) }}</span>
                             </div>
                         </a>
                     {% endfor %}

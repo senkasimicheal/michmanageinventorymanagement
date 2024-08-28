@@ -309,12 +309,12 @@
                   <p class="dashboardheadings">Top 10 Current Account Payments</p>
                   <div style="max-height: 250px; overflow-y: auto;">
                     {% for item, account in top10CurrentAccounts %}
-                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                        <a href="{{ url_for('accounting_route.current_accounts') }}" class="notification-item">
                             <div class="profitability-content">
                                 <p>{{ item }}</p>
                             </div>
                             <div class="profitability-time">
-                                <span>UGX {{ account }}</span>
+                                <span>UGX {{ '{:,.0f}'.format(account) }}</span>
                             </div>
                         </a>
                     {% endfor %}
@@ -328,12 +328,12 @@
                   <p class="dashboardheadings">Top 10 Current Account Payments</p>
                   <div style="max-height: 250px; overflow-y: auto;">
                     {% for item, demanded_account in top10DemandedAccounts %}
-                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                        <a href="{{ url_for('accounting_route.current_accounts') }}" class="notification-item">
                             <div class="profitability-content">
                                 <p>{{ item }}</p>
                             </div>
                             <div class="profitability-time">
-                                <span>UGX {{ demanded_account }}</span>
+                                <span>UGX {{ '{:,.0f}'.format(demanded_account) }}</span>
                             </div>
                         </a>
                     {% endfor %}
@@ -344,10 +344,10 @@
               </div>
               <div class="col-md-6 segment">
                 {% if top10ClientProject %}
-                  <p class="dashboardheadings">Top 10 Clients Per Project</p>
+                  <p class="dashboardheadings">Top 10 Project-Clients Count</p>
                   <div style="max-height: 250px; overflow-y: auto;">
                     {% for item, count in top10ClientProject %}
-                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                        <a href="{{ url_for('accounting_route.accounts_history') }}" class="notification-item">
                             <div class="profitability-content">
                                 <p>{{ item }}</p>
                             </div>
