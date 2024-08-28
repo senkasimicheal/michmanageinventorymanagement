@@ -387,16 +387,80 @@
             {% endif %}
             <div class="row">
               <div class="col-md-6 segment" style="display: {% if session.get('profits_chart') == 'profits_chart' %}block{% else %}none{% endif %}">
-                <canvas id="profitChart"></canvas>
+                {% if top10profits %}
+                  <p class="dashboardheadings">Top 10 Profitable Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, profit in top10profits %}
+                        <a href="{{ url_for('stockManagement_route.revenue_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ profit }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No profitable items found.</p>
+                {% endif %}
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('loss_chart') == 'loss_chart' %}block{% else %}none{% endif %}">
-                <canvas id="lossChart"></canvas>
+                {% if top10losses %}
+                  <p class="dashboardheadings">Top 10 Unprofitable Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, loss in top10losses %}
+                        <a href="{{ url_for('stockManagement_route.revenue_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ loss }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No unprofitable items found.</p>
+                {% endif %}
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('revenue_and_qty_chart') == 'revenue_and_qty_chart' %}block{% else %}none{% endif %}">
-                <canvas id="revenueChart"></canvas>
+                {% if top10revenues %}
+                  <p class="dashboardheadings">Top 10 Revenue-Generating Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, revenue in top10revenues %}
+                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ revenue }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No revenue generating items found.</p>
+                {% endif %}
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('revenue_and_qty_chart') == 'revenue_and_qty_chart' %}block{% else %}none{% endif %}">
-                <canvas id="quantityChart"></canvas>
+                {% if top10SoldItems %}
+                  <p class="dashboardheadings">Top 10 Most Sold Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, quantity in top10SoldItems %}
+                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>{{ quantity }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No items sold yet.</p>
+                {% endif %}
               </div>
               <div class="col-md-6 segment" style="display: {% if session.get('monthly_profits_chart') == 'monthly_profits_chart' %}block{% else %}none{% endif %}">
                 <canvas id="trended_profitChart"></canvas>
@@ -441,254 +505,6 @@
   <!-- container-scroller -->
 
   <!-- CHARTS JAVASCRIPTS -->
-  <script>
-    var ctx = document.getElementById('profitChart').getContext('2d');
-    var chartData = {{ profits_chart | tojson }};
-
-    // Combine labels and values into an array of objects
-    var dataArray = chartData.labels.map((label, index) => ({
-        label: label,
-        value: chartData.values[index]
-    }));
-
-    // Sort the array by value in descending order
-    dataArray.sort((a, b) => b.value - a.value);
-
-    // Extract the sorted labels and values
-    var sortedLabels = dataArray.map(item => item.label);
-    var sortedValues = dataArray.map(item => item.value);
-
-    var profitChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedLabels,
-            datasets: [{
-                label: 'Profits',
-                data: sortedValues,
-                backgroundColor: '#00c8bf'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Amount'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                },
-                tooltip: {
-                    enabled: true
-                },
-                title: {
-                    display: true,
-                    text: 'Profits On The Items',
-                    font: {
-                        size: 12
-                    },
-                    padding: {
-                        bottom: 20
-                    }
-                }
-            }
-        }
-    });
-  </script>
-
-  <script>
-    var ctx = document.getElementById('lossChart').getContext('2d');
-    var chartData = {{ Losses_chart | tojson }};
-
-    // Combine labels and values into an array of objects
-    var dataArray = chartData.labels.map((label, index) => ({
-        label: label,
-        value: chartData.values[index]
-    }));
-
-    // Sort the array by value in descending order
-    dataArray.sort((a, b) => b.value - a.value);
-
-    // Extract the sorted labels and values
-    var sortedLabels = dataArray.map(item => item.label);
-    var sortedValues = dataArray.map(item => item.value);
-
-    var lossChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedLabels,
-            datasets: [{
-                label: 'Loss',
-                data: sortedValues,
-                backgroundColor: '#00c8bf'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Amount'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                },
-                tooltip: {
-                    enabled: true
-                },
-                title: {
-                    display: true,
-                    text: 'Losses On The Items',
-                    font: {
-                        size: 12
-                    },
-                    padding: {
-                        bottom: 20
-                    }
-                }
-            }
-        }
-    });
-  </script>
-
-  <script>
-    var ctx = document.getElementById('revenueChart').getContext('2d');
-    var chartData = {{ revenue | tojson }};
-
-    // Combine labels and values into an array of objects
-    var dataArray = chartData.labels.map((label, index) => ({
-        label: label,
-        value: chartData.values[index]
-    }));
-
-    // Sort the array by value in descending order
-    dataArray.sort((a, b) => b.value - a.value);
-
-    // Extract the sorted labels and values
-    var sortedLabels = dataArray.map(item => item.label);
-    var sortedValues = dataArray.map(item => item.value);
-
-    var revenueChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedLabels,
-            datasets: [{
-              label: 'Sales Amount',
-                data: sortedValues,
-                backgroundColor: '#00c8bf'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Amount'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                },
-                tooltip: {
-                    enabled: true
-                },
-                title: {
-                    display: true,
-                  text: 'Sales Amount On Items Sold',
-                    font: {
-                        size: 12
-                    },
-                    padding: {
-                        bottom: 20
-                    }
-                }
-            }
-        }
-    });
-  </script>
-
-  <script>
-    var ctx = document.getElementById('quantityChart').getContext('2d');
-    var chartData = {{ quantity_sold_stocked | tojson }};
-
-    // Combine labels and values into an array of objects
-    var dataArray = chartData.labels.map((label, index) => ({
-        label: label,
-        value: chartData.values[index]
-    }));
-
-    // Sort the array by value in descending order
-    dataArray.sort((a, b) => b.value - a.value);
-
-    // Extract the sorted labels and values
-    var sortedLabels = dataArray.map(item => item.label);
-    var sortedValues = dataArray.map(item => item.value);
-
-    var quantityChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedLabels,
-            datasets: [{
-                label: 'Quantity',
-                data: sortedValues,
-                backgroundColor: '#00c8bf'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Amount'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                },
-                tooltip: {
-                    enabled: true
-                },
-                title: {
-                    display: true,
-                    text: 'Quantity Sold On Each Item',
-                    font: {
-                        size: 12
-                    },
-                    padding: {
-                        bottom: 20
-                    }
-                }
-            }
-        }
-    });
-  </script>
-
     <script>
       var ctx = document.getElementById('trended_profitChart').getContext('2d');
       var chartData = {{ trended_profit | tojson }};

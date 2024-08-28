@@ -26160,6 +26160,11 @@ table td {
   color: #333;
 }
 
+.profitability-content {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
 .notification-time {
   font-size: 12px;
   color: #999;
@@ -26167,15 +26172,29 @@ table td {
   align-self: flex-end; /* Align time to the bottom of the notification item */
 }
 
+.profitability-time {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  align-self: flex-end;
+  /* Align time to the bottom of the notification item */
+}
 .notification-item p {
   margin: 0;
 }
 
+.profitability-item p {
+  margin: 0;
+}
 .notification-item span {
   display: block;
   margin-top: 5px;
 }
 
+.profitability-item span {
+  display: block;
+  margin-top: 5px;
+}
 /* Optional: Add a hover effect for a better visual experience */
 .notification-item:hover {
   background: #f1f1f1;
@@ -26183,6 +26202,23 @@ table td {
   text-decoration: none;
 }
 
+.notification-item {
+  background: lightblue;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.segment .dashboardheadings {
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 .custom-select-container {
   position: relative;
   width: 100%;

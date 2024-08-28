@@ -958,12 +958,7 @@ def revenue_details():
                                             'quantity': 1,
                                             'unitPrice': 1,
                                             'stockDate': 1,
-                                            'totalPrice': {
-                                                '$add': [
-                                                    '$totalPrice',
-                                                    {'$ifNull': ['$oldTotalPrice', 0]}
-                                                ]
-                                            }
+                                            'totalPrice': 1
                                         }
                                     }
                                 ],
@@ -1237,12 +1232,7 @@ def stock_overview():
                                         'quantity': 1,
                                         'unitPrice': 1,
                                         'stockDate': 1,
-                                        'totalPrice': {
-                                            '$add': [
-                                                '$totalPrice',
-                                                {'$ifNull': ['$oldTotalPrice', 0]}
-                                            ]
-                                        }
+                                        'totalPrice': 1
                                     }
                                 }
                             ],
@@ -1271,11 +1261,9 @@ def stock_overview():
 
                     # Check if 'inventoryDetails' is in record and has the necessary structure
                     if 'inventoryDetails' in record and record['inventoryDetails']:
+                        print(record)
                         quantity_stocked = record['inventoryDetails'][0].get('quantity', 0)
-                        quantities_stocked_iter = quantity_stocked
-                        unitPrice = record['inventoryDetails'][0].get('unitPrice', 0)
-                        quantitysold = record['quantitysold']
-                        total_price_iter = unitPrice * quantitysold
+                        total_price_iter = record['inventoryDetails'][0].get('totalPrice', 0)
                         profit_iter = record['totalRevenue'] - total_price_iter
 
                     # Append values for this iteration to the lists
@@ -1305,41 +1293,49 @@ def stock_overview():
                 #####PLOTS
                 #profits and losses
                 # Filter positive profits
-                positive_profits_df = df[df['Profit'] > 0]
-                if not positive_profits_df.empty:
+                profitableItems = []
+                profits = []
+                top_profitable_items = df[df['Profit'] > 0].sort_values(by='Profit', ascending=False).head(10)
+
+                if not top_profitable_items.empty:
                     session['profits_chart'] = 'profits_chart'
-                
-                profits_chart = {
-                    'labels': positive_profits_df['Item Name'].tolist(),
-                    'values': positive_profits_df['Profit'].tolist()
-                }
+                    for index, row in top_profitable_items.iterrows():
+                        profitableItems.append(row['Item Name'])
+                        profits.append(row['Profit'])
+                top10profits = list(zip(profitableItems, profits))
 
                 # Filter negative profits
-                negative_profits_df = df[df['Profit'] < 0]
-                if not negative_profits_df.empty:
-                    session['loss_chart'] = 'loss_chart'
-                negative_profits_df['Profit'] = -1*negative_profits_df['Profit']
+                unprofitableItems = []
+                losses = []
+                top_unprofitable_items = df[df['Profit'] < 0].sort_values(by='Profit', ascending=False).head(10)
 
-                Losses_chart = {
-                    'labels': negative_profits_df['Item Name'].tolist(),
-                    'values': negative_profits_df['Profit'].tolist()
-                }
+                if not top_unprofitable_items.empty:
+                    session['loss_chart'] = 'loss_chart'
+                    for index, row in top_unprofitable_items.iterrows():
+                        unprofitableItems.append(row['Item Name'])
+                        losses.append(row['Profit'])
+                top10losses = list(zip(unprofitableItems, losses))
 
                 ##total revenue
+                revenueItems = []
+                revenue = []
                 if not df.empty:
                     session['revenue_and_qty_chart'] = 'revenue_and_qty_chart'
-
-                revenue = {
-                    'labels': df['Item Name'].tolist(),
-                    'values': df['Total Revenue'].tolist()
-                }
+                    top_revenue = df.sort_values(by='Total Revenue', ascending=False).head(10)
+                    for index, row in top_revenue.iterrows():
+                        revenueItems.append(row['Item Name'])
+                        revenue.append(row['Total Revenue'])
+                top10revenues = list(zip(revenueItems, revenue))
 
                 ##Quantity sold
-
-                quantity_sold_stocked = {
-                    'labels': df['Item Name'].tolist(),
-                    'values': df['Quantity Sold'].tolist()
-                }
+                soldItems = []
+                soldQuantity = []
+                if not df.empty:
+                    quantity_sold = df.sort_values(by='Quantity Sold', ascending=False).head(10)
+                    for index, row in quantity_sold.iterrows():
+                        soldItems.append(row['Item Name'])
+                        soldQuantity.append(row['Quantity Sold'])
+                top10SoldItems = list(zip(soldItems, soldQuantity))
 
                 ###PROFIT TRENDS
                 twelve_months_ago = datetime.now() - timedelta(days=365)
@@ -1379,12 +1375,7 @@ def stock_overview():
                                         'quantity': 1,
                                         'unitPrice': 1,
                                         'stockDate': 1,
-                                        'totalPrice': {
-                                            '$add': [
-                                                '$totalPrice',
-                                                {'$ifNull': ['$oldTotalPrice', 0]}
-                                            ]
-                                        }
+                                        'totalPrice': 1
                                     }
                                 }
                             ],
@@ -1433,12 +1424,12 @@ def stock_overview():
                     'values': monthly_profits_df['Monthly Profit'].tolist()
                 }
 
-                del df_ungrouped, df, positive_profits_df, negative_profits_df, profit_info_df, monthly_profits, monthly_profits_df
+                del df_ungrouped, df, profit_info_df, monthly_profits, monthly_profits_df
                 gc.collect()
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
-                return render_template('stock dashboard.html',profits_chart=profits_chart,Losses_chart=Losses_chart,revenue=revenue,
-                                    quantity_sold_stocked=quantity_sold_stocked,trended_profit=trended_profit,
+                return render_template('stock dashboard.html',top10profits=top10profits,top10losses=top10losses,top10revenues=top10revenues,
+                                    top10SoldItems=top10SoldItems,trended_profit=trended_profit,
                                     start_of_previous_month=start_of_previous_month,
                                     first_day_of_current_month=first_day_of_current_month, dp=dp_str)
         else:
