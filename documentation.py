@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, url_for, request, session, flash, redirect, make_response, jsonify, current_app
+from flask import Blueprint, render_template, url_for, request, session, flash, redirect, make_response, jsonify, current_app, send_from_directory
 from utils import get_mongo_client, get_db_and_fs, send_async_email
 from flask_mail import Message
 import threading
