@@ -306,7 +306,7 @@
             <div class="row">
               <div class="col-md-6 segment">
                 {% if top10CurrentAccounts %}
-                  <p class="dashboardheadings">Top 10 Current Account Payments</p>
+                  <p class="dashboardheadings">Top 10 Current Payments</p>
                   <div style="max-height: 250px; overflow-y: auto;">
                     {% for item, account in top10CurrentAccounts %}
                         <a href="{{ url_for('accounting_route.current_accounts') }}" class="notification-item">
@@ -325,7 +325,7 @@
               </div>
               <div class="col-md-6 segment">
                 {% if top10DemandedAccounts %}
-                  <p class="dashboardheadings">Top 10 Current Account Payments</p>
+                  <p class="dashboardheadings">Top 10 Demanded Projects</p>
                   <div style="max-height: 250px; overflow-y: auto;">
                     {% for item, demanded_account in top10DemandedAccounts %}
                         <a href="{{ url_for('accounting_route.current_accounts') }}" class="notification-item">
@@ -339,7 +339,7 @@
                     {% endfor %}
                   </div>
                 {% else %}
-                    <p>No demanded accounts found.</p>
+                    <p>No demanded projects found.</p>
                 {% endif %}
               </div>
               <div class="col-md-6 segment">

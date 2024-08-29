@@ -331,30 +331,38 @@
           {% endif %}
 
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
+          {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
               <i class="typcn typcn-device-desktop menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
           </li>
+          {% endif %}
+          {% if session.get('view_stock_info') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
               <i class="typcn typcn-cloud-storage menu-icon"></i>
-              <span class="menu-title">Stock Info</span>
+              <span class="menu-title">Current Stock</span>
             </a>
           </li>
+          {% endif %}
+          {% if session.get('view_revenue') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
               <i class="typcn typcn-business-card menu-icon"></i>
-              <span class="menu-title">Revenues</span>
+              <span class="menu-title">Profits</span>
             </a>
           </li>
+          {% endif %}
+          {% if session.get('view_sales') != 'no' %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
               <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
               <span class="menu-title">Sales</span>
             </a>
           </li>
+          {% endif %}
           {% endif %}
           {% if session['account_type'] == 'Accounting' %}
           <li class="nav-item">
