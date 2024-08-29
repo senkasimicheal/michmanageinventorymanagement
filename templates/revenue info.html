@@ -403,7 +403,7 @@
                       <!-- <th>Unit Buying Price</th> -->
                       <th>Total Buying Price</th>
                       <th>Quantity Sold</th>
-                      <th>Selling Price</th>
+                      <th>Total Selling Price</th>
                       <th>Average Unit Profit</th>
                       <th>Total Profit</th>
                   </tr>
@@ -417,8 +417,8 @@
                       <td class="total-buying-price">{{ '{:,.0f}'.format(revenue['totalInventoryPrice']) }}</td>
                       <td>{{ revenue['quantitySold'] }}</td>
                       <td class="revenue">{{ '{:,.0f}'.format(revenue['totalRevenue']) }}</td>
-                      <td class="unit-profit">{{ '{:,.0f}'.format(revenue['totalRevenue']/revenue['quantitySold'] - revenue['totalInventoryPrice']/revenue['quantityInInventory']) }}</td>
-                      <td class="total-profit">{{ '{:,.0f}'.format(revenue['totalRevenue'] - revenue['totalInventoryPrice']) }}</td>
+                      <td class="unit-profit">{{ '{:,.0f}'.format(revenue['unitProfit']) }}</td>
+                      <td class="total-profit">{{ '{:,.0f}'.format(revenue['totalProfit']) }}</td>
                   </tr>
                   {% endfor %}
                   <tr id="totalRow">

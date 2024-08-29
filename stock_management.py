@@ -922,6 +922,7 @@ def revenue_details():
                 if 'Enterprise Resource Planning' in account_type:
                     company_name = company['company_name']
                     twelve_months_ago = datetime.now() - timedelta(days=365)
+
                     pipeline = [
                         {
                             '$match': {
@@ -990,6 +991,24 @@ def revenue_details():
                                 'quantitySold': {'$sum': '$quantitySold'},
                                 'quantityInInventory': {'$sum': '$inventoryDetails.quantity'},
                                 'totalInventoryPrice': {'$sum': '$inventoryDetails.totalPrice'}
+                            }
+                        },
+                        {
+                            '$addFields': {
+                                'unitProfit': {
+                                    '$round': [
+                                        {
+                                            '$subtract': [
+                                                {'$divide': ['$totalRevenue', '$quantitySold']},
+                                                {'$divide': ['$totalInventoryPrice', '$quantityInInventory']}
+                                            ]
+                                        },
+                                        0
+                                    ]
+                                },
+                                'totalProfit': {
+                                    '$subtract': ['$totalRevenue', '$totalInventoryPrice']
+                                }
                             }
                         },
                         {
@@ -1456,11 +1475,11 @@ def download_stock_data():
 
             current_stock = db.inventories.find(
                 {'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},
-                {'_id': 0, 'company_name': 0, 'available_quantity': 0}
+                {'_id': 0, 'company_name': 0}
             )
             old_stock = db.old_inventories.find(
                 {'company_name': company['company_name'], 'stockDate': {'$gte': startdate, '$lte': enddate}},
-                {'_id': 0, 'company_name': 0, 'available_quantity': 0}
+                {'_id': 0, 'company_name': 0}
             )
             combined_stock = list(current_stock) + list(old_stock)
 
@@ -1474,18 +1493,26 @@ def download_stock_data():
             ws.title = "Stock Data"
 
             # Write header row
-            headers = ['Item Name', 'Stocked Quantity', 'Unit Of Measurement', 'Unit Buying Price', 'Stock Date', 'Total Buying Price']
+            headers = ['Item Name', 'Stock Date', 'Stocked Quantity', 'Available Stock', 'Measurement', 'Buying Price', 'Total Buying Price', 'Total Stock Value']
             ws.append(headers)
 
             # Write data rows
             for record in sorted_combined_stock:
+                if 'cumulativeOldPrices' in record:
+                    cumulativeOldPrices = record['cumulativeOldPrices']
+                elif 'oldTotalPrice' in record:
+                    cumulativeOldPrices = record['oldTotalPrice'] + record['totalPrice']
+                else:
+                    cumulativeOldPrices = record['totalPrice']
                 row = [
                     record.get('itemName', ''),
+                    record.get('stockDate', '').strftime('%Y-%m-%d') if isinstance(record.get('stockDate'), datetime) else '',
                     record.get('quantity', 0),
+                    record.get('available_quantity', 0),
                     record.get('unitOfMeasurement', ''),
                     record.get('unitPrice', 0),
-                    record.get('stockDate', '').strftime('%Y-%m-%d') if isinstance(record.get('stockDate'), datetime) else '',
-                    record.get('totalPrice', 0)
+                    record.get('totalPrice', 0),
+                    cumulativeOldPrices
                 ]
                 ws.append(row)
 
@@ -1568,12 +1595,7 @@ def download_revenue_data():
                                     'quantity': 1,
                                     'unitPrice': 1,
                                     'stockDate': 1,
-                                    'totalPrice': {
-                                        '$add': [
-                                            '$totalPrice',
-                                            {'$ifNull': ['$oldTotalPrice', 0]}
-                                        ]
-                                    }
+                                    'totalPrice': 1
                                 }
                             }
                         ],
@@ -1608,6 +1630,24 @@ def download_revenue_data():
                     }
                 },
                 {
+                    '$addFields': {
+                        'unitProfit': {
+                            '$round': [
+                                {
+                                    '$subtract': [
+                                        {'$divide': ['$totalRevenue', '$quantitySold']},
+                                        {'$divide': ['$totalInventoryPrice', '$quantityInInventory']}
+                                    ]
+                                },
+                                0
+                            ]
+                        },
+                        'totalProfit': {
+                            '$subtract': ['$totalRevenue', '$totalInventoryPrice']
+                        }
+                    }
+                },
+                {
                     '$match': {
                         'quantityInInventory': {'$ne': 0}
                     }
@@ -1615,28 +1655,29 @@ def download_revenue_data():
             ]
 
             revenue_info = list(db.stock_sales.aggregate(pipeline))
+            revenue_info.sort(key=lambda x: x['_id'])
 
             data_rows = []
 
             if revenue_info:
-                for info in revenue_info:
-                    item_name = info['_id']
-                    total_revenue = info['totalRevenue']
-                    quantity_sold = info['quantitySold']
-                    stock_date = info['stockDate']
-                    stock_qty = info['quantityInInventory']
-                    total_buying_price = info['totalInventoryPrice']
+                for revenue in revenue_info:
+                    item_name = revenue['_id']
+                    stock_date = revenue['stockDate'].strftime('%Y-%m-%d')
+                    total_buying_price = revenue['totalInventoryPrice']
+                    quantity_sold = revenue['quantitySold']
+                    total_revenue = revenue['totalRevenue']                   
 
-                    profit = total_revenue - total_buying_price
+                    unitProfit = round(revenue['unitProfit'],0)
+                    totalProfit = revenue['totalProfit']
 
                     data_rows.append({
                         'Item Name': item_name,
                         'Stock Date': stock_date,
-                        'Stock Quantity': stock_qty,
                         'Total Buying Price': total_buying_price,
                         'Sold Quantity': quantity_sold,
-                        'Total Revenue': total_revenue,
-                        'Profit/Loss': profit
+                        'Total Selling Price': total_revenue,
+                        'Average Unit Profit': unitProfit,
+                        'Total Profit': totalProfit
                     })
 
             df = pd.DataFrame(data_rows)
@@ -1697,17 +1738,17 @@ def download_sales_data():
             ws.title = "Sales Data"
 
             # Write header row
-            headers = ['Item Name', 'Sold Quantity', 'Unit Selling Price', 'Revenue', 'Sale Date']
+            headers = ['Item Name', 'Sale Date', 'Sold Quantity', 'Selling Price', 'Total Selling Price']
             ws.append(headers)
 
             # Write data rows
             for sale in sorted_sales_info:
                 row = [
                     sale.get('itemName', ''),
+                    sale.get('saleDate', '').strftime('%Y-%m-%d') if isinstance(sale.get('saleDate'), datetime) else '',
                     sale.get('quantity', 0),
                     sale.get('unitPrice', 0),
                     sale.get('revenue', 0),
-                    sale.get('saleDate', '').strftime('%Y-%m-%d') if isinstance(sale.get('saleDate'), datetime) else ''
                 ]
                 ws.append(row)
 
@@ -1973,17 +2014,17 @@ def download_inhouse_item_use():
             inhouse_df = pd.DataFrame({
                 'Item Used': inhouse_itemName,
                 'Date Used': inhouse_useDate,
+                'Item Stock Date': inhouse_itemStockDates,
                 'Item Quantity': inhouse_itemQuantity,
                 'Item Average Price': inhouse_itemAverageUnitPrices,
-                'Item Stock Date': inhouse_itemStockDates
             })
 
             # Explode DataFrame to handle lists in columns
             inhouse_df_exploded = inhouse_df.explode('Item Used')
             inhouse_df_exploded['Date Used'] = inhouse_df.explode('Date Used')['Date Used']
+            inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
             inhouse_df_exploded['Item Quantity'] = inhouse_df.explode('Item Quantity')['Item Quantity']
             inhouse_df_exploded['Item Average Price'] = inhouse_df.explode('Item Average Price')['Item Average Price']
-            inhouse_df_exploded['Item Stock Date'] = inhouse_df.explode('Item Stock Date')['Item Stock Date']
             inhouse_df_exploded.reset_index(drop=True, inplace=True)  # Reset the index
 
             inhouse_df_exploded['Average Total Cost'] = inhouse_df_exploded['Item Quantity'] * inhouse_df_exploded['Item Average Price']
@@ -2155,15 +2196,15 @@ def download_expense_data():
             ws.title = "Expenses"
 
             # Write header row
-            headers = ['Expense', 'Amount', 'Date']
+            headers = ['Expense', 'Date', 'Amount']
             ws.append(headers)
 
             # Write data rows
             for expense in sorted_expenses:
                 row = [
                     expense.get('expenseName', ''),
-                    expense.get('amount', 0),
                     expense.get('expenseDate', '').strftime('%Y-%m-%d') if isinstance(expense.get('expenseDate'), datetime) else '',
+                    expense.get('amount', 0)
                 ]
                 ws.append(row)
 
