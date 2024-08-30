@@ -1204,7 +1204,7 @@ def stock_overview():
                             'company_name': company_name,
                             'stockDate': {
                                 '$gte': start_of_previous_month,
-                                '$lt': first_day_of_current_month
+                                '$lte': first_day_of_current_month
                             }
                         }
                     },
@@ -1227,7 +1227,7 @@ def stock_overview():
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
                                                 { '$gte': ['$stockDate', start_of_previous_month] },
-                                                { '$lt': ['$stockDate', first_day_of_current_month] }
+                                                { '$lte': ['$stockDate', first_day_of_current_month] }
                                             ]
                                         }
                                     }
@@ -1546,7 +1546,10 @@ def download_revenue_data():
                 {
                     '$match': {
                         'company_name': company_name,
-                        'stockDate': {'$gte': twelve_months_ago}
+                        'stockDate': {
+                            '$gte': startdate,
+                            '$lte': enddate
+                        }
                     }
                 },
                 {
@@ -1567,7 +1570,8 @@ def download_revenue_data():
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
                                             {'$eq': ['$company_name', company_name]},
-                                            {'$gte': ['$stockDate', twelve_months_ago]}
+                                            { '$gte': ['$stockDate', startdate] },
+                                            { '$lte': ['$stockDate', enddate] }
                                         ]
                                     }
                                 }
