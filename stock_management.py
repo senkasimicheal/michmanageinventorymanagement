@@ -958,8 +958,7 @@ def revenue_details():
                                             '_id': 0,
                                             'quantity': 1,
                                             'unitPrice': 1,
-                                            'stockDate': 1,
-                                            'totalPrice': 1
+                                            'stockDate': 1
                                         }
                                     }
                                 ],
@@ -967,30 +966,15 @@ def revenue_details():
                             }
                         },
                         {
-                            '$addFields': {
-                                'inventoryDetails': {
-                                    '$reduce': {
-                                        'input': '$inventoryDetails',
-                                        'initialValue': {
-                                            'quantity': 0,
-                                            'totalPrice': 0
-                                        },
-                                        'in': {
-                                            'quantity': {'$add': ['$$value.quantity', '$$this.quantity']},
-                                            'totalPrice': {'$add': ['$$value.totalPrice', '$$this.totalPrice']}
-                                        }
-                                    }
-                                }
-                            }
+                            '$unwind': '$inventoryDetails'
                         },
                         {
                             '$group': {
                                 '_id': '$_id.itemName',
                                 'stockDate': {'$first': '$_id.stockDate'},
-                                'totalRevenue': {'$sum': '$totalRevenue'},
-                                'quantitySold': {'$sum': '$quantitySold'},
-                                'quantityInInventory': {'$sum': '$inventoryDetails.quantity'},
-                                'totalInventoryPrice': {'$sum': '$inventoryDetails.totalPrice'}
+                                'totalRevenue': {'$first': '$totalRevenue'},
+                                'quantitySold': {'$first': '$quantitySold'},
+                                'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}  # Assuming you want the average unit price
                             }
                         },
                         {
@@ -1000,20 +984,23 @@ def revenue_details():
                                         {
                                             '$subtract': [
                                                 {'$divide': ['$totalRevenue', '$quantitySold']},
-                                                {'$divide': ['$totalInventoryPrice', '$quantityInInventory']}
+                                                '$unitPrice'
                                             ]
                                         },
                                         0
                                     ]
                                 },
                                 'totalProfit': {
-                                    '$subtract': ['$totalRevenue', '$totalInventoryPrice']
+                                    '$subtract': [
+                                        '$totalRevenue',
+                                        {'$multiply': ['$unitPrice', '$quantitySold']}
+                                    ]
                                 }
                             }
                         },
                         {
                             '$match': {
-                                'quantityInInventory': {'$ne': 0}
+                                'quantitySold': {'$ne': 0}
                             }
                         }
                     ]
@@ -1281,7 +1268,7 @@ def stock_overview():
                     # Check if 'inventoryDetails' is in record and has the necessary structure
                     if 'inventoryDetails' in record and record['inventoryDetails']:
                         quantity_stocked = record['inventoryDetails'][0].get('quantity', 0)
-                        total_price_iter = record['inventoryDetails'][0].get('totalPrice', 0)
+                        total_price_iter = (record['inventoryDetails'][0].get('unitPrice', 0))*record['quantitysold']
                         profit_iter = record['totalRevenue'] - total_price_iter
 
                     # Append values for this iteration to the lists
@@ -1559,10 +1546,7 @@ def download_revenue_data():
                 {
                     '$match': {
                         'company_name': company_name,
-                        'stockDate': {
-                            '$gte': startdate,
-                            '$lte': enddate
-                        }
+                        'stockDate': {'$gte': twelve_months_ago}
                     }
                 },
                 {
@@ -1583,8 +1567,7 @@ def download_revenue_data():
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
                                             {'$eq': ['$company_name', company_name]},
-                                            {'$gte': ['$stockDate', startdate]},
-                                            {'$lte': ['$stockDate', enddate]}
+                                            {'$gte': ['$stockDate', twelve_months_ago]}
                                         ]
                                     }
                                 }
@@ -1594,8 +1577,7 @@ def download_revenue_data():
                                     '_id': 0,
                                     'quantity': 1,
                                     'unitPrice': 1,
-                                    'stockDate': 1,
-                                    'totalPrice': 1
+                                    'stockDate': 1
                                 }
                             }
                         ],
@@ -1603,30 +1585,15 @@ def download_revenue_data():
                     }
                 },
                 {
-                    '$addFields': {
-                        'inventoryDetails': {
-                            '$reduce': {
-                                'input': '$inventoryDetails',
-                                'initialValue': {
-                                    'quantity': 0,
-                                    'totalPrice': 0
-                                },
-                                'in': {
-                                    'quantity': {'$add': ['$$value.quantity', '$$this.quantity']},
-                                    'totalPrice': {'$add': ['$$value.totalPrice', '$$this.totalPrice']}
-                                }
-                            }
-                        }
-                    }
+                    '$unwind': '$inventoryDetails'
                 },
                 {
                     '$group': {
                         '_id': '$_id.itemName',
                         'stockDate': {'$first': '$_id.stockDate'},
-                        'totalRevenue': {'$sum': '$totalRevenue'},
-                        'quantitySold': {'$sum': '$quantitySold'},
-                        'quantityInInventory': {'$sum': '$inventoryDetails.quantity'},
-                        'totalInventoryPrice': {'$sum': '$inventoryDetails.totalPrice'}
+                        'totalRevenue': {'$first': '$totalRevenue'},
+                        'quantitySold': {'$first': '$quantitySold'},
+                        'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}  # Assuming you want the average unit price
                     }
                 },
                 {
@@ -1636,20 +1603,23 @@ def download_revenue_data():
                                 {
                                     '$subtract': [
                                         {'$divide': ['$totalRevenue', '$quantitySold']},
-                                        {'$divide': ['$totalInventoryPrice', '$quantityInInventory']}
+                                        '$unitPrice'
                                     ]
                                 },
                                 0
                             ]
                         },
                         'totalProfit': {
-                            '$subtract': ['$totalRevenue', '$totalInventoryPrice']
+                            '$subtract': [
+                                '$totalRevenue',
+                                {'$multiply': ['$unitPrice', '$quantitySold']}
+                            ]
                         }
                     }
                 },
                 {
                     '$match': {
-                        'quantityInInventory': {'$ne': 0}
+                        'quantitySold': {'$ne': 0}
                     }
                 }
             ]
@@ -1663,7 +1633,7 @@ def download_revenue_data():
                 for revenue in revenue_info:
                     item_name = revenue['_id']
                     stock_date = revenue['stockDate'].strftime('%Y-%m-%d')
-                    total_buying_price = revenue['totalInventoryPrice']
+                    buying_price = revenue['unitPrice']
                     quantity_sold = revenue['quantitySold']
                     total_revenue = revenue['totalRevenue']                   
 
@@ -1673,7 +1643,7 @@ def download_revenue_data():
                     data_rows.append({
                         'Item Name': item_name,
                         'Stock Date': stock_date,
-                        'Total Buying Price': total_buying_price,
+                        'Buying Price': buying_price,
                         'Sold Quantity': quantity_sold,
                         'Total Selling Price': total_revenue,
                         'Average Unit Profit': unitProfit,

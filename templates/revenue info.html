@@ -401,7 +401,7 @@
                       </th>
                       <!-- <th>Stocked Quantity</th> -->
                       <!-- <th>Unit Buying Price</th> -->
-                      <th>Total Buying Price</th>
+                      <th>Buying Price</th>
                       <th>Quantity Sold</th>
                       <th>Total Selling Price</th>
                       <th>Average Unit Profit</th>
@@ -414,7 +414,7 @@
                       <td>{{ loop.index }}</td>
                       <td>{{ revenue['_id'] }}</td>
                       <td>{{ revenue['stockDate'].strftime('%Y-%m-%d') }}</td>
-                      <td class="total-buying-price">{{ '{:,.0f}'.format(revenue['totalInventoryPrice']) }}</td>
+                      <td class="total-buying-price">{{ '{:,.0f}'.format(revenue['unitPrice']) }}</td>
                       <td>{{ revenue['quantitySold'] }}</td>
                       <td class="revenue">{{ '{:,.0f}'.format(revenue['totalRevenue']) }}</td>
                       <td class="unit-profit">{{ '{:,.0f}'.format(revenue['unitProfit']) }}</td>
