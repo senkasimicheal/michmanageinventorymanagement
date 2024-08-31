@@ -1355,7 +1355,7 @@ def stock_overview():
                         '$group': {
                             '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'totalRevenue': {'$sum': '$revenue'},
-                            'quantitysold': {'$sum': '$quantity'}
+                            'quantitySold': {'$sum': '$quantity'}
                         }
                     },
                     {
@@ -1379,15 +1379,53 @@ def stock_overview():
                                         '_id': 0,
                                         'quantity': 1,
                                         'unitPrice': 1,
-                                        'stockDate': 1,
-                                        'totalPrice': 1
+                                        'stockDate': 1
                                     }
                                 }
                             ],
                             'as': 'inventoryDetails'
                         }
+                    },
+                    {
+                        '$unwind': '$inventoryDetails'
+                    },
+                    {
+                        '$group': {
+                            '_id': '$_id.itemName',
+                            'stockDate': {'$first': '$_id.stockDate'},
+                            'totalRevenue': {'$first': '$totalRevenue'},
+                            'quantitySold': {'$first': '$quantitySold'},
+                            'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}  # Assuming you want the average unit price
+                        }
+                    },
+                    {
+                        '$addFields': {
+                            'unitProfit': {
+                                '$round': [
+                                    {
+                                        '$subtract': [
+                                            {'$divide': ['$totalRevenue', '$quantitySold']},
+                                            '$unitPrice'
+                                        ]
+                                    },
+                                    0
+                                ]
+                            },
+                            'totalProfit': {
+                                '$subtract': [
+                                    '$totalRevenue',
+                                    {'$multiply': ['$unitPrice', '$quantitySold']}
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        '$match': {
+                            'quantitySold': {'$ne': 0}
+                        }
                     }
                 ]
+                
                 profit_info = list(db.stock_sales.aggregate(pipeline_profits))
 
                 profit_item_names = []
@@ -1396,10 +1434,9 @@ def stock_overview():
 
 
                 for profit_record in profit_info:
-                    if 'inventoryDetails' in profit_record and profit_record['inventoryDetails']:
-                        profit_item_names.append(profit_record['_id']['itemName'])
-                        profit_data.append(profit_record['totalRevenue'] - profit_record['inventoryDetails'][0]['totalPrice'])
-                        profit_stock_dates.append(profit_record['_id']['stockDate'])
+                    profit_item_names.append(profit_record['_id'])
+                    profit_stock_dates.append(profit_record['stockDate'])
+                    profit_data.append(profit_record['totalProfit'])
 
                 # Create the DataFrame
                 profit_info_df = pd.DataFrame({
@@ -2558,3 +2595,17 @@ def store_bar_code():
 @stockManagement.route('/download-barcode/<filename>')
 def download_barcode(filename):
     return send_from_directory(directory='.', path=filename, as_attachment=True, download_name=filename)
+
+@stockManagement.route('/api/data', methods=['GET'])
+def get_data():
+    # Example query to fetch data
+    db, fs = get_db_and_fs()
+    data = db.inventories.find({})
+    result = []
+    for item in data:
+        result.append({
+            "itemName": item["itemName"],
+            "quantity": item["quantity"],
+            "unitPrice": item["unitPrice"],
+        })
+    return jsonify(result)
