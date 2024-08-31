@@ -2596,16 +2596,186 @@ def store_bar_code():
 def download_barcode(filename):
     return send_from_directory(directory='.', path=filename, as_attachment=True, download_name=filename)
 
-@stockManagement.route('/api/data', methods=['GET'])
-def get_data():
-    # Example query to fetch data
-    db, fs = get_db_and_fs()
-    data = db.inventories.find({})
+@stockManagement.route('/api/<api_key>/<data>', methods=['GET'])
+def get_data(api_key, data):
     result = []
-    for item in data:
-        result.append({
-            "itemName": item["itemName"],
-            "quantity": item["quantity"],
-            "unitPrice": item["unitPrice"],
-        })
+    if api_key and data:
+        db, fs = get_db_and_fs()
+        try:
+            api = db.managers.find_one({'_id': ObjectId(api_key)})
+        except Exception as e:
+            return jsonify({"error": "Invalid API Key"}), 400
+
+        if api:
+            if data == 'inventory':
+                current_stock = db.inventories.find(
+                    {'company_name': api['name']},
+                    {'_id': 0, 'company_name': 0}
+                )
+                old_stock = db.old_inventories.find(
+                    {'company_name': api['name']},
+                    {'_id': 0, 'company_name': 0}
+                )
+                combined_stock = list(current_stock) + list(old_stock)
+
+                sorted_combined_stock = sorted(combined_stock, key=lambda x: x.get("stockDate", ""), reverse=True)
+                for item in sorted_combined_stock:
+                    result.append({
+                        'Product ID': item['product_id'],
+                        'Item Name': item['itemName'],
+                        'Stock Date': item['stockDate'],
+                        'Stocked Quantity': item['quantity'],
+                        'Available Stock': item['available_quantity'],
+                        'Measurement': item['unitOfMeasurement'],
+                        'Buying Price': item['unitPrice'],
+                        'Total Buying Price': item['totalPrice']
+                    })
+            elif data == 'sales':
+                sales_info = list(db.stock_sales.find({
+                'company_name': api['name']
+                }, {
+                    '_id': 0,
+                    'company_name': 0,
+                    'stockDate': 0
+                }))
+
+                sorted_sales_info = sorted(sales_info, key=lambda x: x["saleDate"], reverse=True)
+
+                for item in sorted_sales_info:
+                    result.append({
+                        'Item Name': item['itemName'],
+                        'Sale Date': item['saleDate'],
+                        'Sold Quantity': item['quantity'],
+                        'Selling Price': item['unitPrice'],
+                        'Total Selling Price': item['revenue'],
+                    })
+            elif data == 'profits':
+                pipeline = [
+                    {
+                        '$match': {
+                            'company_name': api['name']
+                        }
+                    },
+                    {
+                        '$group': {
+                            '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
+                            'totalRevenue': {'$sum': '$revenue'},
+                            'quantitySold': {'$sum': '$quantity'}
+                        }
+                    },
+                    {
+                        '$lookup': {
+                            'from': 'inventories',
+                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'pipeline': [
+                                {
+                                    '$match': {
+                                        '$expr': {
+                                            '$and': [
+                                                {'$eq': ['$itemName', '$$itemName']},
+                                                {'$eq': ['$company_name', api['name']]}
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    '$project': {
+                                        '_id': 0,
+                                        'quantity': 1,
+                                        'unitPrice': 1,
+                                        'stockDate': 1
+                                    }
+                                }
+                            ],
+                            'as': 'inventoryDetails'
+                        }
+                    },
+                    {
+                        '$unwind': '$inventoryDetails'
+                    },
+                    {
+                        '$group': {
+                            '_id': '$_id.itemName',
+                            'stockDate': {'$first': '$_id.stockDate'},
+                            'totalRevenue': {'$first': '$totalRevenue'},
+                            'quantitySold': {'$first': '$quantitySold'},
+                            'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}
+                        }
+                    },
+                    {
+                        '$addFields': {
+                            'unitProfit': {
+                                '$round': [
+                                    {
+                                        '$subtract': [
+                                            {'$divide': ['$totalRevenue', '$quantitySold']},
+                                            '$unitPrice'
+                                        ]
+                                    },
+                                    0
+                                ]
+                            },
+                            'totalProfit': {
+                                '$subtract': [
+                                    '$totalRevenue',
+                                    {'$multiply': ['$unitPrice', '$quantitySold']}
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        '$match': {
+                            'quantitySold': {'$ne': 0}
+                        }
+                    }
+                ]
+
+                revenue_info = list(db.stock_sales.aggregate(pipeline))
+                revenue_info.sort(key=lambda x: x['_id'])
+
+                data_rows = []
+
+                if revenue_info:
+                    for revenue in revenue_info:
+                        item_name = revenue['_id']
+                        stock_date = revenue['stockDate'].strftime('%Y-%m-%d')
+                        buying_price = revenue['unitPrice']
+                        quantity_sold = revenue['quantitySold']
+                        total_revenue = revenue['totalRevenue']                   
+
+                        unitProfit = round(revenue['unitProfit'],0)
+                        totalProfit = revenue['totalProfit']
+
+                        result.append({
+                            'Item Name': item_name,
+                            'Stock Date': stock_date,
+                            'Buying Price': buying_price,
+                            'Sold Quantity': quantity_sold,
+                            'Total Selling Price': total_revenue,
+                            'Average Unit Profit': unitProfit,
+                            'Total Profit': totalProfit
+                        })
+            elif data == 'expenses':
+                expenses = list(db.stock_expenses.find(
+                    {'company_name': api['name']},
+                    {'_id': 0, 'company_name': 0}
+                ))
+
+                sorted_expenses = sorted(expenses, key=lambda x: x["expenseDate"], reverse=True)
+
+                headers = ['', 'Date', 'Amount']
+
+                for expense in sorted_expenses:
+                    result.append({
+                        'Expense': expense.get('expenseName', ''),
+                        'Date': expense.get('expenseDate', '').strftime('%Y-%m-%d') if isinstance(expense.get('expenseDate'), datetime) else '',
+                        'Amount': expense.get('amount', 0)
+                    })
+            else:
+                return jsonify({"error": "Invalid data request"}), 400
+        else:
+            return jsonify({"error": "API Key not found"}), 404
+    else:
+        return jsonify({"error": "Missing API Key or Data"}), 400
+    
     return jsonify(result)
