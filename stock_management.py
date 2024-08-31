@@ -2621,7 +2621,6 @@ def get_data(api_key, data):
                 sorted_combined_stock = sorted(combined_stock, key=lambda x: x.get("stockDate", ""), reverse=True)
                 for item in sorted_combined_stock:
                     result.append({
-                        'Product ID': item['product_id'],
                         'Item Name': item['itemName'],
                         'Stock Date': item['stockDate'],
                         'Stocked Quantity': item['quantity'],
@@ -2733,8 +2732,6 @@ def get_data(api_key, data):
                 revenue_info = list(db.stock_sales.aggregate(pipeline))
                 revenue_info.sort(key=lambda x: x['_id'])
 
-                data_rows = []
-
                 if revenue_info:
                     for revenue in revenue_info:
                         item_name = revenue['_id']
@@ -2762,8 +2759,6 @@ def get_data(api_key, data):
                 ))
 
                 sorted_expenses = sorted(expenses, key=lambda x: x["expenseDate"], reverse=True)
-
-                headers = ['', 'Date', 'Amount']
 
                 for expense in sorted_expenses:
                     result.append({
