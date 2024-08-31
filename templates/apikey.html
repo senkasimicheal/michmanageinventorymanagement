@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Account setting</title>
+  <title>API Keys</title>
   {% if session['dark_mode'] == 'yes' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
   {% endif %}
@@ -215,7 +215,7 @@
       <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
         <ul class="navbar-nav mr-lg-2">
           <li class="nav-item ml-0">
-            <h4 class="mb-0">Account setting</h4>
+            <h4 class="mb-0">API Keys</h4>
           </li>
         </ul>
         <ul class="navbar-nav navbar-nav-right">
@@ -416,44 +416,16 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
-          <form id="myForm" class="property_forn content-pannel" action="{{url_for('managerAccountSetup_route.account_setup_initiated')}}" method="POST" enctype="multipart/form-data">
-            <label style="margin-top: 5px;" class="input_labels" for="">2 Factor Authentication</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch" onclick="updateHiddenInput()"><br>
-            {% if session['is_manager'] == 'is_manager' %}
-            {% if session['account_type'] == 'Enterprise Resource Planning' %}
-            <a href="{{ url_for('managerAccountSetup_route.apikey') }}" class="btn btn-primary">API Key</a>
-            {% endif %}
-            {% endif %}
-            <input type="hidden" id="hiddenInput" name="switchState" value="no">
-            <label style="margin-top: 5px;" class="input_labels" for="">Enable dark mode</label>
-            <input style="width: 10%;" class="property_inputs" type="checkbox" id="mySwitch1" onclick="updateHiddenInput1()"><br>
-            <input type="hidden" id="hiddenInput1" name="switchState1" value="no">
-            <label class="input_labels" for="">Name</label>
-            <input class="property_inputs" type="text" name="name"><br>
-            <label class="input_labels" for="">Phone</label>
-            <input class="property_inputs" type="tel" name="phone_number"><br>
-            <label class="input_labels" for="">Address</label>
-            <input class="property_inputs" type="tel" name="address"><br>
-            <label class="input_labels" for="">Upload Profile Picture</label>
-            <input type="file" accept=".jpg, .jpeg, .png" name="dp" id="imageUpload" onchange="validateFile()"><br>
-            <input required type="submit" class="btn" id="submitButton" value="Save">
-            <span id="wait-message" style="color: green; display: none;">Please wait while we setup your account...</span>
-          </form>
-        </div>
-        
-        <script>
-          function validateFile() {
-            const fileInput = document.getElementById('imageUpload');
-            const filePath = fileInput.value;
-            const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
-        
-            if (!allowedExtensions.exec(filePath)) {
-              alert('Please upload file having extensions .jpeg/.jpg/.png only.');
-              fileInput.value = '';
-              return false;
-            }
-          }
-        </script>        
+          {%if apikey_viewed == 'no'%}
+          <p>Please note this key some where safe as it can only be viewed once</p>
+          <p>{{apikey}}</p>
+          {%else%}
+          <p>
+            <span style="filter: blur(5px); -webkit-filter: blur(5px);">{{ first_part }}</span>
+            <span>{{ second_part }}</span>
+          </p>
+          {%endif%}          
+        </div>      
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
