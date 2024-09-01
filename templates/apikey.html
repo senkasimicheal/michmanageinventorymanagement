@@ -415,17 +415,31 @@
               {% endif %}
           {% endwith %}
         </div>
-        <div class="content-wrapper">
-          {%if apikey_viewed == 'no'%}
-          <p>Please note this key some where safe for future reference. It can only be viewed once</p>
-          <p>API Key: {{apikey}}</p>
-          {%else%}
-          <p>
-            <span style="filter: blur(5px); -webkit-filter: blur(5px);">{{ first_part }}</span>
-            <span>{{ second_part }}</span>
-          </p>
-          {%endif%}          
-        </div>      
+        <div class="content-wrapper" style="user-select: none;">
+          {% if apikey_viewed == 'no' %}
+            <p>Please note this key somewhere safe for future reference. It can only be viewed once.</p>
+            <p>API Key: <span id="apikey" class="no-select">{{ apikey }}</span></p>
+            <button id="copy-button">Copy API Key</button>
+          {% else %}
+            <p>
+              <span class="no-select" style="filter: blur(5px); -webkit-filter: blur(5px);">{{ first_part }}</span>
+              <span class="no-select">{{ second_part }}</span>
+            </p>
+          {% endif %}
+        </div>
+        
+        <script>
+          document.getElementById("copy-button").addEventListener("click", function() {
+            var apikey = document.getElementById("apikey").textContent;
+            var textarea = document.createElement("textarea");
+            textarea.value = apikey;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            alert("API Key copied to clipboard!");
+          });
+        </script>
         <!-- content-wrapper ends -->
         <!-- partial:partials/_footer.html -->
         <footer class="footer">
