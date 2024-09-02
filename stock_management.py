@@ -2607,7 +2607,7 @@ def get_data(api_key, data):
             return jsonify({"error": "Invalid API Key"}), 400
 
         if api:
-            if data == 'inventory':
+            if data == 'stock':
                 current_stock = db.inventories.find(
                     {'company_name': api['name']},
                     {'_id': 0, 'company_name': 0}
