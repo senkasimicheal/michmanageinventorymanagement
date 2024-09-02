@@ -1202,7 +1202,7 @@ def stock_overview():
                     {
                         '$match': {
                             'company_name': company_name,
-                            'stockDate': {
+                            'saleDate': {
                                 '$gte': start_of_previous_month,
                                 '$lte': first_day_of_current_month
                             }
@@ -1348,7 +1348,7 @@ def stock_overview():
                     {
                         '$match': {
                             'company_name': company_name,
-                            'stockDate': {'$gte': twelve_months_ago}
+                            'saleDate': {'$gte': twelve_months_ago}
                         }
                     },
                     {
