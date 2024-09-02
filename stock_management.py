@@ -927,7 +927,7 @@ def revenue_details():
                         {
                             '$match': {
                                 'company_name': company_name,
-                                'stockDate': {'$gte': twelve_months_ago}
+                                'saleDate': {'$gte': twelve_months_ago}
                             }
                         },
                         {
@@ -1583,7 +1583,7 @@ def download_revenue_data():
                 {
                     '$match': {
                         'company_name': company_name,
-                        'stockDate': {
+                        'saleDate': {
                             '$gte': startdate,
                             '$lte': enddate
                         }
