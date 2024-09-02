@@ -23,6 +23,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
   <script>
       function fetchNotifications() {
         fetch('/notifications')
@@ -386,6 +387,7 @@
           </form>
           <p class="display-date">Display date: 12 Months Back</p>
           <div style="width: 100%; height: 100%; overflow: auto;">
+            <i class="bi bi-printer-fill" style="cursor: pointer; font-size: 1.5em;" onclick="printTable()" title="Print"></i>
             <table class="tenant_table" id="tenantTable">
               <thead>
                   <tr>
@@ -467,6 +469,29 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+
+  <script>
+    function printTable() {
+      var printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write('<html><head><title>Print Table</title>');
+      
+      // Include the print styles in the print window
+      printWindow.document.write('<style>@media print {');
+      printWindow.document.write('table { width: 100%; border-collapse: collapse; }');
+      printWindow.document.write('table, th, td { border: 1px solid black; }');
+      printWindow.document.write('th, td { padding: 8px; text-align: left; }');
+      printWindow.document.write('}</style>');
+  
+      printWindow.document.write('</head><body>');
+      
+      var tableHTML = document.getElementById('tenantTable').outerHTML;
+      printWindow.document.write(tableHTML);
+      
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    }
+  </script>
 
   <script>
     function confirmDelete() {
