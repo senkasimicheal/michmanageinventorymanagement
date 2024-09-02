@@ -93,23 +93,7 @@
     <!-- slider section -->
     <section class="sale_section layout_padding">
       <div class="container-fluid-form">
-          <form id="myForm" action="{{url_for('login_route.verifying_your_account')}}" method="POST">
-              <h3>Verify Your Account</h3>
-              {% if session['no_send_emails_code'] %}
-              <ul class="code">
-                <li tabindex="0" class="digit" title="{{no_send_emails_code}}"><span>Tap To View Code</span></li>
-              </ul>
-              {% else %}
-              <h6>Enter 6 digit code sent to your email</h6>
-              {% endif %}
-              <label class="input_labels" for="">Email</label>
-              <input class="property_inputs" type="email" name="email" required><br>
-              <label class="input_labels" for="">Code</label>
-              <input class="property_inputs" type="number" name="code" required><br>
-              <input style="margin-bottom: 5px !important; margin-top: 5px !important;" id="submitButton" required type="submit"
-                class="btn" value="Verify">
-              <span id="wait-message" style="color: green; display: none;">Please wait while we verify your account...</span>
-          </form>
+        <h6 style="color: white;">Please check your email and click the Verify button to verify your account</h6>
       </div>
     </section>
     <!-- end slider section -->

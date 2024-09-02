@@ -214,9 +214,7 @@ def register_account():
         <html>
         <body>
         <p>Dear {name},</p>
-        <p>Thank you for registering with us. Please verify your email address by entering the following code in the verification field on our website:</p>
-        <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
-        <p>Please copy the code above and click on verify:</p>
+        <p>Thank you for registering with us. Please verify your account by clicking on the 'Verify' button below</p>
         <p><b style="font-size: 20px;"><a href="https://michmanagement.onrender.com/auto-registration-verification?email={email}&code={code}">Verify</a></b></p>
         <p>Best Regards,</p>
         <p>Mich Manage</p>
