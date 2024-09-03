@@ -37,6 +37,7 @@ from collections import defaultdict
 import barcode
 from PIL import Image, ImageDraw, ImageFont
 from barcode.writer import ImageWriter
+from dateutil.relativedelta import relativedelta
 
 stockManagement = Blueprint('stockManagement_route', __name__)
 
@@ -932,16 +933,9 @@ def revenue_details():
                             }
                         },
                         {
-                            '$group': {
-                                '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
-                                'totalRevenue': {'$sum': '$revenue'},
-                                'quantitySold': {'$sum': '$quantity'}
-                            }
-                        },
-                        {
                             '$lookup': {
                                 'from': 'inventories',
-                                'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                                'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                                 'pipeline': [
                                     {
                                         '$match': {
@@ -949,7 +943,7 @@ def revenue_details():
                                                 '$and': [
                                                     {'$eq': ['$itemName', '$$itemName']},
                                                     {'$eq': ['$company_name', company_name]},
-                                                    { '$eq': ['$stockDate', '$$stockDate'] }
+                                                    {'$eq': ['$stockDate', '$$stockDate']}
                                                 ]
                                             }
                                         }
@@ -969,7 +963,7 @@ def revenue_details():
                         {
                             '$lookup': {
                                 'from': 'old_inventories',
-                                'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                                'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                                 'pipeline': [
                                     {
                                         '$match': {
@@ -977,7 +971,7 @@ def revenue_details():
                                                 '$and': [
                                                     {'$eq': ['$itemName', '$$itemName']},
                                                     {'$eq': ['$company_name', company_name]},
-                                                    { '$eq': ['$stockDate', '$$stockDate'] }
+                                                    {'$eq': ['$stockDate', '$$stockDate']}
                                                 ]
                                             }
                                         }
@@ -995,29 +989,24 @@ def revenue_details():
                             }
                         },
                         {
-                            '$project': {
-                                'inventoryDetails': {
-                                    '$cond': {
-                                        'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
-                                        'then': '$inventoryDetails',
-                                        'else': '$oldInventoryDetails'
-                                    }
-                                },
-                                'totalRevenue': 1,
-                                'quantitySold': 1,
-                                '_id': '$_id'
+                            '$addFields': {
+                                'combinedInventoryDetails': {
+                                    '$concatArrays': ['$inventoryDetails', '$oldInventoryDetails']
+                                }
                             }
                         },
                         {
-                            '$unwind': '$inventoryDetails'
+                            '$unwind': '$combinedInventoryDetails'
                         },
                         {
                             '$group': {
-                                '_id': '$_id.itemName',
-                                'stockDate': {'$first': '$_id.stockDate'},
-                                'totalRevenue': {'$first': '$totalRevenue'},
-                                'quantitySold': {'$first': '$quantitySold'},
-                                'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}
+                                '_id': {
+                                    'itemName': '$itemName',
+                                    'stockDate': '$stockDate'
+                                },
+                                'totalRevenue': {'$sum': '$revenue'},
+                                'quantitySold': {'$sum': '$quantity'},
+                                'unitPrice': {'$avg': '$combinedInventoryDetails.unitPrice'}
                             }
                         },
                         {
@@ -1049,7 +1038,7 @@ def revenue_details():
                     ]
 
                     revenue_info = list(db.stock_sales.aggregate(pipeline))
-                    revenue_info.sort(key=lambda x: x['_id'])
+                    revenue_info.sort(key=lambda x: x['_id']['itemName'])
                     dp = company.get('dp')
                     dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                     return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
@@ -1428,7 +1417,8 @@ def stock_overview():
                 ###PROFIT TRENDS
                 now = datetime.now()
                 current_day_of_current_month = datetime(now.year, now.month, now.day)
-                twelve_months_ago = current_day_of_current_month.replace(year=current_day_of_current_month.year - 1)
+                twelve_months_ago = current_day_of_current_month - relativedelta(years=1)
+
                 pipeline_profits = [
                     {
                         '$match': {
@@ -1454,7 +1444,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                { '$eq': ['$stockDate', '$$stockDate'] }
+                                                {'$eq': ['$stockDate', '$$stockDate']}
                                             ]
                                         }
                                     }
@@ -1482,7 +1472,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                { '$eq': ['$stockDate', '$$stockDate'] }
+                                                {'$eq': ['$stockDate', '$$stockDate']}
                                             ]
                                         }
                                     }
@@ -1552,13 +1542,12 @@ def stock_overview():
                         }
                     }
                 ]
-                
+
                 profit_info = list(db.stock_sales.aggregate(pipeline_profits))
 
                 profit_item_names = []
                 profit_data = []
                 profit_stock_dates = []
-
 
                 for profit_record in profit_info:
                     profit_item_names.append(profit_record['_id'])
@@ -1710,23 +1699,13 @@ def download_revenue_data():
                 {
                     '$match': {
                         'company_name': company_name,
-                        'saleDate': {
-                            '$gte': startdate,
-                            '$lte': enddate
-                        }
-                    }
-                },
-                {
-                    '$group': {
-                        '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
-                        'totalRevenue': {'$sum': '$revenue'},
-                        'quantitySold': {'$sum': '$quantity'}
+                        'saleDate': {'$gte': startdate, '$lte': enddate}
                     }
                 },
                 {
                     '$lookup': {
                         'from': 'inventories',
-                        'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                        'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                         'pipeline': [
                             {
                                 '$match': {
@@ -1734,7 +1713,7 @@ def download_revenue_data():
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
                                             {'$eq': ['$company_name', company_name]},
-                                            { '$eq': ['$stockDate', '$$stockDate'] }
+                                            {'$eq': ['$stockDate', '$$stockDate']}
                                         ]
                                     }
                                 }
@@ -1754,7 +1733,7 @@ def download_revenue_data():
                 {
                     '$lookup': {
                         'from': 'old_inventories',
-                        'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                        'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                         'pipeline': [
                             {
                                 '$match': {
@@ -1762,7 +1741,7 @@ def download_revenue_data():
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
                                             {'$eq': ['$company_name', company_name]},
-                                            { '$eq': ['$stockDate', '$$stockDate'] }
+                                            {'$eq': ['$stockDate', '$$stockDate']}
                                         ]
                                     }
                                 }
@@ -1780,29 +1759,24 @@ def download_revenue_data():
                     }
                 },
                 {
-                    '$project': {
-                        'inventoryDetails': {
-                            '$cond': {
-                                'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
-                                'then': '$inventoryDetails',
-                                'else': '$oldInventoryDetails'
-                            }
-                        },
-                        'totalRevenue': 1,
-                        'quantitySold': 1,
-                        '_id': '$_id'
+                    '$addFields': {
+                        'combinedInventoryDetails': {
+                            '$concatArrays': ['$inventoryDetails', '$oldInventoryDetails']
+                        }
                     }
                 },
                 {
-                    '$unwind': '$inventoryDetails'
+                    '$unwind': '$combinedInventoryDetails'
                 },
                 {
                     '$group': {
-                        '_id': '$_id.itemName',
-                        'stockDate': {'$first': '$_id.stockDate'},
-                        'totalRevenue': {'$first': '$totalRevenue'},
-                        'quantitySold': {'$first': '$quantitySold'},
-                        'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}  # Assuming you want the average unit price
+                        '_id': {
+                            'itemName': '$itemName',
+                            'stockDate': '$stockDate'
+                        },
+                        'totalRevenue': {'$sum': '$revenue'},
+                        'quantitySold': {'$sum': '$quantity'},
+                        'unitPrice': {'$avg': '$combinedInventoryDetails.unitPrice'}
                     }
                 },
                 {
@@ -1833,15 +1807,16 @@ def download_revenue_data():
                 }
             ]
 
+
             revenue_info = list(db.stock_sales.aggregate(pipeline))
-            revenue_info.sort(key=lambda x: x['_id'])
+            revenue_info.sort(key=lambda x: x['_id']['itemName'])
 
             data_rows = []
 
             if revenue_info:
                 for revenue in revenue_info:
-                    item_name = revenue['_id']
-                    stock_date = revenue['stockDate'].strftime('%Y-%m-%d')
+                    item_name = revenue['_id']['itemName']
+                    stock_date = revenue['_id']['stockDate'].strftime('%Y-%m-%d')
                     buying_price = revenue['unitPrice']
                     quantity_sold = revenue['quantitySold']
                     total_revenue = revenue['totalRevenue']                   
@@ -2828,16 +2803,9 @@ def get_data(api_key, data):
                         }
                     },
                     {
-                        '$group': {
-                            '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
-                            'totalRevenue': {'$sum': '$revenue'},
-                            'quantitySold': {'$sum': '$quantity'}
-                        }
-                    },
-                    {
                         '$lookup': {
                             'from': 'inventories',
-                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'pipeline': [
                                 {
                                     '$match': {
@@ -2845,7 +2813,7 @@ def get_data(api_key, data):
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', api['name']]},
-                                                { '$eq': ['$stockDate', '$$stockDate'] }
+                                                {'$eq': ['$stockDate', '$$stockDate']}
                                             ]
                                         }
                                     }
@@ -2865,7 +2833,7 @@ def get_data(api_key, data):
                     {
                         '$lookup': {
                             'from': 'old_inventories',
-                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'pipeline': [
                                 {
                                     '$match': {
@@ -2873,7 +2841,7 @@ def get_data(api_key, data):
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', api['name']]},
-                                                { '$eq': ['$stockDate', '$$stockDate'] }
+                                                {'$eq': ['$stockDate', '$$stockDate']}
                                             ]
                                         }
                                     }
@@ -2891,29 +2859,24 @@ def get_data(api_key, data):
                         }
                     },
                     {
-                        '$project': {
-                            'inventoryDetails': {
-                                '$cond': {
-                                    'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
-                                    'then': '$inventoryDetails',
-                                    'else': '$oldInventoryDetails'
-                                }
-                            },
-                            'totalRevenue': 1,
-                            'quantitySold': 1,
-                            '_id': '$_id'
+                        '$addFields': {
+                            'combinedInventoryDetails': {
+                                '$concatArrays': ['$inventoryDetails', '$oldInventoryDetails']
+                            }
                         }
                     },
                     {
-                        '$unwind': '$inventoryDetails'
+                        '$unwind': '$combinedInventoryDetails'
                     },
                     {
                         '$group': {
-                            '_id': '$_id.itemName',
-                            'stockDate': {'$first': '$_id.stockDate'},
-                            'totalRevenue': {'$first': '$totalRevenue'},
-                            'quantitySold': {'$first': '$quantitySold'},
-                            'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}
+                            '_id': {
+                                'itemName': '$itemName',
+                                'stockDate': '$stockDate'
+                            },
+                            'totalRevenue': {'$sum': '$revenue'},
+                            'quantitySold': {'$sum': '$quantity'},
+                            'unitPrice': {'$avg': '$combinedInventoryDetails.unitPrice'}
                         }
                     },
                     {
@@ -2945,12 +2908,12 @@ def get_data(api_key, data):
                 ]
 
                 revenue_info = list(db.stock_sales.aggregate(pipeline))
-                revenue_info.sort(key=lambda x: x['_id'])
+                revenue_info.sort(key=lambda x: x['_id']['itemName'])
 
                 if revenue_info:
                     for revenue in revenue_info:
-                        item_name = revenue['_id']
-                        stock_date = revenue['stockDate'].strftime('%Y-%m-%d')
+                        item_name = revenue['_id']['itemName']
+                        stock_date = revenue['_id']['stockDate'].strftime('%Y-%m-%d')
                         buying_price = revenue['unitPrice']
                         quantity_sold = revenue['quantitySold']
                         total_revenue = revenue['totalRevenue']                   

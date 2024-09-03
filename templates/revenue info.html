@@ -413,10 +413,10 @@
               </thead>
               <tbody>
                   {% for revenue in revenue_info %}
-                  <tr title="{{ revenue['_id'] }}" style="cursor: pointer;">
+                  <tr title="{{ revenue['_id']['itemName'] }}" style="cursor: pointer;">
                       <td>{{ loop.index }}</td>
-                      <td>{{ revenue['_id'] }}</td>
-                      <td>{{ revenue['stockDate'].strftime('%Y-%m-%d') }}</td>
+                      <td>{{ revenue['_id']['itemName'] }}</td>
+                      <td>{{ revenue['_id']['stockDate'].strftime('%Y-%m-%d') }}</td>
                       <td class="total-buying-price">{{ '{:,.0f}'.format(revenue['unitPrice']) }}</td>
                       <td>{{ revenue['quantitySold'] }}</td>
                       <td class="revenue">{{ '{:,.0f}'.format(revenue['totalRevenue']) }}</td>
