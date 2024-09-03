@@ -505,47 +505,47 @@
     document.addEventListener('DOMContentLoaded', (event) => {
       const table = document.getElementById('tenantTable');
       let buttonContainer = null;
-
+    
       // Create button container and buttons once
       function createButtons() {
         buttonContainer = document.createElement('div');
         buttonContainer.classList.add('button-container');
         buttonContainer.style.display = 'inline-block';
-
+    
         // Create edit button
         const editButton = document.createElement('button');
         editButton.textContent = 'Edit';
         editButton.classList.add('action-button', 'edit-button');
         editButton.style.marginRight = '5px';
-
+    
         // Create delete button
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.classList.add('action-button', 'delete-button');
-
+    
         // Append buttons to the container
         buttonContainer.appendChild(editButton);
         buttonContainer.appendChild(deleteButton);
       }
-
+    
       // When a row is clicked
       table.addEventListener('click', (e) => {
         if (e.target && e.target.nodeName === 'TD') {
           // Get the clicked row
           const currentRow = e.target.parentElement;
-
+    
           // Skip if the row has id 'totalRow'
           if (currentRow.id === 'totalRow') return;
-
+    
           // Remove buttons from the previous row, if any
           if (buttonContainer && buttonContainer.parentNode) {
             buttonContainer.parentNode.removeChild(buttonContainer);
           }
-
+    
           const itemId = currentRow.getAttribute('data-id');
           const itemName = currentRow.cells[1].textContent;
           const stockDate = currentRow.cells[2].textContent;
-
+    
           // Set button actions
           buttonContainer.children[0].onclick = function () {
             if (confirm(`Are you sure you want to edit Item: ${itemName}, Stock Date: ${stockDate}?`)) {
@@ -553,20 +553,32 @@
             }
           };
           buttonContainer.children[1].onclick = function () {
-            if (confirm(`Are you sure you want to delete Item: ${itemName}, Stock Date: ${stockDate}?`)) {
+            const deleteConsent = confirm(`Are you sure you want to delete Item: ${itemName}, Stock Date: ${stockDate}?`);
+            if (deleteConsent) {
+              const deleteSalesConsent = confirm("Do you also want to delete related sales made on this stock?");
+              const deleteSaleConsent = deleteSalesConsent ? "yes" : "no";
+    
               const form = document.createElement('form');
               form.method = 'POST';
               form.action = `/delete-item/${itemId}`;
+              
+              // Create a hidden input to send the deleteSaleConsent value
+              const consentInput = document.createElement('input');
+              consentInput.type = 'hidden';
+              consentInput.name = 'delete_sale_consent';
+              consentInput.value = deleteSaleConsent;
+              
+              form.appendChild(consentInput);
               document.body.appendChild(form);
               form.submit();
             }
           };
-
+    
           // Insert the container into the second cell of the clicked row
           currentRow.cells[1].appendChild(buttonContainer);
         }
       });
-
+    
       // Remove buttons when clicking outside the table
       window.addEventListener('click', function (event) {
         if (!table.contains(event.target)) {
@@ -575,10 +587,10 @@
           }
         }
       });
-
+    
       // Initial button creation
       createButtons();
-    });
+    });    
   </script>
 
   <script>

@@ -402,9 +402,9 @@
                           <br>
                           <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
                       </th>
-                      <th>Buying Price</th>
                       <th>Quantity Sold</th>
                       <th>Total Selling Price</th>
+                      <th>Total Buying Price</th>
                       <th>Average Unit Profit</th>
                       <th>Total Profit</th>
                   </tr>
@@ -415,18 +415,17 @@
                       <td>{{ loop.index }}</td>
                       <td>{{ revenue['_id']['itemName'] }}</td>
                       <td>{{ revenue['_id']['stockDate'].strftime('%Y-%m-%d') }}</td>
-                      <td class="total-buying-price">{{ '{:,.0f}'.format(revenue['unitPrice']) }}</td>
                       <td>{{ revenue['quantitySold'] }}</td>
                       <td class="revenue">{{ '{:,.0f}'.format(revenue['totalRevenue']) }}</td>
+                      <td class="total-buying-price">{{ '{:,.0f}'.format(revenue['totalBuyingPrice']) }}</td>
                       <td class="unit-profit">{{ '{:,.0f}'.format(revenue['unitProfit']) }}</td>
                       <td class="total-profit">{{ '{:,.0f}'.format(revenue['totalProfit']) }}</td>
                   </tr>
                   {% endfor %}
                   <tr id="totalRow">
-                      <td style="font-weight: bold;" colspan="3">Total</td>
-                      <td style="font-weight: bold;" id="totalBuyingPrice">0</td>
-                      <td></td>
+                      <td style="font-weight: bold;" colspan="4">Total</td>
                       <td style="font-weight: bold;" id="totalRevenue">0</td>
+                      <td style="font-weight: bold;" id="totalBuyingPrice">0</td>
                       <td style="font-weight: bold;" id="unitProfit">0</td>
                       <td style="font-weight: bold;" id="totalProfit">0</td>
                   </tr>

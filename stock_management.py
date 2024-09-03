@@ -42,7 +42,7 @@ from dateutil.relativedelta import relativedelta
 stockManagement = Blueprint('stockManagement_route', __name__)
 
 def generate_random_product_id(length=8):
-    characters = string.ascii_letters + string.digits  # a-z, A-Z, 0-9
+    characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
 @stockManagement.route('/add new stock page')
@@ -1011,6 +1011,12 @@ def revenue_details():
                         },
                         {
                             '$addFields': {
+                                'totalBuyingPrice': {
+                                    '$multiply': ['$unitPrice', '$quantitySold']
+                                },
+                                'totalProfit': {
+                                    '$subtract': ['$totalRevenue', {'$multiply': ['$unitPrice', '$quantitySold']}]
+                                },
                                 'unitProfit': {
                                     '$round': [
                                         {
@@ -1020,12 +1026,6 @@ def revenue_details():
                                             ]
                                         },
                                         0
-                                    ]
-                                },
-                                'totalProfit': {
-                                    '$subtract': [
-                                        '$totalRevenue',
-                                        {'$multiply': ['$unitPrice', '$quantitySold']}
                                     ]
                                 }
                             }
@@ -1227,7 +1227,7 @@ def stock_overview():
 
                     start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                     first_day_of_current_month = today.replace(hour=0, minute=0, second=0, microsecond=0)
-
+                
                 pipeline = [
                     {
                         '$match': {
@@ -1239,16 +1239,9 @@ def stock_overview():
                         }
                     },
                     {
-                        '$group': {
-                            '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
-                            'totalRevenue': {'$sum': '$revenue'},
-                            'quantitysold': {'$sum': '$quantity'}
-                        }
-                    },
-                    {
                         '$lookup': {
                             'from': 'inventories',
-                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'pipeline': [
                                 {
                                     '$match': {
@@ -1256,7 +1249,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                { '$eq': ['$stockDate', '$$stockDate'] }
+                                                {'$eq': ['$stockDate', '$$stockDate']}
                                             ]
                                         }
                                     }
@@ -1266,8 +1259,7 @@ def stock_overview():
                                         '_id': 0,
                                         'quantity': 1,
                                         'unitPrice': 1,
-                                        'stockDate': 1,
-                                        'totalPrice': 1
+                                        'stockDate': 1
                                     }
                                 }
                             ],
@@ -1277,7 +1269,7 @@ def stock_overview():
                     {
                         '$lookup': {
                             'from': 'old_inventories',
-                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'pipeline': [
                                 {
                                     '$match': {
@@ -1285,7 +1277,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                { '$eq': ['$stockDate', '$$stockDate'] }
+                                                {'$eq': ['$stockDate', '$$stockDate']}
                                             ]
                                         }
                                     }
@@ -1295,8 +1287,7 @@ def stock_overview():
                                         '_id': 0,
                                         'quantity': 1,
                                         'unitPrice': 1,
-                                        'stockDate': 1,
-                                        'totalPrice': 1
+                                        'stockDate': 1
                                     }
                                 }
                             ],
@@ -1304,17 +1295,50 @@ def stock_overview():
                         }
                     },
                     {
-                        '$project': {
-                            'inventoryDetails': {
-                                '$cond': {
-                                    'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
-                                    'then': '$inventoryDetails',
-                                    'else': '$oldInventoryDetails'
-                                }
+                        '$addFields': {
+                            'combinedInventoryDetails': {
+                                '$concatArrays': ['$inventoryDetails', '$oldInventoryDetails']
+                            }
+                        }
+                    },
+                    {
+                        '$unwind': '$combinedInventoryDetails'
+                    },
+                    {
+                        '$group': {
+                            '_id': {
+                                'itemName': '$itemName',
+                                'stockDate': '$stockDate'
                             },
-                            'totalRevenue': 1,
-                            'quantitysold': 1,
-                            '_id': 1
+                            'totalRevenue': {'$sum': '$revenue'},
+                            'quantitySold': {'$sum': '$quantity'},
+                            'unitPrice': {'$avg': '$combinedInventoryDetails.unitPrice'}
+                        }
+                    },
+                    {
+                        '$addFields': {
+                            'unitProfit': {
+                                '$round': [
+                                    {
+                                        '$subtract': [
+                                            {'$divide': ['$totalRevenue', '$quantitySold']},
+                                            '$unitPrice'
+                                        ]
+                                    },
+                                    0
+                                ]
+                            },
+                            'totalProfit': {
+                                '$subtract': [
+                                    '$totalRevenue',
+                                    {'$multiply': ['$unitPrice', '$quantitySold']}
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        '$match': {
+                            'quantitySold': {'$ne': 0}
                         }
                     }
                 ]
@@ -1322,53 +1346,32 @@ def stock_overview():
                 revenue_info = list(db.stock_sales.aggregate(pipeline))
                 item_names = []
                 quantities_sold = []
-                quantities_stocked = []
                 total_revenues = []
                 total_prices = []
                 profits = []
 
                 for record in revenue_info:
                     item_names.append(record['_id']['itemName'])
-                    quantities_sold.append(record['quantitysold'])
+                    quantities_sold.append(record['quantitySold'])
                     total_revenues.append(record['totalRevenue'])
+                    total_prices.append(record['unitPrice']*record['quantitySold'])
+                    profits.append(record['totalProfit'])
 
-                    # Initialize variables for each iteration
-                    quantities_stocked_iter = 0
-                    total_price_iter = 0
-                    profit_iter = 0
-
-                    # Check if 'inventoryDetails' is in record and has the necessary structure
-                    if 'inventoryDetails' in record and record['inventoryDetails']:
-                        quantity_stocked = record['inventoryDetails'][0].get('quantity', 0)
-                        total_price_iter = (record['inventoryDetails'][0].get('unitPrice', 0))*record['quantitysold']
-                        profit_iter = record['totalRevenue'] - total_price_iter
-
-                    # Append values for this iteration to the lists
-                    quantities_stocked.append(quantities_stocked_iter)
-                    total_prices.append(total_price_iter)
-                    profits.append(profit_iter)
-
-                # Create the DataFrame
                 df_ungrouped = pd.DataFrame({
                     'Item Name': item_names,
                     'Quantity Sold': quantities_sold,
-                    'Quantity Stocked': quantities_stocked,
                     'Total Revenue': total_revenues,
                     'Total Price': total_prices,
                     'Profit': profits
                 })
 
-                # Group by 'Item Name' and aggregate using sum
                 df = df_ungrouped.groupby('Item Name', as_index=False).agg({
                     'Quantity Sold': 'sum',
-                    'Quantity Stocked': 'sum',
                     'Total Revenue': 'sum',
                     'Total Price': 'sum',
                     'Profit': 'sum'
                 })
 
-                #####PLOTS
-                #profits and losses
                 # Filter positive profits
                 profitableItems = []
                 profits = []
@@ -1427,16 +1430,9 @@ def stock_overview():
                         }
                     },
                     {
-                        '$group': {
-                            '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
-                            'totalRevenue': {'$sum': '$revenue'},
-                            'quantitySold': {'$sum': '$quantity'}
-                        }
-                    },
-                    {
                         '$lookup': {
                             'from': 'inventories',
-                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'pipeline': [
                                 {
                                     '$match': {
@@ -1464,7 +1460,7 @@ def stock_overview():
                     {
                         '$lookup': {
                             'from': 'old_inventories',
-                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'let': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'pipeline': [
                                 {
                                     '$match': {
@@ -1490,29 +1486,24 @@ def stock_overview():
                         }
                     },
                     {
-                        '$project': {
-                            'inventoryDetails': {
-                                '$cond': {
-                                    'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
-                                    'then': '$inventoryDetails',
-                                    'else': '$oldInventoryDetails'
-                                }
-                            },
-                            'totalRevenue': 1,
-                            'quantitySold': 1,
-                            '_id': '$_id'
+                        '$addFields': {
+                            'combinedInventoryDetails': {
+                                '$concatArrays': ['$inventoryDetails', '$oldInventoryDetails']
+                            }
                         }
                     },
                     {
-                        '$unwind': '$inventoryDetails'
+                        '$unwind': '$combinedInventoryDetails'
                     },
                     {
                         '$group': {
-                            '_id': '$_id.itemName',
-                            'stockDate': {'$first': '$_id.stockDate'},
-                            'totalRevenue': {'$first': '$totalRevenue'},
-                            'quantitySold': {'$first': '$quantitySold'},
-                            'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}
+                            '_id': {
+                                'itemName': '$itemName',
+                                'stockDate': '$stockDate'
+                            },
+                            'totalRevenue': {'$sum': '$revenue'},
+                            'quantitySold': {'$sum': '$quantity'},
+                            'unitPrice': {'$avg': '$combinedInventoryDetails.unitPrice'}
                         }
                     },
                     {
@@ -1550,8 +1541,8 @@ def stock_overview():
                 profit_stock_dates = []
 
                 for profit_record in profit_info:
-                    profit_item_names.append(profit_record['_id'])
-                    profit_stock_dates.append(profit_record['stockDate'])
+                    profit_item_names.append(profit_record['_id']['itemName'])
+                    profit_stock_dates.append(profit_record['_id']['stockDate'])
                     profit_data.append(profit_record['totalProfit'])
 
                 # Create the DataFrame
@@ -1781,6 +1772,12 @@ def download_revenue_data():
                 },
                 {
                     '$addFields': {
+                        'totalBuyingPrice': {
+                            '$multiply': ['$unitPrice', '$quantitySold']
+                        },
+                        'totalProfit': {
+                            '$subtract': ['$totalRevenue', {'$multiply': ['$unitPrice', '$quantitySold']}]
+                        },
                         'unitProfit': {
                             '$round': [
                                 {
@@ -1790,12 +1787,6 @@ def download_revenue_data():
                                     ]
                                 },
                                 0
-                            ]
-                        },
-                        'totalProfit': {
-                            '$subtract': [
-                                '$totalRevenue',
-                                {'$multiply': ['$unitPrice', '$quantitySold']}
                             ]
                         }
                     }
@@ -1807,7 +1798,6 @@ def download_revenue_data():
                 }
             ]
 
-
             revenue_info = list(db.stock_sales.aggregate(pipeline))
             revenue_info.sort(key=lambda x: x['_id']['stockDate'], reverse=True)
 
@@ -1817,7 +1807,7 @@ def download_revenue_data():
                 for revenue in revenue_info:
                     item_name = revenue['_id']['itemName']
                     stock_date = revenue['_id']['stockDate'].strftime('%Y-%m-%d')
-                    buying_price = revenue['unitPrice']
+                    buying_price = revenue['totalBuyingPrice']
                     quantity_sold = revenue['quantitySold']
                     total_revenue = revenue['totalRevenue']                   
 
@@ -1827,9 +1817,9 @@ def download_revenue_data():
                     data_rows.append({
                         'Item Name': item_name,
                         'Stock Date': stock_date,
-                        'Buying Price': buying_price,
                         'Sold Quantity': quantity_sold,
                         'Total Selling Price': total_revenue,
+                        'Total Buying Price': buying_price,
                         'Average Unit Profit': unitProfit,
                         'Total Profit': totalProfit
                     })
@@ -2606,8 +2596,14 @@ def delete_item(item_id):
             if manager.get('update_stock') in ('yes', None):
                 selected_item = db.inventories.find_one({'_id': ObjectId(item_id)})
                 if selected_item:
-                    db.inventories.delete_one({'_id': ObjectId(item_id)})
-                    db.audit_logs.insert_one({'user': login_data,'Activity': 'Stock deletion','Item': item_id,'timestamp': datetime.now()})
+                    delete_sale_consent = request.form.get('delete_sale_consent')
+                    if delete_sale_consent == "no":
+                        db.inventories.delete_one({'_id': ObjectId(item_id)})
+                        db.audit_logs.insert_one({'user': login_data,'Activity': 'Stock deletion','Item': item_id,'timestamp': datetime.now()})
+                    elif delete_sale_consent == "yes":
+                        db.inventories.delete_one({'_id': ObjectId(item_id)})
+                        db.stock_sales.delete_many({'stock_id': ObjectId(item_id)})
+                        db.audit_logs.insert_one({'user': login_data,'Activity': 'Stock deletion with related sales','Item': item_id,'timestamp': datetime.now()})
                     flash('Item was deleted', 'success')
                 else:
                     flash('Please select an up-to-date item', 'error')
