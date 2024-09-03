@@ -1038,7 +1038,7 @@ def revenue_details():
                     ]
 
                     revenue_info = list(db.stock_sales.aggregate(pipeline))
-                    revenue_info.sort(key=lambda x: x['_id']['itemName'])
+                    revenue_info.sort(key=lambda x: x['_id']['stockDate'], reverse=True)
                     dp = company.get('dp')
                     dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                     return render_template('revenue info.html', revenue_info = revenue_info, dp=dp_str)
@@ -1809,7 +1809,7 @@ def download_revenue_data():
 
 
             revenue_info = list(db.stock_sales.aggregate(pipeline))
-            revenue_info.sort(key=lambda x: x['_id']['itemName'])
+            revenue_info.sort(key=lambda x: x['_id']['stockDate'], reverse=True)
 
             data_rows = []
 
