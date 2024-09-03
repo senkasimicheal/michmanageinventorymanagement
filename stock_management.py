@@ -921,7 +921,9 @@ def revenue_details():
 
                 if 'Enterprise Resource Planning' in account_type:
                     company_name = company['company_name']
-                    twelve_months_ago = datetime.now() - timedelta(days=365)
+                    now = datetime.now()
+                    first_day_of_current_month = datetime(now.year, now.month, 1)
+                    twelve_months_ago = first_day_of_current_month.replace(year=first_day_of_current_month.year - 1)
 
                     pipeline = [
                         {
@@ -1016,7 +1018,7 @@ def revenue_details():
                                 'stockDate': {'$first': '$_id.stockDate'},
                                 'totalRevenue': {'$first': '$totalRevenue'},
                                 'quantitySold': {'$first': '$quantitySold'},
-                                'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}  # Assuming you want the average unit price
+                                'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}
                             }
                         },
                         {
@@ -1075,7 +1077,9 @@ def sales_details():
 
                 company_name = company['company_name']
 
-                twelve_months_ago = datetime.now() - timedelta(days=365)
+                now = datetime.now()
+                first_day_of_current_month = datetime(now.year, now.month, 1)
+                twelve_months_ago = first_day_of_current_month.replace(year=first_day_of_current_month.year - 1)
 
                 sales_info = list(db.stock_sales.find({'company_name': company_name, 'saleDate': {'$gte': twelve_months_ago}}))
                 sales_info.sort(key=lambda x: x['saleDate'], reverse=True)
@@ -1137,7 +1141,9 @@ def stock_history_details():
 
             if 'Enterprise Resource Planning' in account_type:
                 company_name = company['company_name']
-                twelve_months_ago = datetime.now() - timedelta(days=365)
+                now = datetime.now()
+                first_day_of_current_month = datetime(now.year, now.month, 1)
+                twelve_months_ago = first_day_of_current_month.replace(year=first_day_of_current_month.year - 1)
                 stock_info = list(db.old_inventories.find({'company_name': company_name, 'stockDate': {'$gte': twelve_months_ago}}))
                 stock_info.sort(key=lambda x: x['stockDate'], reverse=True)
 
@@ -1162,7 +1168,9 @@ def inhouse_items_use_details():
                                                                                 'password': 0, 'auth': 0, 'dark_mode': 0})
             
             company_name = company['company_name']
-            twelve_months_ago = datetime.now() - timedelta(days=365)
+            now = datetime.now()
+            first_day_of_current_month = datetime(now.year, now.month, 1)
+            twelve_months_ago = first_day_of_current_month.replace(year=first_day_of_current_month.year - 1)
             inhouse_item_use = list(db.inhouse_use.find({'company_name': company_name, 'useDate': {'$gte': twelve_months_ago}}))
             inhouse_item_use.sort(key=lambda x: max(x['useDate']), reverse=True)
 
@@ -1419,7 +1427,9 @@ def stock_overview():
                 top10SoldItems = list(zip(soldItems, soldQuantity))
 
                 ###PROFIT TRENDS
-                twelve_months_ago = datetime.now() - timedelta(days=365)
+                now = datetime.now()
+                first_day_of_current_month = datetime(now.year, now.month, 1)
+                twelve_months_ago = first_day_of_current_month.replace(year=first_day_of_current_month.year - 1)
                 pipeline_profits = [
                     {
                         '$match': {
@@ -1957,7 +1967,9 @@ def view_production_info():
     else:
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
-            twelve_months_ago = datetime.now() - timedelta(days=365)
+            now = datetime.now()
+            first_day_of_current_month = datetime(now.year, now.month, 1)
+            twelve_months_ago = first_day_of_current_month.replace(year=first_day_of_current_month.year - 1)
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
                                                                                 'password': 0, 'auth': 0, 'dark_mode': 0})
 
@@ -2318,7 +2330,9 @@ def view_expenses():
 
                 if 'Enterprise Resource Planning' in account_type:
                     company_name = company['company_name']
-                    twelve_months_ago = datetime.now() - timedelta(days=365)
+                    now = datetime.now()
+                    first_day_of_current_month = datetime(now.year, now.month, 1)
+                    twelve_months_ago = first_day_of_current_month.replace(year=first_day_of_current_month.year - 1)
                     expense_info = list(db.stock_expenses.find({'company_name': company_name, 'expenseDate': {'$gte': twelve_months_ago}}))
                     expense_info.sort(key=lambda x: x.get('timestamp', x['expenseDate']), reverse=True)
 
