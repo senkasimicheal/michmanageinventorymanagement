@@ -397,19 +397,19 @@
                     <br>
                     <input type="text" id="itemNameFilter" onkeyup="filterTable('itemNameFilter', 1)"
                       placeholder="Search for item names...">
-                    </th>
-                    <th>
-                      Stock Date
-                      <br>
-                      <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
-                    </th>
-                    <th>Stocked Quantity</th>
-                    <th>Available Stock</th>
-                    <th>Measurement</th>
-                    <th>Buying Price</th>
-                    <th>Total Buying Price</th>
-                    <th>Total Stock Value</th>
-                    </tr>
+                  </th>
+                  <th>
+                    Stock Date
+                    <br>
+                    <input type="text" id="stockDateFilter" onkeyup="filterTable('stockDateFilter', 2)" placeholder="YYYY-MM-DD">
+                  </th>
+                  <th>Stocked Quantity</th>
+                  <th>Available Stock</th>
+                  <th>Measurement</th>
+                  <th>Buying Price</th>
+                  <th>Total Buying Price</th>
+                  <th>Total Stock Value</th>
+                </tr>
               </thead>
               <tbody>
                 {% for stock in stock_info %}
@@ -451,7 +451,6 @@
                   <td style="font-weight: bold;" colspan="7">Total</td>
                   <td style="font-weight: bold;" id="totalBuyingPrice">0</td>
                   <td style="font-weight: bold;" id="totalStockValue">0</td>
-                  <td></td>
                 </tr>
               </tbody>
             </table>
