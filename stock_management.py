@@ -948,7 +948,7 @@ def revenue_details():
                                                 '$and': [
                                                     {'$eq': ['$itemName', '$$itemName']},
                                                     {'$eq': ['$company_name', company_name]},
-                                                    {'$gte': ['$stockDate', twelve_months_ago]}
+                                                    { '$eq': ['$stockDate', '$$stockDate'] }
                                                 ]
                                             }
                                         }
@@ -976,7 +976,7 @@ def revenue_details():
                                                 '$and': [
                                                     {'$eq': ['$itemName', '$$itemName']},
                                                     {'$eq': ['$company_name', company_name]},
-                                                    {'$gte': ['$stockDate', twelve_months_ago]}
+                                                    { '$eq': ['$stockDate', '$$stockDate'] }
                                                 ]
                                             }
                                         }
@@ -1228,6 +1228,7 @@ def stock_overview():
                     first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
                 else:
                     today = datetime.today()
+
                     start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                     first_day_of_current_month = today.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -1259,8 +1260,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                {'$gte': ['$stockDate', start_of_previous_month]},
-                                                {'$lte': ['$stockDate', first_day_of_current_month]}
+                                                { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
                                     }
@@ -1289,8 +1289,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                {'$gte': ['$stockDate', start_of_previous_month]},
-                                                {'$lte': ['$stockDate', first_day_of_current_month]}
+                                                { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
                                     }
@@ -1446,7 +1445,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                {'$gte': ['$stockDate', twelve_months_ago]}
+                                                { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
                                     }
@@ -1474,7 +1473,7 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                {'$gte': ['$stockDate', twelve_months_ago]}
+                                                { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
                                     }
@@ -1514,7 +1513,7 @@ def stock_overview():
                             'stockDate': {'$first': '$_id.stockDate'},
                             'totalRevenue': {'$first': '$totalRevenue'},
                             'quantitySold': {'$first': '$quantitySold'},
-                            'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}  # Assuming you want the average unit price
+                            'unitPrice': {'$avg': '$inventoryDetails.unitPrice'}
                         }
                     },
                     {
@@ -1726,8 +1725,7 @@ def download_revenue_data():
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
                                             {'$eq': ['$company_name', company_name]},
-                                            {'$gte': ['$stockDate', startdate]},
-                                            {'$lte': ['$stockDate', enddate]}
+                                            { '$eq': ['$stockDate', '$$stockDate'] }
                                         ]
                                     }
                                 }
@@ -1755,8 +1753,7 @@ def download_revenue_data():
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
                                             {'$eq': ['$company_name', company_name]},
-                                            {'$gte': ['$stockDate', startdate]},
-                                            {'$lte': ['$stockDate', enddate]}
+                                            { '$eq': ['$stockDate', '$$stockDate'] }
                                         ]
                                     }
                                 }
@@ -2835,6 +2832,7 @@ def get_data(api_key, data):
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', api['name']]}
+                                                { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
                                     }
@@ -2862,6 +2860,7 @@ def get_data(api_key, data):
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', api['name']]}
+                                                { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
                                     }
