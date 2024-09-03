@@ -2831,7 +2831,7 @@ def get_data(api_key, data):
                                         '$expr': {
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
-                                                {'$eq': ['$company_name', api['name']]}
+                                                {'$eq': ['$company_name', api['name']]},
                                                 { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
@@ -2859,7 +2859,7 @@ def get_data(api_key, data):
                                         '$expr': {
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
-                                                {'$eq': ['$company_name', api['name']]}
+                                                {'$eq': ['$company_name', api['name']]},
                                                 { '$eq': ['$stockDate', '$$stockDate'] }
                                             ]
                                         }
