@@ -966,6 +966,48 @@ def revenue_details():
                             }
                         },
                         {
+                            '$lookup': {
+                                'from': 'old_inventories',
+                                'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                                'pipeline': [
+                                    {
+                                        '$match': {
+                                            '$expr': {
+                                                '$and': [
+                                                    {'$eq': ['$itemName', '$$itemName']},
+                                                    {'$eq': ['$company_name', company_name]},
+                                                    {'$gte': ['$stockDate', twelve_months_ago]}
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        '$project': {
+                                            '_id': 0,
+                                            'quantity': 1,
+                                            'unitPrice': 1,
+                                            'stockDate': 1
+                                        }
+                                    }
+                                ],
+                                'as': 'oldInventoryDetails'
+                            }
+                        },
+                        {
+                            '$project': {
+                                'inventoryDetails': {
+                                    '$cond': {
+                                        'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
+                                        'then': '$inventoryDetails',
+                                        'else': '$oldInventoryDetails'
+                                    }
+                                },
+                                'totalRevenue': 1,
+                                'quantitySold': 1,
+                                '_id': '$_id'
+                            }
+                        },
+                        {
                             '$unwind': '$inventoryDetails'
                         },
                         {
@@ -1163,7 +1205,7 @@ def stock_overview():
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('stock dashboard.html', 
-                       profits_chart=None,  # Or you can use an empty string, list, or dict depending on your needs
+                       profits_chart=None,
                        Losses_chart=None,
                        revenue=None,
                        quantity_sold_stocked=None,
@@ -1171,7 +1213,6 @@ def stock_overview():
                        start_of_previous_month=None,
                        first_day_of_current_month=None,dp=dp_str)
             else:
-                # Clear sessions
                 session.pop("profits_chart", None)
                 session.pop("loss_chart", None)
                 session.pop("revenue_and_qty_chart", None)
@@ -1186,10 +1227,7 @@ def stock_overview():
                     start_of_previous_month = datetime.strptime(startdate_on_str, '%Y-%m-%d')
                     first_day_of_current_month = datetime.strptime(enddate_on_str, '%Y-%m-%d')
                 else:
-                    # Get today's date
                     today = datetime.today()
-
-                    # Get the first day of the current month
                     start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                     first_day_of_current_month = today.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -1205,7 +1243,7 @@ def stock_overview():
                     },
                     {
                         '$group': {
-                            '_id': {'itemName': '$itemName','stockDate': '$stockDate'},
+                            '_id': {'itemName': '$itemName', 'stockDate': '$stockDate'},
                             'totalRevenue': {'$sum': '$revenue'},
                             'quantitysold': {'$sum': '$quantity'}
                         }
@@ -1221,8 +1259,8 @@ def stock_overview():
                                             '$and': [
                                                 {'$eq': ['$itemName', '$$itemName']},
                                                 {'$eq': ['$company_name', company_name]},
-                                                { '$gte': ['$stockDate', start_of_previous_month] },
-                                                { '$lte': ['$stockDate', first_day_of_current_month] }
+                                                {'$gte': ['$stockDate', start_of_previous_month]},
+                                                {'$lte': ['$stockDate', first_day_of_current_month]}
                                             ]
                                         }
                                     }
@@ -1238,6 +1276,50 @@ def stock_overview():
                                 }
                             ],
                             'as': 'inventoryDetails'
+                        }
+                    },
+                    {
+                        '$lookup': {
+                            'from': 'old_inventories',
+                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'pipeline': [
+                                {
+                                    '$match': {
+                                        '$expr': {
+                                            '$and': [
+                                                {'$eq': ['$itemName', '$$itemName']},
+                                                {'$eq': ['$company_name', company_name]},
+                                                {'$gte': ['$stockDate', start_of_previous_month]},
+                                                {'$lte': ['$stockDate', first_day_of_current_month]}
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    '$project': {
+                                        '_id': 0,
+                                        'quantity': 1,
+                                        'unitPrice': 1,
+                                        'stockDate': 1,
+                                        'totalPrice': 1
+                                    }
+                                }
+                            ],
+                            'as': 'oldInventoryDetails'
+                        }
+                    },
+                    {
+                        '$project': {
+                            'inventoryDetails': {
+                                '$cond': {
+                                    'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
+                                    'then': '$inventoryDetails',
+                                    'else': '$oldInventoryDetails'
+                                }
+                            },
+                            'totalRevenue': 1,
+                            'quantitysold': 1,
+                            '_id': 1
                         }
                     }
                 ]
@@ -1379,6 +1461,48 @@ def stock_overview():
                                 }
                             ],
                             'as': 'inventoryDetails'
+                        }
+                    },
+                    {
+                        '$lookup': {
+                            'from': 'old_inventories',
+                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'pipeline': [
+                                {
+                                    '$match': {
+                                        '$expr': {
+                                            '$and': [
+                                                {'$eq': ['$itemName', '$$itemName']},
+                                                {'$eq': ['$company_name', company_name]},
+                                                {'$gte': ['$stockDate', twelve_months_ago]}
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    '$project': {
+                                        '_id': 0,
+                                        'quantity': 1,
+                                        'unitPrice': 1,
+                                        'stockDate': 1
+                                    }
+                                }
+                            ],
+                            'as': 'oldInventoryDetails'
+                        }
+                    },
+                    {
+                        '$project': {
+                            'inventoryDetails': {
+                                '$cond': {
+                                    'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
+                                    'then': '$inventoryDetails',
+                                    'else': '$oldInventoryDetails'
+                                }
+                            },
+                            'totalRevenue': 1,
+                            'quantitySold': 1,
+                            '_id': '$_id'
                         }
                     },
                     {
@@ -1602,8 +1726,8 @@ def download_revenue_data():
                                         '$and': [
                                             {'$eq': ['$itemName', '$$itemName']},
                                             {'$eq': ['$company_name', company_name]},
-                                            { '$gte': ['$stockDate', startdate] },
-                                            { '$lte': ['$stockDate', enddate] }
+                                            {'$gte': ['$stockDate', startdate]},
+                                            {'$lte': ['$stockDate', enddate]}
                                         ]
                                     }
                                 }
@@ -1618,6 +1742,49 @@ def download_revenue_data():
                             }
                         ],
                         'as': 'inventoryDetails'
+                    }
+                },
+                {
+                    '$lookup': {
+                        'from': 'old_inventories',
+                        'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                        'pipeline': [
+                            {
+                                '$match': {
+                                    '$expr': {
+                                        '$and': [
+                                            {'$eq': ['$itemName', '$$itemName']},
+                                            {'$eq': ['$company_name', company_name]},
+                                            {'$gte': ['$stockDate', startdate]},
+                                            {'$lte': ['$stockDate', enddate]}
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                '$project': {
+                                    '_id': 0,
+                                    'quantity': 1,
+                                    'unitPrice': 1,
+                                    'stockDate': 1
+                                }
+                            }
+                        ],
+                        'as': 'oldInventoryDetails'
+                    }
+                },
+                {
+                    '$project': {
+                        'inventoryDetails': {
+                            '$cond': {
+                                'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
+                                'then': '$inventoryDetails',
+                                'else': '$oldInventoryDetails'
+                            }
+                        },
+                        'totalRevenue': 1,
+                        'quantitySold': 1,
+                        '_id': '$_id'
                     }
                 },
                 {
@@ -2682,6 +2849,47 @@ def get_data(api_key, data):
                                 }
                             ],
                             'as': 'inventoryDetails'
+                        }
+                    },
+                    {
+                        '$lookup': {
+                            'from': 'old_inventories',
+                            'let': {'itemName': '$_id.itemName', 'stockDate': '$_id.stockDate'},
+                            'pipeline': [
+                                {
+                                    '$match': {
+                                        '$expr': {
+                                            '$and': [
+                                                {'$eq': ['$itemName', '$$itemName']},
+                                                {'$eq': ['$company_name', api['name']]}
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    '$project': {
+                                        '_id': 0,
+                                        'quantity': 1,
+                                        'unitPrice': 1,
+                                        'stockDate': 1
+                                    }
+                                }
+                            ],
+                            'as': 'oldInventoryDetails'
+                        }
+                    },
+                    {
+                        '$project': {
+                            'inventoryDetails': {
+                                '$cond': {
+                                    'if': {'$gt': [{'$size': '$inventoryDetails'}, 0]},
+                                    'then': '$inventoryDetails',
+                                    'else': '$oldInventoryDetails'
+                                }
+                            },
+                            'totalRevenue': 1,
+                            'quantitySold': 1,
+                            '_id': '$_id'
                         }
                     },
                     {
