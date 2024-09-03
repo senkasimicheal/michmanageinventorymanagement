@@ -1191,12 +1191,7 @@ def stock_overview():
 
                     # Get the first day of the current month
                     start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-                    # Calculate the first day of the next month
-                    if today.month == 12:  # If it's December, the next month is January of the next year
-                        first_day_of_current_month = today.replace(year=today.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-                    else:
-                        first_day_of_current_month = today.replace(month=today.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                    first_day_of_current_month = today.replace(hour=0, minute=0, second=0, microsecond=0)
 
                 pipeline = [
                     {
