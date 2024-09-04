@@ -1102,7 +1102,6 @@ def stock_details():
                 stock_info = list(db.inventories.find({'company_name': company_name}))
                 stock_info.sort(key=lambda x: x.get('timestamp', x['stockDate']), reverse=True)
                 stock_info.sort(key=lambda x: x['itemName'])
-
                 dp = company.get('dp')
                 dp_str = base64.b64encode(base64.b64decode(dp)).decode() if dp else None
                 return render_template('stock info.html', stock_info = stock_info, dp=dp_str)
@@ -1656,7 +1655,7 @@ def download_stock_data():
             ws.title = "Stock Data"
 
             # Write header row
-            headers = ['Item Name', 'Stock Date', 'Stocked Quantity', 'Available Stock', 'Measurement', 'Buying Price', 'Total Buying Price', 'Total Stock Value']
+            headers = ['Item Name', 'Stock Date', 'Stocked Quantity', 'Available Stock', 'Measurement', 'Selling Price', 'Buying Price', 'Total Buying Price', 'Total Stock Value']
             ws.append(headers)
 
             # Write data rows
@@ -1673,6 +1672,7 @@ def download_stock_data():
                     record.get('quantity', 0),
                     record.get('available_quantity', 0),
                     record.get('unitOfMeasurement', ''),
+                    record.get('selling_price', 0),
                     record.get('unitPrice', 0),
                     record.get('totalPrice', 0),
                     cumulativeOldPrices
@@ -2549,6 +2549,7 @@ def apply_item_edits():
             item_name = request.form.get("item_name")
             quantity = request.form.get("quantity")
             unit_price = request.form.get("unit_price")
+            selling_price = request.form.get("selling_price")
             stockdate = request.form.get("stockdate")
             unit_of_measurement = request.form.get("unit_of_measurement")
 
@@ -2594,6 +2595,10 @@ def apply_item_edits():
                     else:
                         cumulativeOldPrices = new_total_price
                     db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'unitPrice': unit_price, 'totalPrice': new_total_price, 'cumulativeOldPrices': cumulativeOldPrices}})
+                    applied = 1
+                if selling_price:
+                    selling_price = float(selling_price)
+                    db.inventories.update_one({'_id': ObjectId(item_id)}, {'$set': {'selling_price': selling_price}})
                     applied = 1
                 if stockdate:
                     stockDate = datetime.strptime(stockdate, '%Y-%m-%d')

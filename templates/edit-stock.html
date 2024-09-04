@@ -361,8 +361,10 @@
                         </select>
                         <label class="input_labels" for="">Quantity (Optional) [<span style="color: red;">{{selected_item["quantity"]}}</span>]</label>
                         <input class="property_inputs" type="number" name="quantity" min="1">
-                        <label class="input_labels" for="">Unit Price (Optional) [<span style="color: red;">{{selected_item["unitPrice"]}}</span>]</label>
+                        <label class="input_labels" for="">Buying Price (Optional) [<span style="color: red;">{{selected_item["unitPrice"]}}</span>]</label>
                         <input class="property_inputs" type="number" name="unit_price" min="0">
+                        <label class="input_labels" for="">Selling Price (Optional) [<span style="color: red;">{{selected_item["selling_price"]}}</span>]</label>
+                        <input class="property_inputs" type="number" name="selling_price" min="0">
                         <label class="input_labels" for="">Stock Date (Optional) [<span style="color: red;">{{selected_item["stockDate"].strftime('%Y-%m-%d')}}</span>]</label>
                         <input class="property_inputs" type="date" name="stockdatee" id="stockdatee"
                             placeholder="enter date"><br>

@@ -368,6 +368,7 @@
                   <th>Stocked Quantity</th>
                   <th>Available Stock</th>
                   <th>Measurement</th>
+                  <th>Selling Price</th>
                   <th>Buying Price</th>
                   <th>Total Buying Price</th>
                   <th>Total Stock Value</th>
@@ -396,6 +397,7 @@
                     {% endif %}
                   </td>
                   <td>{{ stock['unitOfMeasurement'] }}</td>
+                  <td>{{ '{:,.0f}'.format(stock['selling_price'])}}</td>
                   <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
                   <td class="total-buying-price">{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
                   <td class="total-stock-value">
@@ -410,7 +412,7 @@
                 </tr>
                 {% endfor %}
                 <tr id="totalRow">
-                  <td style="font-weight: bold;" colspan="7">Total</td>
+                  <td style="font-weight: bold;" colspan="8">Total</td>
                   <td style="font-weight: bold;" id="totalBuyingPrice">0</td>
                   <td style="font-weight: bold;" id="totalStockValue">0</td>
                 </tr>
