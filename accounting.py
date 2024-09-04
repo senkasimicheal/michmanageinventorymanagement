@@ -60,7 +60,6 @@ def new_accounts_page():
                 dp_str = None
 
             items_to_update = []
-            # Aggregate current and old accounts
             available_current_accounts = list(db.transaction_finance_accounts.aggregate([
                 { 
                     '$match': { 'company_name': company['company_name'] }
@@ -149,7 +148,7 @@ def add_new_account():
             else:
                 receipt_number = 1
 
-            all_items = request.json.get('items', [])  # Access the JSON data sent from the client
+            all_items = request.json.get('items', [])
             timestamp = datetime.now()
             added = 0
             for item in all_items:
@@ -172,11 +171,9 @@ def add_new_account():
                         generated_id = result.inserted_id
                         receipt_id = str(generated_id)
 
-                        # Create a payment receipt PDF file
                         buffer = BytesIO()
                         doc = SimpleDocTemplate(buffer, pagesize=letter)
 
-                        # QR Code Generation
                         url = f'https://michmanagement.onrender.com//get_financial_receipt?id={receipt_id}'
                         qr = qrcode.QRCode(
                             version=1,
@@ -189,7 +186,6 @@ def add_new_account():
                         img = qr.make_image(fill_color="black", back_color="white")
                         img.save(f'payment_receipt_qr_{receipt_id}.png')
 
-                        # Create the receipt details
                         data = [
                             ['Payment Receipt - ' + company['company_name'], ''],
                             ['Receipt No:', receipt_number],
@@ -207,12 +203,10 @@ def add_new_account():
                             ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
                         ]
 
-                        # Create a table with the receipt details
                         table = Table(data)
 
-                        # Add a table style
                         table.setStyle(TableStyle([
-                            ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                            ('SPAN', (0, 0), (1, 0)),
                             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
 
@@ -223,24 +217,20 @@ def add_new_account():
                             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
                             ('GRID', (0,0), (-1,-1), 1, colors.black),
-                            ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+                            ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')
                         ]))
 
-                        # Load your QR code image
                         qr_code_img = f'payment_receipt_qr_{receipt_id}.png'
                         qr_code = PDFImage(qr_code_img)
                         qr_code.hAlign = 'CENTER'
 
-                        # Add the QR code image to the elements list before building the PDF
                         elements = [table, qr_code]
                         doc.build(elements)
 
-                        # Get the PDF data and encode it as base64
                         pdf_data = buffer.getvalue()
                         buffer.close()
                         payment_receipt_base64 = base64.b64encode(pdf_data).decode()
 
-                        # Delete the QR code image file
                         os.remove(f'payment_receipt_qr_{receipt_id}.png')
                         
                         db.old_transaction_finance_accounts.update_one(
@@ -465,12 +455,9 @@ def update_accounts():
                     payment_status = "Pending"
                 db.old_transaction_finance_accounts.insert_one(account)
 
-                ##generate payment receipt
-                # Create a payment receipt PDF file
                 buffer = BytesIO()
                 doc = SimpleDocTemplate(buffer, pagesize=letter)
 
-                # QR Code Generation
                 url = f'https://michmanagement.onrender.com//get_financial_receipt?id={item["client_id"]}'
                 qr = qrcode.QRCode(
                     version=1,
@@ -483,7 +470,6 @@ def update_accounts():
                 img = qr.make_image(fill_color="black", back_color="white")
                 img.save(f'payment_receipt_qr_{item["client_id"]}.png')
 
-                # Create the receipt details
                 data = [
                     ['Payment Receipt - ' + account['company_name'], ''],
                     ['Receipt No:', receipt_number],
@@ -501,12 +487,10 @@ def update_accounts():
                     ['Prepared by:', f"{login_data} on {timestamp.strftime('%Y-%m-%d')}"]
                 ]
 
-                # Create a table with the receipt details
                 table = Table(data)
 
-                # Add a table style
                 table.setStyle(TableStyle([
-                    ('SPAN', (0, 0), (1, 0)),  # Merge the first row
+                    ('SPAN', (0, 0), (1, 0)),
                     ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
 
@@ -517,27 +501,22 @@ def update_accounts():
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                     ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
                     ('GRID', (0,0), (-1,-1), 1, colors.black),
-                    ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')  # Make the last cell on the last row italic
+                    ('FONTNAME', (1, -1), (1, -1), 'Helvetica-Oblique')
                 ]))
 
-                # Load your QR code image
                 qr_code_img = f'payment_receipt_qr_{item["client_id"]}.png'
                 qr_code = PDFImage(qr_code_img)
                 qr_code.hAlign = 'CENTER'
 
-                # Add the QR code image to the elements list before building the PDF
                 elements = [table, qr_code]
                 doc.build(elements)
 
-                # Get the PDF data and encode it as base64
                 pdf_data = buffer.getvalue()
                 buffer.close()
                 payment_receipt_base64 = base64.b64encode(pdf_data).decode()
 
-                # Delete the QR code image file
                 os.remove(f'payment_receipt_qr_{item["client_id"]}.png')
 
-                ###send payment receipt
                 email = account.get('email')
                 if email and email.strip():
                     if send_emails is not None:
@@ -969,11 +948,9 @@ def accounts_overview():
             else:
                 today = datetime.today()
 
-                # Get the first day of the current month
                 start_of_previous_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-                # Calculate the first day of the next month
-                if today.month == 12:  # If it's December, the next month is January of the next year
+                if today.month == 12:
                     first_day_of_current_month = today.replace(year=today.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
                 else:
                     first_day_of_current_month = today.replace(month=today.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -987,13 +964,13 @@ def accounts_overview():
                 },
                 {
                     '$group': {
-                        '_id': '$project_name',  # Group by project_name
-                        'total_amount': {'$sum': '$amount'},  # Sum of amount
-                        'total_amount_demanded': {'$sum': '$amount_demanded'}  # Sum of amount_demanded
+                        '_id': '$project_name',
+                        'total_amount': {'$sum': '$amount'},
+                        'total_amount_demanded': {'$sum': '$amount_demanded'}
                     }
                 },
                 {
-                    '$sort': {'total_amount': -1}  # Sort by total_amount in descending order
+                    '$sort': {'total_amount': -1}
                 }
             ]
 
@@ -1241,10 +1218,9 @@ def view_finance_receipt(id):
             flash("No receipt found for this transaction", 'error')
             return redirect('/current-accounts')
     else:
-        old_account = db.old_transaction_finance_accounts.find_one({'client_id': ObjectId(id)})
+        old_account = db.old_transaction_finance_accounts.find_one({'_id': ObjectId(id)})
         if old_account:
             if 'payment_receipt' in old_account:
-                # Convert the base64 string back to bytes
                 payment_receipt = base64.b64decode(old_account['payment_receipt'])
 
                 # Create a BytesIO object from the PDF data

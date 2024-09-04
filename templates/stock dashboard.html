@@ -377,16 +377,8 @@
           </form>
           <p class="display-date">Display date: {{start_of_previous_month.strftime('%Y-%m-%d')}} to {{first_day_of_current_month.strftime('%Y-%m-%d')}}</p>          
           <div class="chart-container">
-            {% if 'profits_chart' not in session and
-            'loss_chart' not in session and
-            'revenue_and_qty_chart' not in session and
-            'monthly_profits_chart' not in session and
-            'inhouse_costs_chart' not in session and
-            'inhouse_revenue_chart' not in session %}
-            <p>No data found, try selecting another period</p>
-            {% endif %}
             <div class="row">
-              <div class="col-md-6 segment" style="display: {% if session.get('profits_chart') == 'profits_chart' %}block{% else %}none{% endif %}">
+              <div class="col-md-6 segment">
                 {% if top10profits %}
                   <p class="dashboardheadings">Top 10 Profitable Items</p>
                   <div style="max-height: 250px; overflow-y: auto;">
@@ -405,7 +397,7 @@
                     <p>No profitable items found.</p>
                 {% endif %}
               </div>
-              <div class="col-md-6 segment" style="display: {% if session.get('loss_chart') == 'loss_chart' %}block{% else %}none{% endif %}">
+              <div class="col-md-6 segment">
                 {% if top10losses %}
                   <p class="dashboardheadings">Top 10 Unprofitable Items</p>
                   <div style="max-height: 250px; overflow-y: auto;">
@@ -424,7 +416,7 @@
                     <p>No unprofitable items found.</p>
                 {% endif %}
               </div>
-              <div class="col-md-6 segment" style="display: {% if session.get('revenue_and_qty_chart') == 'revenue_and_qty_chart' %}block{% else %}none{% endif %}">
+              <div class="col-md-6 segment">
                 {% if top10revenues %}
                   <p class="dashboardheadings">Top 10 Revenue-Generating Items</p>
                   <div style="max-height: 250px; overflow-y: auto;">
@@ -443,7 +435,7 @@
                     <p>No revenue generating items found.</p>
                 {% endif %}
               </div>
-              <div class="col-md-6 segment" style="display: {% if session.get('revenue_and_qty_chart') == 'revenue_and_qty_chart' %}block{% else %}none{% endif %}">
+              <div class="col-md-6 segment">
                 {% if top10SoldItems %}
                   <p class="dashboardheadings">Top 10 Most Sold Items</p>
                   <div style="max-height: 250px; overflow-y: auto;">
@@ -462,8 +454,12 @@
                     <p>No items sold yet.</p>
                 {% endif %}
               </div>
-              <div class="col-md-6 segment" style="display: {% if session.get('monthly_profits_chart') == 'monthly_profits_chart' %}block{% else %}none{% endif %}">
-                <p class="dashboardheadings">Monthly Profit Trends</p>
+              <div class="col-md-6 segment">
+                {%if projections == "projections"%}
+                <p class="dashboardheadings">Projected Profits for the Next 6 Months</p>
+                {%else%}
+                <p class="dashboardheadings">Monthly Profit Trends <span class="projection"><a class="projectiondashboardheadings" href="{{url_for('stockManagement_route.stock_overview', projections="projections")}}">Projection</a></span></p>
+                {%endif%}
                 <div>
                   <canvas id="trended_profitChart"></canvas>
                 </div>
@@ -493,56 +489,73 @@
   <!-- container-scroller -->
 
   <!-- CHARTS JAVASCRIPTS -->
-    <script>
-      var ctx = document.getElementById('trended_profitChart').getContext('2d');
-      var chartData = {{ trended_profit | tojson }};
-      
-      var trended_profitChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-              labels: chartData.labels,
-              datasets: [{
-                  label: 'Profits',
-                  data: chartData.values,
-                  backgroundColor: 'rgba(75, 192, 192, 0.2)',  // Classic background color with transparency
-                  borderColor: '#a43cda',  // Line color
-                  borderWidth: 2,
-                  fill: false,  // Fill area under the line
-                  tension: 0.3  // Smooth line
-              }]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: false, // Ensures the chart resizes responsively
-              scales: {
-                  y: {
-                      beginAtZero: true,
-                      title: {
-                          display: true,
-                          text: 'Profit/Loss'
-                      }
-                  }
-              },
-              plugins: {
-                  legend: {
-                      display: true,
-                      position: 'bottom'
-                  },
-                  tooltip: {
-                      enabled: true
-                  }
-              },
-              layout: {
-                  padding: {
-                      left: 10,
-                      right: 10,
-                      top: 10,
-                      bottom: 10
-                  }
-              }
-          }
-      });
-    </script>
+  <script>
+    var ctx = document.getElementById('trended_profitChart').getContext('2d');
+    var chartData = {{ trended_profit | tojson }};
+  
+    var trended_profitChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Profit',
+                data: chartData.values,
+                backgroundColor: function(context) {
+                    var index = context.dataIndex;
+                    return chartData.types[index] === 'Projection' ? 'rgba(255, 159, 64, 0.2)' : 'rgba(75, 192, 192, 0.2)';
+                },
+                borderColor: function(context) {
+                    var index = context.dataIndex;
+                    return chartData.types[index] === 'Projection' ? '#ff7f0e' : '#a43cda';
+                },
+                borderWidth: 2,
+                fill: false,  // No fill
+                tension: 0.3,  // Smooth line
+                segment: {
+                    borderColor: function(context) {
+                        var index = context.p1DataIndex;
+                        return chartData.types[index] === 'Projection' ? '#ff7f0e' : '#a43cda';
+                    }
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Ensures the chart resizes responsively
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Profit'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        filter: function(legendItem, chartData) {
+                            return chartData.datasets[0].data.some((_, i) => chartData.datasets[0].data[i] === legendItem.text);
+                        }
+                    }
+                },
+                tooltip: {
+                    enabled: true
+                }
+            },
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10
+                }
+            }
+        }
+    });
+  </script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {

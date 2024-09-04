@@ -13,6 +13,7 @@ from io import BytesIO
 import json
 from bson.objectid import ObjectId
 import cv2
+from sklearn.linear_model import LinearRegression
 import numpy as np
 import io
 import base64
@@ -1209,13 +1210,6 @@ def stock_overview():
                        start_of_previous_month=None,
                        first_day_of_current_month=None,dp=dp_str)
             else:
-                session.pop("profits_chart", None)
-                session.pop("loss_chart", None)
-                session.pop("revenue_and_qty_chart", None)
-                session.pop("monthly_profits_chart", None)
-                session.pop("inhouse_costs_chart", None)
-                session.pop("inhouse_revenue_chart", None)
-
                 startdate_on_str = request.form.get("startdate")
                 enddate_on_str = request.form.get("enddate")
 
@@ -1378,7 +1372,6 @@ def stock_overview():
                 top_profitable_items = df[df['Profit'] > 0].sort_values(by='Profit', ascending=False).head(10)
 
                 if not top_profitable_items.empty:
-                    session['profits_chart'] = 'profits_chart'
                     for index, row in top_profitable_items.iterrows():
                         profitableItems.append(row['Item Name'])
                         profits.append(row['Profit'])
@@ -1390,7 +1383,6 @@ def stock_overview():
                 top_unprofitable_items = df[df['Profit'] < 0].sort_values(by='Profit', ascending=False).head(10)
 
                 if not top_unprofitable_items.empty:
-                    session['loss_chart'] = 'loss_chart'
                     for index, row in top_unprofitable_items.iterrows():
                         unprofitableItems.append(row['Item Name'])
                         losses.append(row['Profit'])
@@ -1400,7 +1392,6 @@ def stock_overview():
                 revenueItems = []
                 revenue = []
                 if not df.empty:
-                    session['revenue_and_qty_chart'] = 'revenue_and_qty_chart'
                     top_revenue = df.sort_values(by='Total Revenue', ascending=False).head(10)
                     for index, row in top_revenue.iterrows():
                         revenueItems.append(row['Item Name'])
@@ -1558,20 +1549,59 @@ def stock_overview():
                 # Group by month and calculate the sum of profits
                 monthly_profits = profit_info_df.groupby(profit_info_df['Stock Date'].dt.to_period('M'))['Profit'].sum()
 
-                # Create a DataFrame with month names
-                monthly_profits_df = pd.DataFrame({
-                    'Month': monthly_profits.index.to_timestamp().strftime('%B'),
-                    'Monthly Profit': monthly_profits
-                })
+                projections = request.args.get('projections')
+                if projections == "projections":
+                    monthly_profits_df = pd.DataFrame({
+                        'Month Name': monthly_profits.index.to_timestamp().strftime('%B'),
+                        'Year': monthly_profits.index.year,
+                        'Month Num': monthly_profits.index.month,
+                        'Monthly Profit': monthly_profits,
+                        'Type': 'Historical'
+                    })
 
-                # Create the line chart
-                if not monthly_profits_df.empty:
-                    session['monthly_profits_chart'] = 'monthly_profits_chart'
+                    # Prepare data for regression
+                    X = monthly_profits_df['Month Num'].values.reshape(-1, 1)
+                    y = monthly_profits_df['Monthly Profit'].values
+                    model = LinearRegression()
+                    model.fit(X, y)
 
-                trended_profit = {
-                    'labels': monthly_profits_df['Month'].tolist(),
-                    'values': monthly_profits_df['Monthly Profit'].tolist()
-                }
+                    # Projecting future profits for the next 6 months
+                    future_months = np.arange(len(monthly_profits_df) + 1, len(monthly_profits_df) + 7).reshape(-1, 1)
+                    projected_profits = model.predict(future_months)
+
+                    # Generate future labels
+                    last_date = monthly_profits.index[-1].to_timestamp()
+                    future_dates = pd.date_range(last_date, periods=7, freq='ME')[1:]
+                    future_labels = [f"{date.strftime('%B')} {date.year}" for date in future_dates]
+
+                    # Combine historical and projected data
+                    future_df = pd.DataFrame({
+                        'Month Name': [date.strftime('%B') for date in future_dates],
+                        'Year': [date.year for date in future_dates],
+                        'Month Num': np.arange(len(monthly_profits_df) + 1, len(monthly_profits_df) + 7),
+                        'Monthly Profit': projected_profits,
+                        'Type': 'Projection'
+                    })
+
+                    all_data_df = pd.concat([monthly_profits_df, future_df])
+
+                    trended_profit = {
+                        'labels': all_data_df.apply(lambda row: f"{row['Month Name']} {row['Year']}", axis=1).tolist(),
+                        'values': all_data_df['Monthly Profit'].tolist(),
+                        'types': all_data_df['Type'].tolist()
+                    }
+                else:
+                    monthly_profits_df = pd.DataFrame({
+                        'Month Name': monthly_profits.index.to_timestamp().strftime('%B'),
+                        'Year': monthly_profits.index.year,
+                        'Monthly Profit': monthly_profits
+                    })
+
+                    trended_profit = {
+                        'labels': monthly_profits_df.apply(lambda row: f"{row['Month Name']} {row['Year']}", axis=1).tolist(),
+                        'values': monthly_profits_df['Monthly Profit'].tolist(),
+                        'types': ['Historical'] * len(monthly_profits_df)
+                    }
 
                 del df_ungrouped, df, profit_info_df, monthly_profits, monthly_profits_df
                 gc.collect()
@@ -1580,7 +1610,7 @@ def stock_overview():
                 return render_template('stock dashboard.html',top10profits=top10profits,top10losses=top10losses,top10revenues=top10revenues,
                                     top10SoldItems=top10SoldItems,trended_profit=trended_profit,
                                     start_of_previous_month=start_of_previous_month,
-                                    first_day_of_current_month=first_day_of_current_month, dp=dp_str)
+                                    first_day_of_current_month=first_day_of_current_month, dp=dp_str,projections=projections)
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/manager login page')

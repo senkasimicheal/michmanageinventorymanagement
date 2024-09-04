@@ -26179,11 +26179,22 @@ table td {
 }
 
 .segment .dashboardheadings {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: bold;
   text-align: center;
   color: #fff;
   background: linear-gradient(90deg, #4facfe, #00f2fe);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.segment .projectiondashboardheadings {
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(90deg, #ff0000, #0000ff);
   padding: 10px;
   border-radius: 8px;
   margin-bottom: 20px;
