@@ -24,6 +24,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </head>
 <body>
   <!-- preloader -->
@@ -329,6 +333,26 @@
               {% endif %}
           {% endwith %}
         </div>
+        <!-- Disclaimer Modal -->
+        <div class="modal fade" id="disclaimerModal" tabindex="-1" role="dialog" aria-labelledby="disclaimerModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="disclaimerModalLabel">Disclaimer</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                      </button>
+                  </div>
+                  <div class="modal-body">
+                      Please note: The projections provided are based solely on historical stock data and should be interpreted as informational insights rather than actionable business advice. Market conditions are subject to rapid change, and these projections do not account for future uncertainties. We recommend consulting with a financial advisor before making any significant business decisions based on these predictions.
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      <a class="btn btn-primary" href="{{url_for('stockManagement_route.stock_overview', projections='projections')}}">Proceed to Projections</a>
+                  </div>
+              </div>
+          </div>
+        </div>
         <div class="content-wrapper">
           <form class="dashboard-form-form" action="{{url_for('stockManagement_route.stock_overview')}}" method="POST">
             <label class="dashboard-form" for="">From</label>
@@ -420,7 +444,14 @@
                 {%if projections == "projections"%}
                 <p class="dashboardheadings">Projected Profits for the Next 6 Months</p>
                 {%else%}
-                <p class="dashboardheadings">Monthly Profit Trends <span class="projection"><a class="projectiondashboardheadings" href="{{url_for('stockManagement_route.stock_overview', projections="projections")}}">Projection</a></span></p>
+                <p class="dashboardheadings">
+                  Monthly Profit Trends
+                  <span class="projection">
+                      <a class="projectiondashboardheadings" href="#" data-toggle="modal" data-target="#disclaimerModal">
+                          Projections
+                      </a>
+                  </span>
+                </p>
                 {%endif%}
                 <div>
                   <canvas id="trended_profitChart"></canvas>
