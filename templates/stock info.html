@@ -397,7 +397,13 @@
                     {% endif %}
                   </td>
                   <td>{{ stock['unitOfMeasurement'] }}</td>
-                  <td>{{ '{:,.0f}'.format(stock['selling_price'])}}</td>
+                  <td>
+                    {% if 'selling_price' in stock %}
+                    {{ '{:,.0f}'.format(stock['selling_price']) }}
+                    {% else %}
+                    0
+                    {% endif %}
+                  </td>
                   <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
                   <td class="total-buying-price">{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
                   <td class="total-stock-value">

@@ -373,6 +373,7 @@
                   </th>
                   <th>Stocked Quantity</th>
                   <th>Measurement</th>
+                  <th>Selling Price</th>
                   <th>Buying Price</th>
                   <th>Total Buying Price</th>
                   <th>Available Stock</th>
@@ -386,6 +387,13 @@
                   <td>{{ stock['stockDate'].strftime('%Y-%m-%d') }}</td>
                   <td>{{ stock['quantity'] }}</td>
                   <td>{{stock['unitOfMeasurement']}}</td>
+                  <td>
+                    {% if 'selling_price' in stock %}
+                    {{ '{:,.0f}'.format(stock['selling_price']) }}
+                    {% else %}
+                    0
+                    {% endif %}
+                  </td>
                   <td>{{ '{:,.0f}'.format(stock['unitPrice']) }}</td>
                   <td class="total-buying-price">{{ '{:,.0f}'.format(stock['totalPrice']) }}</td>
                   <td>
