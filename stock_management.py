@@ -1582,14 +1582,16 @@ def stock_overview():
                         'Monthly Profit': projected_profits,
                         'Type': 'Projection'
                     })
+                    last_3_months = monthly_profits_df.tail(3)
 
-                    all_data_df = pd.concat([monthly_profits_df, future_df])
+                    all_data_df = pd.concat([last_3_months, future_df])
 
                     trended_profit = {
                         'labels': all_data_df.apply(lambda row: f"{row['Month Name']} {row['Year']}", axis=1).tolist(),
                         'values': all_data_df['Monthly Profit'].tolist(),
                         'types': all_data_df['Type'].tolist()
                     }
+                    del last_3_months, all_data_df
                 else:
                     monthly_profits_df = pd.DataFrame({
                         'Month Name': monthly_profits.index.to_timestamp().strftime('%B'),
