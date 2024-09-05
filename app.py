@@ -140,7 +140,7 @@ def convert_docx_to_pdf(docx_path):
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_financial_reminders():
     current_day_of_week = datetime.now().weekday()
-    if current_day_of_week != 3:
+    if current_day_of_week != 3 and current_day_of_week != 4:
         return
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
@@ -176,7 +176,7 @@ def send_payment_financial_reminders():
 ##########SEND MONTHLY REPORTS###########
 def send_inventory_reports():
     if datetime.now().day != 1:
-        return  # Only run on the first day of the month
+        return
 
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
@@ -518,13 +518,10 @@ scheduler.add_job(
 
 scheduler.add_job(
     send_payment_financial_reminders,
-    CronTrigger(hour=9, minute=0),
+    CronTrigger(hour=12, minute=0),
     id='send_payment_financial_reminders_job',
-    name='Run job every day at 9 AM',
+    name='Run job every day at 12 PM',
     replace_existing=True
 )
 
 scheduler.start()
-
-# if __name__ == "__main__":
-#     app.run(debug=True)
