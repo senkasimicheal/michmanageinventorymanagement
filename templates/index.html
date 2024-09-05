@@ -75,9 +75,7 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Manager Login</a>
-                <a href="{{ url_for('login_route.tenant_login_page') }}" id="tenant-login">Tenant Login</a>
-                <a href="{{ url_for('registration_route.tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
+                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Login</a>
                 <a href="{{ url_for('documentation_route.privacy_policy') }}">Privacy Policy</a>
                 <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
                 <a href="{{ url_for('documentation_route.about') }}">About</a>
@@ -138,7 +136,7 @@
           <div class="img-box">
             <div class="box b1">
               <img src="/static/images/d-1.webp" alt="">
-              <p>Experience faster and more secure servers for enhanced user experience during inventory and property management on
+              <p>Experience faster and more secure servers for enhanced user experience during inventory management on
                 Mich
                 Manage—providing convenience and reliability.</p>
             </div>
@@ -148,8 +146,7 @@
           <div class="img-box">
             <div class="box b1">
               <img src="/static/images/d-2.jpg" alt="">
-              <p>Our system can be utilized from any location, allowing you the flexibility to manage your inventories and properties
-                seamlessly whether you're in the office, at home, or on the go.</p>
+              <p>Our system can be utilized from any location, allowing you the flexibility to manage your inventories seamlessly whether you're in the office, at home, or on the go.</p>
             </div>
           </div>
         </div>
@@ -348,10 +345,7 @@
               </li>
               <li>
                 <a href="{{ url_for('documentation_route.about') }}">About</a>
-              </li>
-              <li>
-                <a href="{{url_for('documentation_route.documentation')}}">Documentation</a>
-              </li>
+              </li>             
               <li>
                 <a href="{{ url_for('documentation_route.download_apk') }}" id="install-link" style="display: none;">Install App</a>
               </li>

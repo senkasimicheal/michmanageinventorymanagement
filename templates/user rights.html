@@ -196,133 +196,121 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
-          {% if session['account_type'] == 'Property Management' %}
-          {% if session['is_manager'] == 'is_manager' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.load_dashboard_page') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Dashboard</span>
-            </a>
-          </li>
-          {% endif %}
-          {% if session.get('add_properties') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.add_properties') }}" id="add-property">
-              <i class="typcn typcn-document-text menu-icon"></i>
-              <span class="menu-title">Add property</span>
-              
-            </a>
-          </li>
-          {% endif %}
-          {% if session.get('add_tenants') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.add_tenants') }}" id="add-tenant">
-              <i class="typcn typcn-film menu-icon"></i>
-              <span class="menu-title">Add Tenants</span>
-            </a>
-            </li>
-            {% endif %}
-            {% if session.get('add_properties') != 'no' %}
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('propertyManagement_route.property_expenses') }}" id="add-property">
-                <i class="typcn typcn-document-text menu-icon"></i>
-                <span class="menu-title">Add Expenses</span>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('propertyManagement_route.view_property_expenses') }}" id="add-property">
-                <i class="typcn typcn-document-text menu-icon"></i>
-                <span class="menu-title">View Expenses</span>
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.update_tenant_info') }}">
-              <i class="typcn typcn-chart-pie-outline menu-icon"></i>
-              <span class="menu-title">Tenants</span>
-              
-            </a>
-          </li>
-          {% if session.get('add_properties') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.view_property_info') }}">
-              <i class="typcn typcn-th-small-outline menu-icon"></i>
-              <span class="menu-title">Properties</span>
-              
-            </a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.resolve_complaints') }}">
-              <i class="typcn typcn-compass menu-icon"></i>
-              <span class="menu-title">Complaints</span>
-              
-            </a>
-          </li>
-          {% if session.get('manage_contracts') != 'no' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.manage_contracts') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Contracts</span>
-              
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.upload_contract_page') }}">
-              <i class="typcn typcn-book menu-icon"></i>
-              <span class="menu-title">Add Contracts</span>
-              
-            </a>
-          </li>
-          {% endif %}
-          {% if session['is_manager'] == 'is_manager' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.view_file_passwords') }}">
-              <i class="typcn typcn-key menu-icon"></i>
-              <span class="menu-title">Passwords</span>
-              
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('propertyManagement_route.export_tenant_data') }}" id="export">
-              <i class="typcn typcn-mortar-board menu-icon"></i>
-              <span class="menu-title">Export</span>
-            </a>
-          </li>
-          {% endif %}
-          {% endif %}
-
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
-              <i class="typcn typcn-device-desktop menu-icon"></i>
-              <span class="menu-title">Dashboard</span>
-            </a>
+              <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
+                  <i class="typcn typcn-device-desktop menu-icon"></i>
+                  <span class="menu-title">Dashboard</span>
+              </a>
+          </li>
+          {% endif %}
+          {% if session.get('add_stock') != 'no' %}
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.add_new_stock_page') }}" id="new-stock">
+                  <i class="typcn typcn-document-add menu-icon"></i>
+                  <span class="menu-title">New Stock</span>
+              </a>
+          </li>
+          {% endif %}
+          {% if session.get('update_stock') != 'no' %}
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.update_existing_stock') }}" id="update-new-stock">
+              <i class="typcn typcn-briefcase menu-icon"></i>
+              <span class="menu-title">Update Stock</span>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.generate_bar_codes') }}" id="update-new-stock">
+                  <i class="typcn typcn-briefcase menu-icon"></i>
+                  <span class="menu-title">Generate Bar Codes</span>
+              </a>
+          </li>
+          {% endif %}
+          {% if session.get('update_sales') != 'no' %}
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.update_sales_page') }}" id="update-sale">
+              <i class="typcn typcn-book menu-icon"></i>
+              <span class="menu-title">Update Sales</span>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.scan_bar_code_page') }}" id="update-sale">
+                  <i class="typcn typcn-book menu-icon"></i>
+                  <span class="menu-title">Scan Bar Code</span>
+              </a>
+          </li>
+          {% endif %}
+          {% if session.get('update_sales') != 'no' %}
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.expenses_page') }}" id="update-sale">
+                  <i class="typcn typcn-calculator menu-icon"></i>
+                  <span class="menu-title">Record Expenses</span>
+              </a>
           </li>
           {% endif %}
           {% if session.get('view_stock_info') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
-              <i class="typcn typcn-cloud-storage menu-icon"></i>
-              <span class="menu-title">Current Stock</span>
-            </a>
+              <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
+                  <i class="typcn typcn-cloud-storage menu-icon"></i>
+                  <span class="menu-title">Current Stock</span>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.stock_history_details') }}">
+                  <i class="typcn typcn-cloud-storage menu-icon"></i>
+                  <span class="menu-title">Stock History</span>
+              </a>
           </li>
           {% endif %}
           {% if session.get('view_revenue') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
-              <i class="typcn typcn-business-card menu-icon"></i>
-              <span class="menu-title">Profits</span>
-            </a>
+              <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
+                  <i class="typcn typcn-business-card menu-icon"></i>
+                  <span class="menu-title">Profits</span>
+              </a>
           </li>
           {% endif %}
           {% if session.get('view_sales') != 'no' %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
-              <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
-              <span class="menu-title">Sales</span>
-            </a>
+              <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
+                  <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+                  <span class="menu-title">Sales</span>
+              </a>
+          </li>
+          {% endif %}
+          {% if session.get('view_sales') != 'no' %}
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.view_expenses') }}" id="update-sale">
+                  <i class="typcn typcn-calculator menu-icon"></i>
+                  <span class="menu-title">View Expenses</span>
+              </a>
+          </li>
+          {% endif %}
+          {% if session.get('inhouse') != 'no' %}
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.update_production_activity') }}" id="inhouse">
+                  <i class="typcn typcn-document-add menu-icon"></i>
+                  <span class="menu-title">Production</span>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.update_inhouse_use_page') }}" id="inhouse-use">
+                  <i class="typcn typcn-document-add menu-icon"></i>
+                  <span class="menu-title">In-House Use</span>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.inhouse_items_use_details') }}">
+                  <i class="typcn typcn-calculator menu-icon"></i>
+                  <span class="menu-title">In-House Info</span>
+              </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('stockManagement_route.view_production_info') }}">
+                  <i class="typcn typcn-calculator menu-icon"></i>
+                  <span class="menu-title">Production Info</span>
+              </a>
           </li>
           {% endif %}
           {% endif %}

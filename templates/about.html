@@ -70,9 +70,7 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Manager Login</a>
-                <a href="{{ url_for('login_route.tenant_login_page') }}" id="tenant-login">Tenant Login</a>
-                <a href="{{ url_for('registration_route.tenant_register_page') }}" id="tenant-signup">Tenant Sign Up</a>
+                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Login</a>              
                 <a href="{{ url_for('documentation_route.privacy_policy') }}">Privacy Policy</a>
                 <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
                 <a href="{{ url_for('documentation_route.about') }}">About</a>
@@ -98,66 +96,50 @@
         <div class="timeline-container">
           <div class="timeline">
             <div class="timeline-item">
-              <div class="year">Feb-2024</div>
-              <div class="content">Launched the first version of our product<br>as a property management system</div>
+              <div class="year">01-Feb-2024</div>
+              <div class="content">Launched the first version of our product<br>as an inventory management system</div>
             </div>
             <div class="timeline-item">
-              <div class="year">May-2024</div>
-              <div class="content">Launched a new module<br>inventory management system</div>
+              <div class="year">01-May-2024</div>
+              <div class="content">Launched a new module<br>accounts management system</div>
             </div>
-            <!-- <div class="timeline-item">
-                                                      <div class="year">2022</div>
-                                                      <div class="content">Introduced AI-driven features to enhance user experience.</div>
-                                                    </div> -->
-            <!-- Add more timeline items as needed -->
           </div>
         </div>
 
         <p>
-          Mich Manage revolutionizes inventory and property management with its intuitive and efficient platform, designed to
-          cater to inventory managers, retailers, landlords, property managers, and tenants alike. Our comprehensive suite of
-          tools simplifies every aspect of inventory and property management, from listing properties to resolving tenant
-          complaints. Here's what sets us apart:
+          Mich Manage revolutionizes inventory management with its intuitive and efficient platform, designed to
+          cater to inventory managers, retailers. Our comprehensive suite of
+          tools simplifies every aspect of inventory management. Here's what sets us apart:
         </p>
         <h5>Vision</h5>
-        <p>To be the leading inventory and property management platform that transforms the stock and real estate landscape
+        <p>To be the leading inventory management platform that transforms the stock landscape
           through innovation,
           efficiency, and empowerment.</p>
         <h5>Mission</h5>
-        <p>We strive to enhance the inventory and property management experience through advanced technology, insightful
+        <p>We strive to enhance the inventory management experience through advanced technology, insightful
           analytics, and
           unwavering support.</p>
         <h5>Our Values</h5>
         <h6>1. Innovation</h6>
-        <p>We believe in continuous improvement and embracing new technologies to stay ahead in the inventory and property
-          management
+        <p>We believe in continuous improvement and embracing new technologies to stay ahead in the inventory management
           industry.</p>
         <h6>2. Efficiency</h6>
-        <p>Our platform is designed to maximize productivity, minimize effort, and optimize inventory and property management
+        <p>Our platform is designed to maximize productivity, minimize effort, and optimize inventory management
           processes.</p>
         <h6>3. Customer-Centric</h6>
         <p>We prioritize the needs of our users, ensuring responsive support and a user-friendly experience.</p>
         <h6>4. Integrity</h6>
         <p>We uphold the highest standards of security and reliability, ensuring our users’ data is always protected.</p>
-        <h6>5. Collaboration</h6>
-        <p>We foster a community where landlords, property managers, and tenants can connect and thrive together.</p>
         <h5>Our Services</h5>
-        <p>1. Property accounting</p>
+        <p>1. Inventory accounting</p>
         <p>2. Reporting and analytics</p>
-        <p>3. Tenant relations</p>
-        <p>4. Contract management</p>
-        <p>5. Automated reminders</p>
-        <p>6. Stock and sales management</p><br>
+        <p>3. Automated reminders</p>
+        <p>4. Stock and sales management</p><br>
         <h5>Why Choose Us?</h5>
-        <h6>Effortless Property Management:</h6>
+        <h6>Effortless Inventory Management:</h6>
         <ul>
-          <li>Easily add and manage inventories & properties through our user-friendly interface.</li>
+          <li>Easily add and manage inventories through our user-friendly interface.</li>
           <li>Stay organized with customizable dashboards tailored to your specific needs.</li>
-        </ul>
-        <h6>Seamless Tenant Management:</h6>
-        <ul>
-          <li>Attach tenants to properties effortlessly and keep track of their details.</li>
-          <li>Update tenant information, manage payments, and resolve complaints promptly.</li>
         </ul>
         <h6>Data Export and Analysis:</h6>
         <ul><li>Export your data for local storage and analysis, ensuring you have insights at your fingertips.</li></ul>
@@ -166,8 +148,8 @@
         <h6>Secure and Reliable:</h6>
         <ul><li>Rest assured that your data is safe and secure with Mich Manage's robust security measures.</li></ul>
         <h5>Get Started Today</h5>
-        <ul><li>Join the Mich Manage community and experience the future of property management.</li></ul>
-        <p>At Mich Manage, we're committed to simplifying property management, empowering landlords, property managers, and tenants to thrive in today's dynamic real estate landscape. Experience the difference with Mich Manage - where property management meets innovation.</p>
+        <ul><li>Join the Mich Manage community and experience the future of inventory management.</li></ul>
+        <p>At Mich Manage, we're committed to simplifying inventory management, empowering business people to thrive in today's dynamic business landscape. Experience the difference with Mich Manage - where inventory management meets innovation.</p>
     </div>
   </section>
 
@@ -230,17 +212,14 @@
               </li>
               <li>
                 <a href="{{ url_for('documentation_route.about') }}">About</a>
-              </li>
-              <li>
-                <a href="{{url_for('documentation_route.documentation')}}">Documentation</a>
-              </li>
+              </li>            
             </ul>
           </div>
         </div>
         <div class="col-md-3">
           <div class="info_form ">
             <div class="social_box">
-              <a href="https://wa.me/?text=Faster and secure property management software, visit us on https://michmanage.onrender.com for our services">
+              <a href="https://wa.me/?text=Faster and secure inventory management software, visit us on https://michmanage.onrender.com for our services">
                 <img class="whatsapp" src="/static/images/whatsapp.png" alt="">
               </a>
               <a href="https://www.linkedin.com/in/micheal-senkasi-846182233?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3B4C%2BpIaMvTRSAomy%2BjqXrbQ%3D%3D">

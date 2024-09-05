@@ -4,8 +4,8 @@ from flask_mail import Mail, Message
 from flask import current_app
 
 def get_mongo_client():
-    client = MongoClient('mongodb://localhost:27017/')
-    # client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
+    # client = MongoClient('mongodb://localhost:27017/')
+    client = MongoClient('mongodb+srv://micheal:QCKh2uCbPTdZ5sqS@cluster0.rivod.mongodb.net/ANALYTCOSPHERE?retryWrites=true&w=majority')
     return client
 
 def get_db_and_fs():
