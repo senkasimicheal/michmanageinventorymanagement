@@ -367,7 +367,7 @@
         </div>
         <div class="content-wrapper">
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
-          <form id="permissionForm2" class="property_forn" action="{{ url_for('userRights_route.user_rights_initiated') }}" method="POST">
+          <form id="permissionForm2" class="property_forn content-pannel" action="{{ url_for('userRights_route.user_rights_initiated') }}" method="POST">
             <input type="hidden" name="email" value="{{ email }}">
             <input type="hidden" name="company_name" value="{{ company_name }}">
             <div>

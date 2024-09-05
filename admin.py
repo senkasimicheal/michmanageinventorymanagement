@@ -97,7 +97,7 @@ def add_property_manager():
         subscribed_days = int(subscribed_days)
         amount_per_month_form_data = request.form.get('amount_per_month')
         amount_per_month = int(amount_per_month_form_data)
-           
+        account_holder = request.form.get('account_holder')  
         account_type = request.form.getlist('account_type')
         if 'All Types' in account_type:
             account_type = ['Property Management', 'Enterprise Resource Planning']
@@ -105,7 +105,8 @@ def add_property_manager():
         if managers is None:
             manager = {'email': email, 'name': name, 'managers': allowed_managers,
                     'manager_email': manager_email, 'last_subscribed_on': datetime.now(),
-                    'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month, 'account_type': account_type}
+                    'subscribed_days': subscribed_days, 'amount_per_month': amount_per_month,
+                    'account_type': account_type, 'account_holder': account_holder}
             db.managers.insert_one(manager)
             user_data = session.get('user_data')
 
