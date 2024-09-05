@@ -17,54 +17,6 @@ def manager_register_page():
     company_name = request.args.get('company_name')
     return render_template("manager register.html", company_name=company_name)
 
-@registration.route('/tenant_register')
-def tenant_register_page():
-    db, fs = get_db_and_fs()
-    companies = db.managers.find({}, {"name": 1})
-    company_names = [company['name'] for company in companies]
-    
-    cursor = db.property_managed.find({}, {'propertyName': 1, '_id': 0})
-    property_data = [item['propertyName'] for item in cursor if 'propertyName' in item]
-    
-    resp = make_response(render_template("tenant register.html", property_data=property_data, company_names=company_names))
-    return resp
-
-#######TENANT REGISTER ACCOUNT###############          
-@registration.route('/tenant-register-account', methods=["POST"])
-def tenant_register_account():
-    db, fs = get_db_and_fs()
-    email = request.form.get('email')
-    username = request.form.get('username')
-    propertyName = request.form.get('propertyName')
-    password = request.form.get('password')
-    confirm_password = request.form.get('confirm_password')
-
-    if password != confirm_password:
-        flash('Passwords do not match', 'error')
-        return redirect('/tenant register')
-    else:
-        tenant_exists = db.tenant_user_accounts.find_one({'tenantEmail': email, 'propertyName': propertyName})
-        user = db.tenant_user_accounts.find_one({'username': username})
-        if tenant_exists is None:
-            if user is None:
-                tenant = db.tenants.find_one({'propertyName': propertyName, 'tenantEmail': email})
-                if tenant is None:
-                    flash('Entered tenant is not attached to any property', 'error')
-                    return redirect('/tenant register')
-                else:
-                    hashed_password = bcrypt.hashpw(confirm_password.encode('utf-8'), bcrypt.gensalt())
-                    tenant_data = {'account_manager': tenant['username'], 'tenantEmail': email, 'username': username, 'propertyName': propertyName,
-                                'registered_on': datetime.now(), 'password': hashed_password}
-                    db.tenant_user_accounts.insert_one(tenant_data)
-                    flash('Tenant registered', 'success')
-                    return redirect('/')
-            else:
-                flash('Username already taken', 'error')
-                return redirect('/tenant register')
-        else:
-            flash('Tenant already registered', 'error')
-            return redirect('/')
-
 ###########REGISTRING AN ACCOUNT###############
 @registration.route('/register-account', methods=["POST"])
 def register_account():

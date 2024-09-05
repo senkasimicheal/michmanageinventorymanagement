@@ -16,10 +16,6 @@ def generate_code(length=6):
 def manager_login_page():
     return render_template('manager login.html')
 
-@login.route('/tenant login page')
-def tenant_login_page():
-    return render_template('tenant login.html')
-
 @login.route("/userlogin", methods=["POST"])
 def userlogin():
     db, fs = get_db_and_fs()
@@ -457,97 +453,3 @@ def password_reset_verifying_user():
 
     flash('Your password was successfully reset', 'success')
     return redirect('/manager login page')
-
-#######TENANT LOGIN##############
-@login.route("/tenant-login", methods=["POST"])
-def tenant_login():
-    db, fs = get_db_and_fs()
-    session.clear()
-    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
-
-    username = request.form.get('username')
-    password = request.form.get('password')
-
-    tenant = db.tenant_user_accounts.find_one({'username': username})
-    if tenant is None:
-        flash('Not a registered tenant', 'error')
-        return redirect('/tenant login page')
-    else:
-        stored_password = tenant['password']
-        if bcrypt.checkpw(password.encode('utf-8'), stored_password):
-            if "auth" in tenant and tenant["auth"] == "yes":
-                code = generate_code()
-
-                user_auth = {"username": tenant['username'], "code": code, "tenantID": str(tenant['_id']), "tenantEmail": tenant['tenantEmail'], "propertyName": tenant['propertyName']}
-                db.tenant_login_auth.delete_one({"username": tenant['username']})
-
-                no_send_emails_code = 0
-
-                #Sending verification code
-                send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
-
-                if send_emails is not None:
-                    msg = Message('Verify Your Identity - Mich Manage', 
-                    sender='michmanage@outlook.com', 
-                    recipients=[tenant["tenantEmail"]])
-                    msg.html = f"""
-                    <html>
-                    <body>
-                    <p>Mich Manage Personal Identification</p>
-                    <p><b style="font-size: 20px;">Verification Code: {code}</b></p>
-                    <p>Best Regards,</p>
-                    <p>Mich Manage</p>
-                    </body>
-                    </html>
-                    """
-                    thread = threading.Thread(target=send_async_email, args=[current_app._get_current_object(), msg])
-                    thread.start()
-                else:
-                    session['no_send_emails_code'] = 'no_send_emails_code'
-                    no_send_emails_code = code
-
-                db.tenant_login_auth.create_index([("createdAt", ASCENDING)], expireAfterSeconds=300)
-                db.tenant_login_auth.insert_one(user_auth)
-                return render_template("tenant authentication.html", no_send_emails_code=no_send_emails_code)
-            else:
-                session.permanent = False
-                session['tenantID'] = str(tenant['_id'])
-                session['login_username'] = str(tenant['_id'])
-                session['tenantEmail'] = tenant['tenantEmail']
-                session['propertyName'] = tenant['propertyName']
-
-                logged_in_data = {
-                    'username': tenant['username'],
-                    'timestamp': datetime.now()
-                }
-                db.tenant_logged_in_data.insert_one(logged_in_data)
-                return redirect('/tenant-data')
-        else:
-            flash('Wrong Password', 'error')
-            return redirect('/tenant login page')
-
-#USER AUTHENTICATION
-@login.route("/tenant-authentication", methods=["POST"])
-def tenant_authentication():
-    db, fs = get_db_and_fs()
-    # Get form data
-    code = request.form.get("code")
-
-    # Check if code exists
-    user_auth = db.tenant_login_auth.find_one({"code": code})
-    if user_auth is None:
-        flash("Check code and try again", 'error')
-        return render_template("tenant authentication.html")
-    else:
-        session.permanent = False
-        session['tenantID'] = str(user_auth['tenantID'])
-        session['tenantEmail'] = user_auth['tenantEmail']
-        session['propertyName'] = user_auth['propertyName']
-
-        logged_in_data = {
-            'username': user_auth['username'],
-            'timestamp': datetime.now()
-        }
-        db.tenant_logged_in_data.insert_one(logged_in_data)
-        db.tenant_login_auth.delete_one({'username': user_auth["username"]})
-        return redirect('/tenant-data')
