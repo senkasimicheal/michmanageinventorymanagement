@@ -140,7 +140,7 @@ def convert_docx_to_pdf(docx_path):
 ##########SEND PAYMENT REMINDERS###########
 def send_payment_financial_reminders():
     current_day_of_week = datetime.now().weekday()
-    if current_day_of_week != 3 and current_day_of_week != 4:
+    if current_day_of_week != 3 or current_day_of_week != 4:
         return
     db, fs = get_db_and_fs()
     send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})

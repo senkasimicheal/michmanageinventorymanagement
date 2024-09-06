@@ -23,7 +23,9 @@ from werkzeug.utils import secure_filename
 from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from zipfile import ZipFile
@@ -501,11 +503,12 @@ def update_new_stock():
             flash('Your session expired or does not exist', 'error')
             return redirect('/manager login page')
     
-@stockManagement.route('/update-sale', methods=['POST'])
+@stockManagement.route('/update-sale', methods=['GET', 'POST'])
 def update_sale():
     db, fs = get_db_and_fs()
     login_data = session.get('login_username')
-    
+    send_emails = db.send_emails.find_one({'emails': "yes"}, {'emails': 1})
+
     if login_data is None:
         flash('Login first', 'error')
         return redirect('/manager login page')
@@ -513,13 +516,37 @@ def update_sale():
         account_type = session.get('account_type')
         if account_type == 'Enterprise Resource Planning':
             company = db.registered_managers.find_one({'username': login_data}, {'_id': 0, 'createdAt': 0, 'code': 0, 'phone_number': 0, 'address': 0,
-                                                                                    'password': 0, 'auth': 0, 'dark_mode': 0})
-                
-            all_items = request.json.get('items', [])  # Access the JSON data sent from the client
+                                                                                'password': 0, 'auth': 0, 'dark_mode': 0})
+
+            all_items = request.json.get('items', [])
+            timestamp = datetime.now()
+            data = request.json or {}
+            receipt_value = data.get('receipt_value')
+            email = data.get('email')
+
+            if receipt_value == 'yes' and email:
+                styles = getSampleStyleSheet()
+                data = [
+                    [Paragraph(f"Agency Name", styles['Normal']),
+                    Paragraph(f"{company['company_name']}", styles['Normal'])],
+                    [Paragraph(f"Date & Time", styles['Normal']),
+                    Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
+                    [Paragraph("Transaction Type", styles['Normal']),
+                    Paragraph(f"Sale", styles['Normal'])],
+                    [Paragraph(f"Transaction Date", styles['Normal']),
+                    Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
+                    [Paragraph("ITEMS PURCHASED", styles['Normal'])],
+                    [Paragraph("Item Name", styles['Heading4']),
+                    Paragraph("Quantity", styles['Heading4']),
+                    Paragraph("Unit Price", styles['Heading4']),
+                    Paragraph("Total Price", styles['Heading4'])]
+                ]
+
             out_of_stock_items = []
             over_quantified = []
-            timestamp = datetime.now()
             updates = 0
+            total_payment = 0
+
             for item in all_items:
                 try:
                     item['quantity'] = float(item.get('quantity', 0))
@@ -557,7 +584,7 @@ def update_sale():
                             available_quantity = existing_item['quantity'] - item['quantity']
                             item['revenue'] = revenue
                             item['stockDate'] = existing_item['stockDate']
-                        
+
                         item['stock_id'] = existing_item['_id']
 
                         db.stock_sales.insert_one(item)
@@ -568,24 +595,98 @@ def update_sale():
                             'timestamp': datetime.now()
                         })
                         db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
+                        if receipt_value == 'yes' and email:
+                            total_payment += revenue
+                            data.append([
+                                Paragraph(item['itemName'], styles['Normal']),
+                                Paragraph(str(item['quantity']), styles['Normal']),
+                                Paragraph(f"UGX {item['unitPrice']:.2f}", styles['Normal']),
+                                Paragraph(f"UGX {revenue:.2f}", styles['Normal'])
+                            ])
                     else:
                         flash(f"Item {item['itemName']} does not exist.", 'error')
                 except (ValueError, TypeError) as e:
                     flash(f"Error processing item {item.get('itemName', 'unknown')}: {e}", 'error')
-            
-            if updates ==1:
-                message = 'Sales updated successfully'
-                flash(message, 'success')
+
+            if updates == 1:
+                if receipt_value == 'yes' and email:
+                    data.append([])
+                    data.append([Paragraph("TOTAL PAYMENT", styles['Heading4']),
+                                Paragraph("", styles['Normal']),
+                                Paragraph("", styles['Normal']),
+                                Paragraph(f"UGX {total_payment:.2f}", styles['Normal'])])
+
+                    buffer = io.BytesIO()
+                    doc = SimpleDocTemplate(buffer, pagesize=letter)
+                    table = Table(data, colWidths=[2.5 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch])
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 5), (-1, 5), colors.grey),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTNAME', (0, 6), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 0), (-1, -1), 10),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, 1), colors.lightgrey)
+                    ]))
+
+                    elements = [Spacer(1, 0.5 * inch), table]
+                    doc.build(elements)
+
+                    pdf_data = buffer.getvalue()
+                    buffer.close()
+
+                    if send_emails is not None:
+                        msg = Message(f"Payment Receipt From {company['company_name']}", 
+                                      sender='michmanage@outlook.com', 
+                                      recipients=[email])
+                        msg.html = f"""
+                        <html>
+                        <body>
+                        <p>Dear Client,</p>
+                        <p>Thank you for transacting with us, kindly find your payment receipt attached</p>
+                        <p>Best Regards,</p>
+                        <p>Mich Manage</p>
+                        </body>
+                        </html>
+                        """
+
+                        # Attach the PDF receipt to the email
+                        msg.attach("Payment Receipt.pdf", "application/pdf", pdf_data)
+
+                        # Send the email
+                        thread = threading.Thread(target=send_async_email, args=[current_app._get_current_object(), msg])
+                        thread.start()
+                flash('Sales updated successfully', 'success')
 
             if out_of_stock_items:
                 flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
             if over_quantified:
                 flash(f'Enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
-
-            return jsonify({'redirect': url_for('stockManagement_route.update_sales_page')})
+            if send_emails is not None:
+                return jsonify({'redirect': url_for('stockManagement_route.update_sales_page')})
+            else:
+                if receipt_value == 'yes' and email:
+                    filename = f'payment_receipt_{email}.pdf'
+                    with open(filename, 'wb') as f:
+                        f.write(pdf_data)
+                    
+                    filepath = os.path.join('.', filename)
+                    remove_file_later(filepath, delay=10)
+                    
+                    return jsonify({
+                        'download_url': url_for('stockManagement_route.download_receipt', filename=filename),
+                        'redirect_url': url_for('stockManagement_route.update_sales_page')
+                    })
+                else:
+                    return jsonify({'redirect': url_for('stockManagement_route.update_sales_page')})
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/manager login page')
+
+@stockManagement.route('/download-receipt/<filename>')
+def download_receipt(filename):
+    return send_from_directory(directory='.', path=filename, as_attachment=True, download_name=filename)
 
 @stockManagement.route('/store_scanned_sale', methods=['GET', 'POST'])
 def store_scanned_sale():
