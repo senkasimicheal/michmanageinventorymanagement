@@ -72,7 +72,8 @@
             <div id="myNav" class="overlay">
               <div class="overlay-content">
                 <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Login</a>               
+                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Login</a>  
+                <a href="{{ url_for('registration_route.manager_register_page') }}" id="login">Signup</a>             
                 <a href="{{ url_for('documentation_route.privacy_policy') }}">Privacy Policy</a>
                 <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
                 <a href="{{ url_for('documentation_route.about') }}">About</a>
@@ -101,8 +102,20 @@
       <div class="container-fluid-form" style="margin-top: -8rem;">
         <form id="myForm" class="property_forn" action="{{url_for('registration_route.register_account')}}" method="POST">
           <h6>Manager account</h6>
+          {% if emails == "yes" %}
           <p>Company Name: {{company_name}}</p>
           <input type="hidden" name="company_name" value="{{company_name}}">
+          {% else %}
+          <label class="input_labels" for="">Company Name</label>
+          <select class="property_inputs" name="company_name" id="property" required>
+            <option value="" disabled selected>Select Name</option>
+            {% if company_names%}
+              {% for name in company_names %}
+                <option value="{{ name['name'] }}">{{ name['name'] }}</option>
+              {% endfor %}
+            {% endif %}
+          </select><br>
+          {% endif %}
           <label class="input_labels" for="">Name</label>
           <input class="property_inputs" type="text" name="name" required><br>
           <label class="input_labels" class="input_labels" for="">Email</label>

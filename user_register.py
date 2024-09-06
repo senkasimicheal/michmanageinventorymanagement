@@ -15,7 +15,15 @@ def generate_code(length=6):
 @registration.route('/manager_register')
 def manager_register_page():
     company_name = request.args.get('company_name')
-    return render_template("manager register.html", company_name=company_name)
+    db, fs = get_db_and_fs()
+    send_emails = db.send_emails.find_one({'emails': "yes"},{'emails': 1})
+    if send_emails is not None:
+        emails = "yes"
+        company_names = []
+    else:
+        emails = "no"
+        company_names = list(db.managers.find({},{"name": 1}))
+    return render_template("manager register.html", company_name=company_name,emails=emails,company_names=company_names)
 
 ###########REGISTRING AN ACCOUNT###############
 @registration.route('/register-account', methods=["POST"])
@@ -176,16 +184,17 @@ def register_account():
 
         thread = threading.Thread(target=send_async_email, args=[current_app._get_current_object(), msg])
         thread.start()
-    else:
-        session['no_send_emails_code'] = 'no_send_emails_code'
-        no_send_emails_code = code
-    # Create an index on the 'createdAt' field
-    db.registration_verification_codes.create_index([("createdAt", ASCENDING)], expireAfterSeconds=43200)
-    # Insert verification code into database
-    db.registration_verification_codes.insert_one(manager)
+        # Create an index on the 'createdAt' field
+        db.registration_verification_codes.create_index([("createdAt", ASCENDING)], expireAfterSeconds=43200)
+        # Insert verification code into database
+        db.registration_verification_codes.insert_one(manager)
 
-    flash('Please verify your account', 'success')
-    return render_template('verify_manager.html', no_send_emails_code=no_send_emails_code)
+        flash('Please verify your account', 'success')
+        return render_template('verify_manager.html', no_send_emails_code=no_send_emails_code)
+    else:
+        db.registered_managers.insert_one(manager)
+        flash('User registered successfully', 'success')
+        return redirect('/manager login page')
 
 ####AUTO VERIFICATION######
 @registration.route('/auto-registration-verification')
@@ -202,7 +211,7 @@ def auto_registration_verification():
                 db.registered_managers.insert_one(code_exists)
                 db.registration_verification_codes.delete_one({'email': email, 'code': code})
                 flash('User registered successfully', 'success')
-                return redirect('/')
+                return redirect('/manager login page')
             except Exception as e:
                 flash('An error occurred while registering the user: ' + str(e), 'error')
         else:
