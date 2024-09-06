@@ -128,11 +128,7 @@
                     <td>{{ manager.subscribed_days }}</td>
                     <td>{{ manager.remaining_days }}</td>
                     <td>{{ '{:,.0f}'.format(manager.amount_per_month) }}</td>
-                    <td>
-                        {% if manager.account_holder %}
-                        {{ manager.account_holder }}
-                        {% endif %}
-                    </td>
+                    <td>{{ manager.account_holder }}</td>
                 </tr>
                 {% endfor %}
             </table>

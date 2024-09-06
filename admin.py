@@ -54,7 +54,7 @@ def registered_clients():
         return redirect('/admin')
     else: 
         managers = []
-        clients = list(db.managers.find({},{'name': 1, 'last_subscribed_on': 1, 'subscribed_days': 1, 'amount_per_month': 1, 'account_type': 1, '_id': 0}))
+        clients = list(db.managers.find({},{'name': 1, 'last_subscribed_on': 1, 'subscribed_days': 1, 'amount_per_month': 1, 'account_type': 1, 'account_holder': 1, '_id': 0}))
         if len(clients) != 0:
             for client in clients:
                 remaining_days = (client['last_subscribed_on'] + timedelta(days=client['subscribed_days']) - datetime.now()).days
