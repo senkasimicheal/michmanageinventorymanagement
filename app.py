@@ -62,7 +62,7 @@ app.config.update(
     MAIL_SERVER='smtp.sendgrid.net',
     MAIL_PORT=587,
     MAIL_USERNAME='apikey',
-    MAIL_PASSWORD='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',
+    MAIL_PASSWORD='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',
     MAIL_USE_TLS=True,
     MAIL_USE_SSL=False
 )
