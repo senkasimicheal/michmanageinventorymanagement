@@ -8,7 +8,11 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
+<<<<<<< HEAD
 set VIRTUAL_ENV=C:\OTHER\Project\Inventory management\env
+=======
+set VIRTUAL_ENV=C:\OTHER\Project\Property management\env
+>>>>>>> fca50db893a3946365ccdc9c634d0c9802f9e595
 
 if not defined PROMPT set PROMPT=$P$G
 
