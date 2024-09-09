@@ -533,113 +533,78 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
-      let itemsArray = [];
-    
-      document.getElementById('update-sale-button').addEventListener('click', () => {
-        const itemName = document.querySelector('input[name="typed_input"]').value;
-        const quantity = document.querySelector('input[name="update_sale_quantity"]').value;
-        const unitPrice = document.querySelector('input[name="update_sale_unit_price"]').value;
-        const saleDate = document.querySelector('input[name="update_sale_date"]').value;
-  
-        if (!itemName || !quantity || !unitPrice || !saleDate) {
-          alert("Please fill in all fields before updating a sale.");
-          return;
-        }
-  
-        const itemObject = {
-          itemName,
-          quantity,
-          unitPrice,
-          saleDate
-        };
-    
-        itemsArray.push(itemObject);
-  
-        document.querySelector('input[name="typed_input"]').value = '';
-        document.querySelector('input[name="update_sale_quantity"]').value = '';
-        document.querySelector('input[name="update_sale_unit_price"]').value = '';
-      });
-    
-      function validateEmail(email) {
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailPattern.test(email);
-      }
-  
-      document.getElementById('myForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-    
-        if (itemsArray.length === 0) {
-          alert("Please update at least one item.");
-          return;
-        }
-    
-        const wantReceipt = confirm("Do you want a receipt?");
-        let email = null;
-        
-        if (wantReceipt) {
-          while (true) {
-            email = prompt("Please enter customer email address for the receipt:");
-            
-            if (!email) {
-              alert("Email address is required if you want a receipt.");
-            } else if (!validateEmail(email)) {
-              alert("Please enter a valid email address.");
-            } else {
-              break;
+        let itemsArray = [];
+
+        document.getElementById('update-sale-button').addEventListener('click', () => {
+            const itemName = document.querySelector('input[name="typed_input"]').value;
+            const quantity = document.querySelector('input[name="update_sale_quantity"]').value;
+            const unitPrice = document.querySelector('input[name="update_sale_unit_price"]').value;
+            const saleDate = document.querySelector('input[name="update_sale_date"]').value;
+
+            if (!itemName || !quantity || !unitPrice || !saleDate) {
+                alert("Please fill in all fields before updating a sale.");
+                return;
             }
-          }
-        }
-    
-        var submitButton = document.getElementById("submit-button");
-        submitButton.disabled = true;
-    
-        var waitMessage = document.getElementById("wait-message");
-        waitMessage.style.display = "inline";
-    
-        submitButton.value = "Submitting...";
-    
-        fetch('{{ url_for('stockManagement_route.update_sale') }}', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            items: itemsArray,
-            receipt_value: wantReceipt ? "yes" : "no",
-            email: wantReceipt ? email : null
-          })
-        })
-        .then(response => response.json())
-        .then(data => {
-          itemsArray = [];
-    
-          if (data.download_url) {
-            // Create an invisible link element and trigger the download
-            var link = document.createElement('a');
-            link.href = data.download_url;
-            link.download = true;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
-    
-          // Redirect after a delay to ensure download starts
-          if (data.redirect_url) {
-            setTimeout(() => {
-              window.location.href = data.redirect_url;
-            }, 1000); // Adjust delay as needed
-          } else {
-            window.location.href = data.redirect;
-          }
-        })
-        .catch((error) => {
-          alert("An error occurred while submitting updates.");
-          submitButton.disabled = false;
-          waitMessage.style.display = "none";
+
+            const itemObject = {
+                itemName,
+                quantity,
+                unitPrice,
+                saleDate
+            };
+
+            itemsArray.push(itemObject);
+
+            document.querySelector('input[name="typed_input"]').value = '';
+            document.querySelector('input[name="update_sale_quantity"]').value = '';
+            document.querySelector('input[name="update_sale_unit_price"]').value = '';
         });
-      });
+
+        document.getElementById('myForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (itemsArray.length === 0) {
+                alert("Please update at least one item.");
+                return;
+            }
+
+            var submitButton = document.getElementById("submit-button");
+            submitButton.disabled = true;
+
+            var waitMessage = document.getElementById("wait-message");
+            waitMessage.style.display = "inline";
+
+            submitButton.value = "Submitting...";
+
+            fetch('{{ url_for('stockManagement_route.update_sale') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    items: itemsArray
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                itemsArray = [];
+
+                if (data.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000); // Adjust delay as needed
+                } else {
+                    window.location.href = data.redirect;
+                }
+            })
+            .catch((error) => {
+                alert("An error occurred while submitting updates.");
+                submitButton.disabled = false;
+                waitMessage.style.display = "none";
+            });
+        });
     });
-  </script>  
+  </script>
 
   <script>
     window.onload = function () {
