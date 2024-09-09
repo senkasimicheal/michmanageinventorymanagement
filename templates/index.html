@@ -81,7 +81,7 @@
                 <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
                 <a href="{{ url_for('documentation_route.about') }}">About</a>
                 <a href="{{ url_for('documentation_route.contact') }}">Contact Us</a>
-                <a href="{{ url_for('documentation_route.download_apk') }}" id="install-link" style="display: none;">Install App</a>
+                <a href="{{ url_for('documentation_route.download_apk') }}">Install App</a>
               </div>
             </div>
           </div>
@@ -348,7 +348,7 @@
                 <a href="{{ url_for('documentation_route.about') }}">About</a>
               </li>             
               <li>
-                <a href="{{ url_for('documentation_route.download_apk') }}" id="install-link" style="display: none;">Install App</a>
+                <a href="{{ url_for('documentation_route.download_apk') }}">Install App</a>
               </li>
             </ul>
           </div>
@@ -409,38 +409,9 @@
     });
   </script>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const installLink = document.getElementById('install-link');
-        const scheme = 'michmanage://'; // Custom scheme for your app
-
-        if (navigator.userAgent.toLowerCase().includes('android')) {
-            // Create an invisible iframe to test the custom URL scheme
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = scheme;
-            document.body.appendChild(iframe);
-
-            // Check if the app is installed by monitoring focus
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-                if (document.hasFocus()) {
-                    // The app is not installed if the page still has focus
-                    installLink.style.display = 'block';
-                    installLink.onclick = () => {
-                        alert('The APK file will be downloaded. Please open the file to install the Mich Manage App.');
-                    };
-                }
-            }, 500);
-        }
-    });
-  </script>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
   <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
-
 </body>
-
 </html>
