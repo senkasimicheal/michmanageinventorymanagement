@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Basic -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- Mobile Metas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <!-- Site Metas -->
+  <meta name="keywords" content="" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+
+  <title>About</title>
+   <!-- bootstrap core css -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+   <!-- fonts style -->
+   <link href="https://fonts.googleapis.com/css?family=Poppins:400,700|Raleway:400,700&display=swap" rel="stylesheet">
+   <!-- Custom styles for this template -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   <!-- responsive style -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+   <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+</head>
+
+<body class="sub_page">
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".hero_area1").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
+  <div class="hero_area1">
+    <!-- header section strats -->
+    <header class="header_section">
+      <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg custom_nav-container">
+          <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="" />
+          </a>
+          <div class="navbar-collapse" id="">
+            <div class="custom_menu-btn">
+              <button onclick="openNav()">
+                <span class="s-1">
+
+                </span>
+                <span class="s-2">
+
+                </span>
+                <span class="s-3">
+
+                </span>
+              </button>
+            </div>
+            <div id="myNav" class="overlay">
+              <div class="overlay-content">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Login</a>       
+                <a href="{{ url_for('registration_route.manager_register_page') }}" id="login">Signup</a>       
+                <a href="{{ url_for('documentation_route.privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('documentation_route.about') }}">About</a>
+                <a href="{{ url_for('documentation_route.contact') }}">Contact Us</a>
+                <a href="{{ url_for('documentation_route.download_apk') }}">Install App</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <!-- end header section -->
+  </div>
+
+  <!-- about section -->
+  <section class="layout_padding-bottom">
+    <div class="container">
+        <div class="heading_container">
+          <h2>
+            About Us
+          </h2>
+        </div>
+        <div class="timeline-container">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="year">01-Feb-2024</div>
+              <div class="content">Launched the first version of our product<br>as an inventory management system</div>
+            </div>
+            <div class="timeline-item">
+              <div class="year">01-May-2024</div>
+              <div class="content">Launched a new module<br>accounts management system</div>
+            </div>
+          </div>
+        </div>
+
+        <p>
+          Mich Manage revolutionizes inventory management with its intuitive and efficient platform, designed to
+          cater to inventory managers, retailers. Our comprehensive suite of
+          tools simplifies every aspect of inventory management. Here's what sets us apart:
+        </p>
+        <h5>Vision</h5>
+        <p>To be the leading inventory management platform that transforms the stock landscape
+          through innovation,
+          efficiency, and empowerment.</p>
+        <h5>Mission</h5>
+        <p>We strive to enhance the inventory management experience through advanced technology, insightful
+          analytics, and
+          unwavering support.</p>
+        <h5>Our Values</h5>
+        <h6>1. Innovation</h6>
+        <p>We believe in continuous improvement and embracing new technologies to stay ahead in the inventory management
+          industry.</p>
+        <h6>2. Efficiency</h6>
+        <p>Our platform is designed to maximize productivity, minimize effort, and optimize inventory management
+          processes.</p>
+        <h6>3. Customer-Centric</h6>
+        <p>We prioritize the needs of our users, ensuring responsive support and a user-friendly experience.</p>
+        <h6>4. Integrity</h6>
+        <p>We uphold the highest standards of security and reliability, ensuring our users’ data is always protected.</p>
+        <h5>Our Services</h5>
+        <p>1. Inventory accounting</p>
+        <p>2. Reporting and analytics</p>
+        <p>3. Automated reminders</p>
+        <p>4. Stock and sales management</p><br>
+        <h5>Why Choose Us?</h5>
+        <h6>Effortless Inventory Management:</h6>
+        <ul>
+          <li>Easily add and manage inventories through our user-friendly interface.</li>
+          <li>Stay organized with customizable dashboards tailored to your specific needs.</li>
+        </ul>
+        <h6>Data Export and Analysis:</h6>
+        <ul><li>Export your data for local storage and analysis, ensuring you have insights at your fingertips.</li></ul>
+        <h6>Responsive Support:</h6>
+        <ul><li>Our dedicated support team is always ready to assist you with any queries or concerns.</li></ul>
+        <h6>Secure and Reliable:</h6>
+        <ul><li>Rest assured that your data is safe and secure with Mich Manage's robust security measures.</li></ul>
+        <h5>Get Started Today</h5>
+        <ul><li>Join the Mich Manage community and experience the future of inventory management.</li></ul>
+        <p>At Mich Manage, we're committed to simplifying inventory management, empowering business people to thrive in today's dynamic business landscape. Experience the difference with Mich Manage - where inventory management meets innovation.</p>
+    </div>
+  </section>
+
+  <!-- end about section -->
+
+  <!-- info section -->
+  <section class="info_section ">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="info_contact">
+            <h5>
+              About Mich Manage
+            </h5>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/location.png" width="18px" alt="">
+              </div>
+              <p>
+                Kampala, Uganda
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/phone.png" width="12px" alt="">
+              </div>
+              <p>
+                <a href="tel:+256772726380">+256772726380</a>
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/mail.png" width="18px" alt="">
+              </div>
+              <p>
+                <a href="mailto:michmanage@outlook.com">michmanage@outlook.com</a>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_info">
+            <h5>
+              Information
+            </h5>
+            <p>
+              Mich Manage Is One Of The Most Trusted Management Systems
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info_links">
+            <h5>
+              Useful Link
+            </h5>
+            <ul>
+              <li>
+                <a href="{{ url_for('index') }}">Home</a>
+              </li>
+              <li>
+                <a href="{{ url_for('documentation_route.about') }}">About</a>
+              </li>            
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_form ">
+            <div class="social_box">
+              <a href="https://wa.me/?text=Faster and secure inventory management software, visit us on https://michmanage.onrender.com for our services">
+                <img class="whatsapp" src="/static/images/whatsapp.png" alt="">
+              </a>
+              <a href="https://www.linkedin.com/in/micheal-senkasi-846182233?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3B4C%2BpIaMvTRSAomy%2BjqXrbQ%3D%3D">
+                <img class="linkedin" src="/static/images/linkedin.png" alt="">
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- end info_section -->
+
+
+  <!-- footer section -->
+  <section class="container-fluid footer_section ">
+    <div class="container">
+      <p>
+        &copy; <span id="displayYear"></span> All Rights Reserved By
+        <a href="#">Mich Manage</a>
+      </p>
+    </div>
+  </section>
+  <!-- end  footer section -->
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+
+</body>
+</body>
+
+</html>

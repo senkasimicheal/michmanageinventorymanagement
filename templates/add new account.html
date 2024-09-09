@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Add New Accounts</title>
+    {% if session['dark_mode'] == 'yes' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
+    {% endif %}
+    <!-- base:css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
+    <!-- endinject -->
+    <!-- plugin css for this page -->
+    <!-- End plugin css for this page -->
+    <!-- inject:css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
+    <!-- endinject -->
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+</head>
+
+<body>
+    <!-- preloader -->
+    <div class="preloader">
+        <div class="spinner" id="spinner">0%</div>
+    </div>
+
+    <script>
+        // hide preloader when document is ready
+        jQuery(document).ready(function () {
+            // add a delay of 1 second
+            setTimeout(function () {
+                // fade out the preloader
+                jQuery(".preloader").fadeOut("slow");
+                // show the hero area
+                jQuery(".container-scroller").addClass('visible');
+            }, 1000);
+        });
+    </script>
+
+    <div class="container-scroller">
+        <!-- partial:partials/_navbar.html -->
+        <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+            <div class="navbar-brand-wrapper d-flex justify-content-center">
+                <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
+                    <a class="navbar-brand brand-logo" href="#"><img src="/static/images/logo.png" alt="logo" /></a>
+                    <a class="navbar-brand brand-logo-mini" href="#"><img class="display-picture-logged-in"
+                            src="data:image/jpeg;base64,{{ dp }}" alt="DP"></a>
+                    <button class="navbar-toggler navbar-toggler align-self-center" type="button"
+                        data-toggle="minimize">
+                        <span class="typcn typcn-th-menu"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+                <ul class="navbar-nav mr-lg-2">
+                    <li class="nav-item nav-profile dropdown">
+                        <a class="nav-link" href="#" data-toggle="dropdown" id="profileDropdown">
+                            <img class="display-picture-logged-in" src="data:image/jpeg;base64,{{ dp }}" alt="DP">
+                            <span class="nav-profile-name">{{ session['user_message1'] }}</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right navbar-dropdown"
+                            aria-labelledby="profileDropdown">
+                            <a class="dropdown-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                                <i class="typcn typcn-cog-outline text-primary"></i>
+                                Settings
+                            </a>
+                            <a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="typcn typcn-eject text-primary"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </li>
+                    <li class="nav-item nav-user-status dropdown">
+
+                    </li>
+                </ul>
+                <ul class="navbar-nav navbar-nav-right">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link count-indicator dropdown-toggle d-flex justify-content-center align-items-center"
+                            id="messageDropdown" href="#" data-toggle="dropdown">
+                            <i class="typcn typcn-cog-outline mx-0"></i>
+                            <span class="count"></span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
+                            aria-labelledby="messageDropdown">
+                            <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
+                            <a class="dropdown-item preview-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Settings
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        User account set up
+                                    </p>
+                                </div>
+                            </a>
+                            {% if session['is_manager'] == 'is_manager' %}
+                            <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.view_user_accounts')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Users
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        View other users
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.add_new_manager_email')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Add User
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Add User
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('userRights_route.manage_user_rights')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">User rights
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Manage user rights
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_audit_logs')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Activities
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_login_history')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Login history
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Login history
+                                    </p>
+                                </div>
+                            </a>
+                            {%endif%}
+                            <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Log Out
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Log Out
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+                <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button"
+                    data-toggle="offcanvas">
+                    <span class="typcn typcn-th-menu"></span>
+                </button>
+            </div>
+        </nav>
+        <!-- partial -->
+        <nav class="navbar-breadcrumb col-xl-12 col-12 d-flex flex-row p-0">
+            <div class="navbar-links-wrapper d-flex align-items-stretch">
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-calendar-outline"></i></a>
+                </div>
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-mail"></i></a>
+                </div>
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-folder"></i></a>
+                </div>
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-document-text"></i></a>
+                </div>
+            </div>
+            <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+                <ul class="navbar-nav mr-lg-2">
+                    <li class="nav-item ml-0">
+                        <h4 class="mb-0">Add New Accounts</h4>
+                    </li>
+                </ul>
+                <ul class="navbar-nav navbar-nav-right">
+                    <li class="nav-item mr-0">
+                        <h5 class="mb-0">{{session['user_message2']}} Days left</h5>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="container-fluid page-body-wrapper">
+
+            <!-- partial -->
+            <!-- partial:partials/_sidebar.html -->
+            <nav class="sidebar sidebar-offcanvas" id="sidebar">
+                <ul class="nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('accounting_route.accounts_overview') }}" id="new-stock">
+                      <i class="typcn typcn-credit-card menu-icon"></i>
+                      <span class="menu-title">Dashboard</span>
+                    </a>
+                  </li>
+                  {% if (session.get('add_new_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('accounting_route.new_accounts_page') }}" id="new-stock">
+                      <i class="typcn typcn-document-add menu-icon"></i>
+                      <span class="menu-title">New Accounts</span>
+                    </a>
+                  </li>
+                  {% endif %}
+                  {% if (session.get('update_finance_account') == 'yes') or (session['is_manager'] == 'is_manager') %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('accounting_route.update_existing_account') }}" id="update-new-stock">
+                      <i class="typcn typcn-briefcase menu-icon"></i>
+                      <span class="menu-title">Update Accounts</span>
+                    </a>
+                  </li>
+                  {% endif %}
+                  {% if (session.get('view_finance') == 'yes') or (session['is_manager'] == 'is_manager') %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('accounting_route.current_accounts') }}" id="update-new-stock">
+                      <i class="typcn typcn-briefcase menu-icon"></i>
+                      <span class="menu-title">Current Accounts</span>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('accounting_route.accounts_history') }}" id="update-new-stock">
+                      <i class="typcn typcn-briefcase menu-icon"></i>
+                      <span class="menu-title">Accounts History</span>
+                    </a>
+                  </li>
+                  {% endif %}
+                </ul>
+              </nav>
+            <!-- partial -->
+            <div class="main-panel">
+                <div id="notification" class="notification"></div>
+
+                <div>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}"
+                        style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="new-stock-form content-wrapper" id="stock-form">
+                    <form id="myForm" class="property_forn content-pannel" action="{{url_for('accounting_route.add_new_account')}}"
+                        method="POST">
+                        <label class="input_labels" for="">Client Name</label>
+                        <input class="property_inputs" type="text" name="client_name">
+                        <label class="input_labels" for="">Telephone</label>
+                        <input class="property_inputs" type="tel" name="telephone">
+                        <label class="input_labels" for="">Email (Optional)</label>
+                        <input class="property_inputs" type="email" name="email">
+                        <label class="input_labels" for="">Project Name</label>
+                        <input class="property_inputs" type="text" name="project_name" id="project_name"
+                            list="projectList" autocomplete="off">
+                        <datalist id="projectList">
+                            {% for project in some_projects %}
+                            <option value="{{ project['project_name'] }}">
+                                {% endfor %}
+                        </datalist>
+                        <label class="input_labels" for="">Account Type</label>
+                        <select name="account_type" id="">
+                            <option value="" disabled selected>Select one</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Joint">Joint</option>
+                            <option value="Group">Group</option>
+                            <option value="Planned Kid">Planned Kid</option>
+                        </select>
+                        <label class="input_labels" for="">Measure (Quantity)</label>
+                        <input class="property_inputs" type="number" name="measure" min="1">
+                        <label class="input_labels" for="">Unit Of Measurement</label>
+                        <select name="unit_of_measurement" id="">
+                            <option value="" disabled selected>Select one</option>
+                            <option value="Acre">Acre</option>
+                            <option value="Hectare">Hectare</option>
+                            <option value="Piece">Piece</option>
+                            <option value="Dozen">Dozen</option>
+                            <option value="Kilogram">Kilogram</option>
+                            <option value="Gram">Gram</option>
+                            <option value="Litre">Litre</option>
+                            <option value="Head">Head</option>
+                            <option value="Bee Hive">Bee Hive</option>
+                            <option value="Year">Year</option>
+                        </select>
+                        <label class="input_labels" for="">Value</label>
+                        <input class="property_inputs" type="number" name="value_amount" id="value_amount" min="5000">
+                        <label class="input_labels" for="">Mode Of Payment</label>
+                        <select name="payment_mode" id="">
+                            <option value="" disabled selected>Select payment mode</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Mobile Money">MTN Mobile Money</option>
+                            <option value="Mobile Money">Airtel Money</option>
+                            <option value="Bank">Bank</option>
+                            <option value="PayPal">PayPal</option>
+                            <option value="MasterCard">MasterCard</option>
+                            <option value="Momo Pay">Momo Pay</option>
+                        </select>
+                        <label class="input_labels" for="">Amount Paid</label>
+                        <input class="property_inputs" type="number" name="amount_paid" id="amount_paid" min="5000">
+                        <span id="error-message" style="color: red; display: none;">Amount paid cannot be greater than
+                            the value amount.</span><br>
+                        <label class="input_labels" for="">Date Of Payment</label>
+                        <input class="property_inputs" type="date" name="date_of_payment" id="date_of_payment"
+                            placeholder="enter payment date"><br>
+                        <button type="button" id="add-account-button">Add Account</button>
+                        <input type="submit" class="btn" id="submit-button" value="Submit">
+                        <span id="wait-message" style="color: green; display: none;">Please wait, your data is being
+                            saved...</span>
+                    </form>
+                </div>
+                <!-- content-wrapper ends -->
+                <!-- partial:partials/_footer.html -->
+                <footer class="footer">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-sm-flex justify-content-center justify-content-sm-between">
+                                <p>
+                                    &copy; <span id="displayYear"></span> All Rights Reserved By
+                                    <a href="#">Mich Manage</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+                <!-- partial -->
+            </div>
+            <!-- main-panel ends -->
+        </div>
+        <!-- page-body-wrapper ends -->
+    </div>
+    <!-- container-scroller -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Hide all alerts after 5 seconds
+            setTimeout(function () {
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function (alert) {
+                    alert.style.display = 'none';
+                });
+            }, 5000);
+        });
+    </script>
+
+    <script>
+        let counter = 0;
+        const spinner = document.getElementById('spinner');
+
+        const intervalId = setInterval(() => {
+            counter++;
+            spinner.textContent = `${counter}%`;
+
+            if (counter === 100) {
+                clearInterval(intervalId);
+            }
+        }, 100); // Adjust this value to control the speed of the counter
+    </script>
+
+    <script>
+        document.getElementById("myForm").addEventListener("submit", function (event) {
+            // Disable the submit button
+            var submitButton = document.getElementById("submit-button");
+            submitButton.disabled = true;
+
+            // Show the wait message
+            var waitMessage = document.getElementById("wait-message");
+            waitMessage.style.display = "inline";
+
+            // Optionally, you can also change the text of the submit button
+            submitButton.value = "Submitting...";
+        });
+    </script>
+
+    <script>
+        const amountPaidInput = document.getElementById('amount_paid');
+        const valueAmountInput = document.getElementById('value_amount');
+        const addAccountButton = document.getElementById('add-account-button');
+        const submitButton = document.querySelector('input[type="submit"]');
+        const errorMessage = document.getElementById('error-message');
+
+        function validateAmount() {
+            const amountPaid = parseFloat(amountPaidInput.value);
+            const valueAmount = parseFloat(valueAmountInput.value);
+
+            if (amountPaid > valueAmount) {
+                addAccountButton.disabled = true;
+                submitButton.disabled = true;
+                errorMessage.style.display = 'block';
+            } else {
+                addAccountButton.disabled = false;
+                submitButton.disabled = false;
+                errorMessage.style.display = 'none';
+            }
+        }
+
+        amountPaidInput.addEventListener('input', validateAmount);
+        valueAmountInput.addEventListener('input', validateAmount);
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let itemsArray = [];
+
+            document.getElementById('add-account-button').addEventListener('click', () => {
+                // Get the form values
+                const client_name = document.querySelector('input[name="client_name"]').value;
+                const telephone = document.querySelector('input[name="telephone"]').value;
+                const email = document.querySelector('input[name="email"]').value || '';
+                const project_name = document.querySelector('input[name="project_name"]').value;
+                const account_type = document.querySelector('select[name="account_type"]').value;
+                const measure = document.querySelector('input[name="measure"]').value;
+                const unit_of_measurement = document.querySelector('select[name="unit_of_measurement"]').value;
+                const value_amount = document.querySelector('input[name="value_amount"]').value;
+                const payment_mode = document.querySelector('select[name="payment_mode"]').value;
+                const amount_paid = document.querySelector('input[name="amount_paid"]').value;
+                const date_of_payment = document.querySelector('input[name="date_of_payment"]').value;
+
+                // Check if any of the fields are empty
+                if (!client_name || !telephone || !project_name || !account_type || !measure || !unit_of_measurement || !value_amount || !payment_mode || !amount_paid || !date_of_payment) {
+                    alert("Please fill in all the mandatory fields before adding an account.");
+                    return; // Stop here if any field is empty
+                }
+
+                if (parseFloat(measure) <= 0) {
+                    alert("Measure must be greater than 0.");
+                    return; // Stop here if measure is not greater than 0
+                }
+
+                // Create an object with the form data
+                const itemObject = {
+                    client_name,
+                    telephone,
+                    email,
+                    project_name,
+                    account_type,
+                    measure,
+                    unit_of_measurement,
+                    value_amount,
+                    payment_mode,
+                    amount_paid,
+                    date_of_payment
+                };
+
+                // Add the object to the array
+                itemsArray.push(itemObject);
+
+                // Clear the input fields
+                document.querySelector('input[name="client_name"]').value = '';
+                document.querySelector('input[name="telephone"]').value = '';
+                document.querySelector('input[name="email"]').value = '';
+                document.querySelector('input[name="measure"]').value = '';
+                document.querySelector('input[name="value_amount"]').value = '';
+                document.querySelector('input[name="amount_paid"]').value = '';
+            });
+
+            // Handle the form submission
+            document.querySelector('.new-stock-form form').addEventListener('submit', (e) => {
+                e.preventDefault(); // Prevent the default form submission
+
+                if (itemsArray.length === 0) {
+                    alert("Please add at least one account.");
+                    return; // Stop here if no items have been added
+                }
+
+                // Send the itemsArray to your Flask app using fetch or another method
+                fetch('{{url_for('accounting_route.add_new_account')}}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ items: itemsArray })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Clear the array after successful submission
+                        itemsArray = [];
+
+                        // Optionally, clear all input fields here as well
+                        if (data.redirect) {
+                            window.location.href = data.redirect; // Redirect to the new URL
+                        } else {
+                            alert(data.message);
+                        }
+
+                    })
+                    .catch((error) => {
+                        alert("An error occurred while submitting items.");
+                    });
+            });
+        });
+    </script>
+
+    <script>
+        window.onload = function () {
+            var date = new Date();
+            var day = date.getDate();
+            var month = date.getMonth() + 1;
+            var year = date.getFullYear();
+
+            if (month < 10) month = "0" + month;
+            if (day < 10) day = "0" + day;
+
+            var today = year + "-" + month + "-" + day;
+
+            var enddateFields = document.getElementsByName("date_of_payment");
+            for (var i = 0; i < enddateFields.length; i++) {
+                enddateFields[i].setAttribute("max", today);
+            }
+
+        }
+    </script>
+    <!-- base:js -->
+    <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page-->
+    <script src="{{ url_for('static', filename='js/Chart.min.js') }}"></script>
+    <!-- End plugin js for this page-->
+    <!-- inject:js -->
+    <script src="{{ url_for('static', filename='js/off-canvas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/hoverable-collapse.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/template.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page-->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <!-- End custom js for this page-->
+</body>
+
+</html>

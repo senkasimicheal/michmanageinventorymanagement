@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Basic -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <!-- Mobile Metas -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <!-- Site Metas -->
+  <meta name="keywords" content="" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+
+  <title>Documentation</title>
+
+
+   <!-- bootstrap core css -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+
+   <!-- fonts style -->
+   <link href="https://fonts.googleapis.com/css?family=Poppins:400,700|Raleway:400,700&display=swap" rel="stylesheet">
+   <!-- Custom styles for this template -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   <!-- responsive style -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+   <script src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
+</head>
+
+<body class="sub_page">
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".hero_area1").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
+  <div class="hero_area1">
+    <!-- header section strats -->
+    <header class="header_section">
+      <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg custom_nav-container">
+          <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="/static/images/logo.png" alt="" />
+          </a>
+          <div class="navbar-collapse" id="">
+            <div class="custom_menu-btn">
+              <button onclick="openNav()">
+                <span class="s-1">
+
+                </span>
+                <span class="s-2">
+
+                </span>
+                <span class="s-3">
+
+                </span>
+              </button>
+            </div>
+            <div id="myNav" class="overlay">
+              <div class="overlay-content">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('login_route.manager_login_page') }}" id="login">Login</a>              
+                <a href="{{ url_for('documentation_route.privacy_policy') }}">Privacy Policy</a>
+                <a href="{{ url_for('documentation_route.terms_of_service') }}">Terms Of Service</a>
+                <a href="{{ url_for('documentation_route.about') }}">About</a>
+                <a href="{{ url_for('documentation_route.contact') }}">Contact Us</a>
+                <a href="{{ url_for('documentation_route.download_apk') }}">Install App</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <!-- end header section -->
+  </div>
+
+
+  <!-- about section -->
+
+  <section>
+    <div class="documentation">
+        <h1>User Manual</h1>
+        <div class="doc-section">
+          <h3>Dashboard</h3>
+          <div class="video-container">
+            <iframe style="width:100%; height:200px;" src="https://www.youtube.com/embed/33-6JAxjKJU?si=itYkpBaHg3oE1XG7"
+              title="YouTube video player" frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
+          </div>
+        </div>
+
+      <div class="doc-section">
+        <h3>Add Property</h3>
+        <div class="video-container">
+          <iframe style="width:100%; height:200px;" src="https://www.youtube.com/embed/xeFNm6iOiMY?si=DdaBPpZAaE5Q3jx0"
+            title="YouTube video player" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+        </div>
+
+      <div class="doc-section">
+        <h3>Add Tenant</h3>
+        <div class="video-container">
+          <iframe style="width:100%; height:200px;" src="https://www.youtube.com/embed/sWx1AUWkGO0?si=kkg9szXK5E50C4KV"
+            title="YouTube video player" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Tenant Complaints</h3>
+        <div class="video-container">
+          <iframe style="width:100%; height:200px;" src="https://www.youtube.com/embed/IoXwAW104Tw?si=mRLZkCRuO4hW6oeg"
+            title="YouTube video player" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Contracts</h3>
+        <div class="video-container">
+          <iframe style="width:100%; height:200px;" src="https://www.youtube.com/embed/Qxs3SD56hZA?si=wpMDT5vcF_aWCDQn"
+            title="YouTube video player" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h3>Export Tenant Data</h3>
+        <div class="video-container">
+          <iframe style="width:100%; height:200px;" src="https://www.youtube.com/embed/k3l-966vBkk?si=u5qQGYWTl4O2Xoun"
+            title="YouTube video player" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+      </div>
+      <!-- <h2>Resource Planning</h2> -->
+      <div class="doc-section">
+        <h3>Full Video</h3>
+        <div class="video-container">
+          <iframe style="width:100%; height:200px;" src="https://www.youtube.com/embed/DAHuSIbJYU0?si=z7lHb_PbM2SzINmu"
+            title="YouTube video player" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- end about section -->
+
+
+  <!-- info section -->
+  <section class="info_section ">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <div class="info_contact">
+            <h5>
+              About Mich Manage
+            </h5>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/location.png" width="18px" alt="">
+              </div>
+              <p>
+                Kampala, Uganda
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/phone.png" width="12px" alt="">
+              </div>
+              <p>
+                <a href="tel:+256772726380">+256772726380</a>
+              </p>
+            </div>
+            <div>
+              <div class="img-box">
+                <img src="/static/images/mail.png" width="18px" alt="">
+              </div>
+              <p>
+                <a href="mailto:michmanage@outlook.com">michmanage@outlook.com</a>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_info">
+            <h5>
+              Information
+            </h5>
+            <p>
+              Mich Manage Is One Of The Most Trusted Management Systems
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info_links">
+            <h5>
+              Useful Link
+            </h5>
+            <ul>
+              <li>
+                <a href="{{ url_for('index') }}">Home</a>
+              </li>
+              <li>
+                <a href="{{ url_for('documentation_route.about') }}">About</a>
+              </li>
+              <li>
+                <a href="{{url_for('documentation_route.documentation')}}">Documentation</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="info_form ">
+            <div class="social_box">
+              <a href="https://wa.me/?text=Faster and secure property management software, visit us on https://michmanage.onrender.com for our services">
+                <img class="whatsapp" src="/static/images/whatsapp.png" alt="">
+              </a>
+              <a href="https://www.linkedin.com/in/micheal-senkasi-846182233?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3B4C%2BpIaMvTRSAomy%2BjqXrbQ%3D%3D">
+                <img class="linkedin" src="/static/images/linkedin.png" alt="">
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- end info_section -->
+
+
+  <!-- footer section -->
+  <section class="container-fluid footer_section ">
+    <div class="container">
+      <p>
+        &copy; <span id="displayYear"></span> All Rights Reserved By
+        <a href="#">Mich Manage</a>
+      </p>
+    </div>
+  </section>
+  <!-- end  footer section -->
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+  
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+  
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+  
+  <script src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+  <script src="{{ url_for('static', filename='site_js/preloader.js') }}"></script>
+
+</body>
+</body>
+
+</html>

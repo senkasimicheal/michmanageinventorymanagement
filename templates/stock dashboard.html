@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Dashboard</title>
+  {% if session['dark_mode'] == 'yes' %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
+  {% endif %}
+  <!-- base:css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
+  <!-- endinject -->
+  <!-- plugin css for this page -->
+  <!-- End plugin css for this page -->
+  <!-- inject:css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
+  <!-- endinject -->
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css">
+</head>
+<body>
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".container-scroller").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
+  <div class="container-scroller">
+    <!-- partial:partials/_navbar.html -->
+    <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+      <div class="navbar-brand-wrapper d-flex justify-content-center">
+        <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
+          <a class="navbar-brand brand-logo" href="#"><img src="/static/images/logo.png" alt="logo"/></a>
+          <a class="navbar-brand brand-logo-mini" href="#"><img class="display-picture-logged-in"
+              src="data:image/jpeg;base64,{{ dp }}" alt="DP"></a>
+          <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+            <span class="typcn typcn-th-menu"></span>
+          </button>
+        </div>
+      </div>
+      <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+        <ul class="navbar-nav mr-lg-2">
+          <li class="nav-item nav-profile dropdown">
+            <a class="nav-link" href="#" data-toggle="dropdown" id="profileDropdown">
+              <img class="display-picture-logged-in" src="data:image/jpeg;base64,{{ dp }}" alt="DP">
+              <span class="nav-profile-name">{{ session['user_message1'] }}</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+              <a class="dropdown-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                <i class="typcn typcn-cog-outline text-primary"></i>
+                Settings
+              </a>
+              <a class="dropdown-item" href="{{ url_for('logout') }}">
+                <i class="typcn typcn-eject text-primary"></i>
+                Logout
+              </a>
+            </div>
+          </li>
+          <li class="nav-item nav-user-status dropdown">
+            
+          </li>        
+        </ul>
+        <ul class="navbar-nav navbar-nav-right">
+          <li class="nav-item dropdown">
+            <a class="nav-link count-indicator dropdown-toggle d-flex justify-content-center align-items-center" id="messageDropdown" href="#" data-toggle="dropdown">
+              <i class="typcn typcn-cog-outline mx-0"></i>
+              <span class="count"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="messageDropdown">
+              <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
+              <a class="dropdown-item preview-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Settings
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    User account set up
+                  </p>
+                </div>
+              </a>
+              {% if session['is_manager'] == 'is_manager' %}
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.view_user_accounts')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Users
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    View other users
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.add_new_manager_email')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Add User
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Add User
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('userRights_route.manage_user_rights')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">User rights
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Manage user rights
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_audit_logs')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Activities
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_login_history')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Login history
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Login history
+                  </p>
+                </div>
+              </a>
+              {%endif%}
+              <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Log Out
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Log Out
+                  </p>
+                </div>
+              </a>
+            </div>
+          </li>
+        </ul>
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+          <span class="typcn typcn-th-menu"></span>
+        </button>
+      </div>
+    </nav>
+    <!-- partial -->
+    <nav class="navbar-breadcrumb col-xl-12 col-12 d-flex flex-row p-0">
+      <div class="navbar-links-wrapper d-flex align-items-stretch">
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-calendar-outline"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-mail"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-folder"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-document-text"></i></a>
+        </div>
+      </div>
+      <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+        <ul class="navbar-nav mr-lg-2">
+          <li class="nav-item ml-0">
+            <h4 class="mb-0">Dashboard</h4>
+          </li>
+        </ul>
+        <ul class="navbar-nav navbar-nav-right">
+          <li class="nav-item mr-0">
+            <h5 class="mb-0">{{session['user_message2']}} Days left</h5>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container-fluid page-body-wrapper">
+      <!-- partial -->
+      <!-- partial:partials/_sidebar.html -->
+      <nav class="sidebar sidebar-offcanvas" id="sidebar">
+        <ul class="nav">
+            {% if session['is_manager'] == 'is_manager' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
+                    <i class="typcn typcn-device-desktop menu-icon"></i>
+                    <span class="menu-title">Dashboard</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('add_stock') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.add_new_stock_page') }}" id="new-stock">
+                    <i class="typcn typcn-document-add menu-icon"></i>
+                    <span class="menu-title">New Stock</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('update_stock') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_existing_stock') }}" id="update-new-stock">
+                <i class="typcn typcn-briefcase menu-icon"></i>
+                <span class="menu-title">Update Stock</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.generate_bar_codes') }}" id="update-new-stock">
+                    <i class="typcn typcn-briefcase menu-icon"></i>
+                    <span class="menu-title">Generate Bar Codes</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('update_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_sales_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Update Sales</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.scan_bar_code_page') }}" id="update-sale">
+                    <i class="typcn typcn-book menu-icon"></i>
+                    <span class="menu-title">Scan Bar Code</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('update_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.expenses_page') }}" id="update-sale">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">Record Expenses</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_stock_info') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
+                    <i class="typcn typcn-cloud-storage menu-icon"></i>
+                    <span class="menu-title">Current Stock</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.stock_history_details') }}">
+                    <i class="typcn typcn-cloud-storage menu-icon"></i>
+                    <span class="menu-title">Stock History</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_revenue') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
+                    <i class="typcn typcn-business-card menu-icon"></i>
+                    <span class="menu-title">Profits</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
+                    <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+                    <span class="menu-title">Sales</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.view_expenses') }}" id="update-sale">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">View Expenses</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('inhouse') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_production_activity') }}" id="inhouse">
+                    <i class="typcn typcn-document-add menu-icon"></i>
+                    <span class="menu-title">Production</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_inhouse_use_page') }}" id="inhouse-use">
+                    <i class="typcn typcn-document-add menu-icon"></i>
+                    <span class="menu-title">In-House Use</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.inhouse_items_use_details') }}">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">In-House Info</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.view_production_info') }}">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">Production Info</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+      </nav>
+      <!-- partial -->
+      <div class="main-panel">
+        <div id="notification" class="notification"></div>
+        {% if session['is_manager'] == 'is_manager' %}
+        <div>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                  {% for category, message in messages %}
+                      <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}" style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+                          {{ message }}
+                      </div>
+                  {% endfor %}
+              {% endif %}
+          {% endwith %}
+        </div>
+        <!-- Disclaimer Modal -->
+        <div class="modal fade" id="disclaimerModal" tabindex="-1" role="dialog" aria-labelledby="disclaimerModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="disclaimerModalLabel">Disclaimer</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                      </button>
+                  </div>
+                  <div class="modal-body">
+                      Please note: The projections provided are based solely on historical stock data and should be interpreted as informational insights rather than actionable business advice. Market conditions are subject to rapid change, and these projections do not account for future uncertainties. We recommend consulting with a financial advisor before making any significant business decisions based on these predictions.
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      <a class="btn btn-primary" href="{{url_for('stockManagement_route.stock_overview', projections='projections')}}">Proceed to Projections</a>
+                  </div>
+              </div>
+          </div>
+        </div>
+        <div class="content-wrapper">
+          <form class="dashboard-form-form" action="{{url_for('stockManagement_route.stock_overview')}}" method="POST">
+            <label class="dashboard-form" for="">From</label>
+            <input class="dashboard-form" type="date" name="startdate" required>
+            <label class="dashboard-form" for="">To</label>
+            <input class="dashboard-form" type="date" name="enddate" required>
+            <input class="dashboard-form dashboard-form-button" type="submit" class="btn" value="Apply">
+          </form>
+          <p class="display-date">Display date: {{start_of_previous_month.strftime('%Y-%m-%d')}} to {{first_day_of_current_month.strftime('%Y-%m-%d')}}</p>          
+          <div class="chart-container">
+            <div class="row">
+              <div class="col-md-6 segment">
+                {% if top10profits %}
+                  <p class="dashboardheadings">Top 10 Profitable Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, profit in top10profits %}
+                        <a href="{{ url_for('stockManagement_route.revenue_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ '{:,.0f}'.format(profit) }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No profitable items found.</p>
+                {% endif %}
+              </div>
+              <div class="col-md-6 segment">
+                {% if top10losses %}
+                  <p class="dashboardheadings">Top 10 Unprofitable Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, loss in top10losses %}
+                        <a href="{{ url_for('stockManagement_route.revenue_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ '{:,.0f}'.format(loss) }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No unprofitable items found.</p>
+                {% endif %}
+              </div>
+              <div class="col-md-6 segment">
+                {% if top10revenues %}
+                  <p class="dashboardheadings">Top 10 Revenue-Generating Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, revenue in top10revenues %}
+                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>UGX {{ '{:,.0f}'.format(revenue) }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No revenue generating items found.</p>
+                {% endif %}
+              </div>
+              <div class="col-md-6 segment">
+                {% if top10SoldItems %}
+                  <p class="dashboardheadings">Top 10 Most Sold Items</p>
+                  <div style="max-height: 250px; overflow-y: auto;">
+                    {% for item, quantity in top10SoldItems %}
+                        <a href="{{ url_for('stockManagement_route.sales_details') }}" class="notification-item">
+                            <div class="profitability-content">
+                                <p>{{ item }}</p>
+                            </div>
+                            <div class="profitability-time">
+                                <span>{{ quantity }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                    <p>No items sold yet.</p>
+                {% endif %}
+              </div>
+              <div class="col-md-6 segment">
+                {%if projections == "projections"%}
+                <p class="dashboardheadings">Projected Profits for the Next 6 Months</p>
+                {%else%}
+                <p class="dashboardheadings">
+                  Monthly Profit Trends
+                  <span class="projection">
+                      <a class="projectiondashboardheadings" href="#" data-toggle="modal" data-target="#disclaimerModal">
+                          Projections
+                      </a>
+                  </span>
+                </p>
+                {%endif%}
+                <div>
+                  <canvas id="trended_profitChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}"
+              style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+              {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+          </div>
+          <p style="padding: 0 1.812rem 1.812rem;">You do not have rights to view the dashboard</p>
+          {% endif %}
+      </div>
+      <!-- main-panel ends -->
+    </div>
+    <!-- page-body-wrapper ends -->
+  </div>
+  <!-- container-scroller -->
+
+  <!-- CHARTS JAVASCRIPTS -->
+  <script>
+    var ctx = document.getElementById('trended_profitChart').getContext('2d');
+    var chartData = {{ trended_profit | tojson }};
+  
+    var trended_profitChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Profit',
+                data: chartData.values,
+                backgroundColor: function(context) {
+                    var index = context.dataIndex;
+                    return chartData.types[index] === 'Projection' ? 'rgba(255, 159, 64, 0.2)' : 'rgba(75, 192, 192, 0.2)';
+                },
+                borderColor: function(context) {
+                    var index = context.dataIndex;
+                    return chartData.types[index] === 'Projection' ? '#ff7f0e' : '#a43cda';
+                },
+                borderWidth: 2,
+                fill: false,  // No fill
+                tension: 0.3,  // Smooth line
+                segment: {
+                    borderColor: function(context) {
+                        var index = context.p1DataIndex;
+                        return chartData.types[index] === 'Projection' ? '#ff7f0e' : '#a43cda';
+                    }
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Ensures the chart resizes responsively
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Profit'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        filter: function(legendItem, chartData) {
+                            return chartData.datasets[0].data.some((_, i) => chartData.datasets[0].data[i] === legendItem.text);
+                        }
+                    }
+                },
+                tooltip: {
+                    enabled: true
+                }
+            },
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10
+                }
+            }
+        }
+    });
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Hide all alerts after 5 seconds
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+    });
+  </script>
+
+  <script>
+    window.onload = function(){
+      var date = new Date();
+      var day = date.getDate();
+      var month = date.getMonth() + 1;
+      var year = date.getFullYear();
+
+      if(month < 10) month = "0" + month;
+      if(day < 10) day = "0" + day;
+
+      var today = year + "-" + month + "-" + day;
+
+      var enddateFields = document.getElementsByName("startdate");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+
+      var enddateFields = document.getElementsByName("enddate");
+      for(var i = 0; i < enddateFields.length; i++){
+        enddateFields[i].setAttribute("max", today);
+      }
+    }
+  </script>
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100); // Adjust this value to control the speed of the counter
+  </script>
+
+  <script type="text/javascript">
+    window.history.forward();
+    function noBack() { window.history.forward(); }
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <!-- base:js -->
+  <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
+  <!-- endinject -->
+  <!-- Plugin js for this page-->
+  <script src="{{ url_for('static', filename='js/Chart.min.js') }}"></script>
+  <!-- End plugin js for this page-->
+  <!-- inject:js -->
+  <script src="{{ url_for('static', filename='js/off-canvas.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/hoverable-collapse.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/template.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
+  <!-- endinject -->
+
+  <!-- End custom js for this page-->
+</body>
+
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Scan To Update Sales</title>
+    {% if session['dark_mode'] == 'yes' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
+    {% endif %}
+    <!-- base:css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
+    <!-- endinject -->
+    <!-- plugin css for this page -->
+    <!-- End plugin css for this page -->
+    <!-- inject:css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
+    <!-- endinject -->
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+</head>
+
+<body>
+    <!-- preloader -->
+    <div class="preloader">
+        <div class="spinner" id="spinner">0%</div>
+    </div>
+
+    <script>
+        // hide preloader when document is ready
+        jQuery(document).ready(function () {
+            // add a delay of 1 second
+            setTimeout(function () {
+                // fade out the preloader
+                jQuery(".preloader").fadeOut("slow");
+                // show the hero area
+                jQuery(".container-scroller").addClass('visible');
+            }, 1000);
+        });
+    </script>
+
+    <div class="container-scroller">
+        <!-- partial:partials/_navbar.html -->
+        <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+            <div class="navbar-brand-wrapper d-flex justify-content-center">
+                <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
+                    <a class="navbar-brand brand-logo" href="#"><img src="/static/images/logo.png" alt="logo" /></a>
+                    <a class="navbar-brand brand-logo-mini" href="#"><img class="display-picture-logged-in"
+                            src="data:image/jpeg;base64,{{ dp }}" alt="DP"></a>
+                    <button class="navbar-toggler navbar-toggler align-self-center" type="button"
+                        data-toggle="minimize">
+                        <span class="typcn typcn-th-menu"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+                <ul class="navbar-nav mr-lg-2">
+                    <li class="nav-item nav-profile dropdown">
+                        <a class="nav-link" href="#" data-toggle="dropdown" id="profileDropdown">
+                            <img class="display-picture-logged-in" src="data:image/jpeg;base64,{{ dp }}" alt="DP">
+                            <span class="nav-profile-name">{{ session['user_message1'] }}</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right navbar-dropdown"
+                            aria-labelledby="profileDropdown">
+                            <a class="dropdown-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                                <i class="typcn typcn-cog-outline text-primary"></i>
+                                Settings
+                            </a>
+                            <a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="typcn typcn-eject text-primary"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </li>
+                    <li class="nav-item nav-user-status dropdown">
+
+                    </li>
+                </ul>
+                <ul class="navbar-nav navbar-nav-right">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link count-indicator dropdown-toggle d-flex justify-content-center align-items-center"
+                            id="messageDropdown" href="#" data-toggle="dropdown">
+                            <i class="typcn typcn-cog-outline mx-0"></i>
+                            <span class="count"></span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
+                            aria-labelledby="messageDropdown">
+                            <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
+                            <a class="dropdown-item preview-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Settings
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        User account set up
+                                    </p>
+                                </div>
+                            </a>
+                            {% if session['is_manager'] == 'is_manager' %}
+                            <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.view_user_accounts')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Users
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        View other users
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.add_new_manager_email')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Add User
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Add User
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('userRights_route.manage_user_rights')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">User rights
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Manage user rights
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_audit_logs')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Activities
+                                    </p>
+                                </div>
+                            </a>
+                            <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_login_history')}}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Login history
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Login history
+                                    </p>
+                                </div>
+                            </a>
+                            {%endif%}
+                            <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
+                                <div class="preview-item-content flex-grow">
+                                    <h6 class="preview-subject ellipsis font-weight-normal">Log Out
+                                    </h6>
+                                    <p class="font-weight-light small-text text-muted mb-0">
+                                        Log Out
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+                <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button"
+                    data-toggle="offcanvas">
+                    <span class="typcn typcn-th-menu"></span>
+                </button>
+            </div>
+        </nav>
+        <!-- partial -->
+        <nav class="navbar-breadcrumb col-xl-12 col-12 d-flex flex-row p-0">
+            <div class="navbar-links-wrapper d-flex align-items-stretch">
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-calendar-outline"></i></a>
+                </div>
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-mail"></i></a>
+                </div>
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-folder"></i></a>
+                </div>
+                <div class="nav-link">
+                    <a href="javascript:;"><i class="typcn typcn-document-text"></i></a>
+                </div>
+            </div>
+            <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+                <ul class="navbar-nav mr-lg-2">
+                    <li class="nav-item ml-0">
+                        <h4 class="mb-0">Update Sales</h4>
+                    </li>
+                </ul>
+                <ul class="navbar-nav navbar-nav-right">
+                    <li class="nav-item mr-0">
+                        <h5 class="mb-0">{{session['user_message2']}} Days left</h5>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="container-fluid page-body-wrapper">
+
+            <!-- partial -->
+            <!-- partial:partials/_sidebar.html -->
+            <nav class="sidebar sidebar-offcanvas" id="sidebar">
+                <ul class="nav">
+                    {% if session['is_manager'] == 'is_manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
+                            <i class="typcn typcn-device-desktop menu-icon"></i>
+                            <span class="menu-title">Dashboard</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('add_stock') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.add_new_stock_page') }}" id="new-stock">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">New Stock</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('update_stock') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.update_existing_stock') }}" id="update-new-stock">
+                        <i class="typcn typcn-briefcase menu-icon"></i>
+                        <span class="menu-title">Update Stock</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.generate_bar_codes') }}" id="update-new-stock">
+                            <i class="typcn typcn-briefcase menu-icon"></i>
+                            <span class="menu-title">Generate Bar Codes</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('update_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.update_sales_page') }}" id="update-sale">
+                        <i class="typcn typcn-book menu-icon"></i>
+                        <span class="menu-title">Update Sales</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.scan_bar_code_page') }}" id="update-sale">
+                            <i class="typcn typcn-book menu-icon"></i>
+                            <span class="menu-title">Scan Bar Code</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('update_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.expenses_page') }}" id="update-sale">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">Record Expenses</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('view_stock_info') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
+                            <i class="typcn typcn-cloud-storage menu-icon"></i>
+                            <span class="menu-title">Current Stock</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.stock_history_details') }}">
+                            <i class="typcn typcn-cloud-storage menu-icon"></i>
+                            <span class="menu-title">Stock History</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('view_revenue') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
+                            <i class="typcn typcn-business-card menu-icon"></i>
+                            <span class="menu-title">Profits</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('view_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
+                            <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+                            <span class="menu-title">Sales</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('view_sales') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.view_expenses') }}" id="update-sale">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">View Expenses</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if session.get('inhouse') != 'no' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.update_production_activity') }}" id="inhouse">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">Production</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.update_inhouse_use_page') }}" id="inhouse-use">
+                            <i class="typcn typcn-document-add menu-icon"></i>
+                            <span class="menu-title">In-House Use</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.inhouse_items_use_details') }}">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">In-House Info</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('stockManagement_route.view_production_info') }}">
+                            <i class="typcn typcn-calculator menu-icon"></i>
+                            <span class="menu-title">Production Info</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+              </nav>
+            <!-- partial -->
+            <div class="main-panel">
+                <div id="notification" class="notification"></div>
+
+                <div>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}"
+                        style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="update-sales-form content-wrapper">
+                    <form id="myForm" class="property_forn content-pannel" action="{{ url_for('stockManagement_route.store_scanned_sale') }}" method="POST">
+                        <br><input class="property_inputs" type="text" name="product_id" id="codeInput" placeholder="Scan barcode"
+                            autofocus><br>
+                        <!-- Hidden input to store the list of scanned items -->
+                        <input type="hidden" name="scanned_items" id="scannedItemsInput">
+                        <button type="button" id="addButton" class="btn" style="display: none; margin-top: 10px;">Add Item</button>
+                        <button type="submit" class="btn" style="margin-top: 10px; margin-bottom: 10px;">Submit</button>
+                    </form>
+                    <!-- Container to display scanned items in a table -->
+                    <div id="scannedItemsContainer" style="width: 100%; height: 100%; overflow: auto;">
+                        <h6>Scanned Items</h6>
+                        <table id="scannedItemsTable" class="tenant_table">
+                            <thead>
+                                <tr>
+                                    <th>Product ID</th>
+                                    <th>Item Name</th>
+                                    <th>Available Quantity</th>
+                                    <th>Selling Price</th>
+                                    <th>Quantity Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scannedItemsTableBody">
+                                <!-- Scanned items will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        var codeInput = document.getElementById('codeInput');
+                        var form = document.getElementById('myForm');
+                        var addButton = document.getElementById('addButton');
+                        var scannedItemsInput = document.getElementById('scannedItemsInput');
+                        var scannedItemsTableBody = document.getElementById('scannedItemsTableBody');
+                        var scannedItems = [];
+
+                        // Retrieve available item names from the server-side template
+                        var availableItemNames = {{ available_itemNames | tojson | safe
+                    }};
+
+                            // Populate itemDetails for quick lookup
+                            var itemDetails = {};
+                            availableItemNames.forEach(item => {
+                                itemDetails[item.product_id] = item;
+                            });
+
+                            // Function to add item to the table
+                        function addItem() {
+                            var code = codeInput.value.trim();
+                            if (code.length === 8) {
+                                var item = itemDetails[code];
+                                if (item) {
+                                    // Create a new row for the table
+                                    var row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td>${code}</td>
+                                        <td>${item.itemName}</td>
+                                        <td>${item.available_quantity}</td>
+                                        <td>${item.selling_price || '0'}</td>
+                                        <td>
+                                            <input type="number" id="quantity_${code}" min="1" max="${item.available_quantity}" required>
+                                            <div id="warning_${code}" class="quantity_warning" style="display: none;">Quantity sold exceeds available stock.</div>
+                                            <div id="zero_warning_${code}" class="quantity_warning" style="display: none;">Quantity cannot be zero.</div>
+                                            <div id="empty_warning_${code}" class="quantity_warning" style="display: none;">Quantity cannot be empty.</div>
+                                        </td>
+                                    `;
+                                    scannedItemsTableBody.appendChild(row);
+
+                                    // Initialize the scanned item entry with default values
+                                    scannedItems.push({ product_id: code, sold_quantity: 0 });
+                                    scannedItemsInput.value = JSON.stringify(scannedItems);
+
+                                    // Clear the input field for the next scan
+                                    codeInput.value = '';
+                                    codeInput.focus();
+
+                                    // Show the add button if there are items
+                                    if (scannedItems.length > 0) {
+                                                            addButton.style.display = 'none';
+                                                        }
+
+                                                        // Add event listener to the quantity input for real-time validation
+                                                        var quantityInput = document.getElementById(`quantity_${code}`);
+                                                        quantityInput.addEventListener('input', function () {
+                                                            validateQuantity(code);
+                                                            updateScannedItems(code, quantityInput.value.trim());
+                                                        });
+                                                    } else {
+                                                        alert('Item not found.');
+                                                    }
+                                                }
+                                            }
+
+                                            // Function to validate quantity and show warning if needed
+                                            function validateQuantity(productId) {
+                                                var quantityInput = document.getElementById(`quantity_${productId}`);
+                                                var warning = document.getElementById(`warning_${productId}`);
+                                                var zeroWarning = document.getElementById(`zero_warning_${productId}`);
+                                                var emptyWarning = document.getElementById(`empty_warning_${productId}`);
+                                                var quantity = quantityInput.value.trim();
+                                                var availableQuantity = itemDetails[productId].available_quantity;
+
+                                                if (quantity === '') {
+                                                    emptyWarning.style.display = 'block';
+                                                    warning.style.display = 'none';
+                                                    zeroWarning.style.display = 'none';
+                                                } else {
+                                                    quantity = parseInt(quantity, 10);
+                                                    if (quantity > availableQuantity) {
+                                                        warning.style.display = 'block';
+                                                        zeroWarning.style.display = 'none';
+                                                        emptyWarning.style.display = 'none';
+                                                    } else if (quantity <= 0) {
+                                                        zeroWarning.style.display = 'block';
+                                                        warning.style.display = 'none';
+                                                        emptyWarning.style.display = 'none';
+                                                    } else {
+                                                        warning.style.display = 'none';
+                                                        zeroWarning.style.display = 'none';
+                                                        emptyWarning.style.display = 'none';
+                                                    }
+                                                }
+                                            }
+
+    // Update the sold_quantity in scannedItems array
+    function updateScannedItems(productId, quantity) {
+        var item = scannedItems.find(item => item.product_id === productId);
+        if (item) {
+            item.sold_quantity = parseInt(quantity, 10) || 0; // Ensure to handle empty input
+            scannedItemsInput.value = JSON.stringify(scannedItems);
+                            }
+                        }
+
+                        // Automatically add item when 8 characters are typed
+                            codeInput.addEventListener('keydown', function (event) {
+                            if (event.key === 'Enter') {
+                                event.preventDefault(); // Prevent form submission
+                                addItem(); // Add the item
+                            }
+                        });
+
+                        // Handle the form submission
+                        form.addEventListener('submit', function (event) {
+                            var allValid = true;
+                            var anyItemScanned = scannedItems.length > 0;
+                            var allQuantitiesEntered = true;
+
+                            scannedItems.forEach(item => {
+                                var quantityInput = document.getElementById(`quantity_${item.product_id}`);
+                                if (quantityInput) {
+                                    var quantity = quantityInput.value.trim();
+                                    var availableQuantity = itemDetails[item.product_id].available_quantity;
+                                    if (quantity === '' || isNaN(quantity) || quantity <= 0 || quantity > availableQuantity) {
+                                        allValid = false;
+                                    } else {
+                                        item.sold_quantity = parseInt(quantity, 10); // Update the sold quantity
+                                    }
+                                } else {
+                                    allQuantitiesEntered = false;
+                                }
+                            });
+
+                            if (!anyItemScanned) {
+                                event.preventDefault(); // Prevent form submission
+                                alert('Please scan at least one item before submitting.');
+                            } else if (!allValid) {
+                                event.preventDefault(); // Prevent form submission
+                                alert('Please correct the quantities before submitting.');
+                            } else if (!allQuantitiesEntered) {
+                                event.preventDefault(); // Prevent form submission
+                                alert('Please enter quantities for all scanned items.');
+                            }
+                        });
+                    });
+</script>
+                <!-- content-wrapper ends -->
+                <!-- partial:partials/_footer.html -->
+                <footer class="footer">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-sm-flex justify-content-center justify-content-sm-between">
+                                <p>
+                                    &copy; <span id="displayYear"></span> All Rights Reserved By
+                                    <a href="#">Mich Manage</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+                <!-- partial -->
+            </div>
+            <!-- main-panel ends -->
+        </div>
+        <!-- page-body-wrapper ends -->
+    </div>
+    <!-- container-scroller -->
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Hide all alerts after 5 seconds
+            setTimeout(function () {
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function (alert) {
+                    alert.style.display = 'none';
+                });
+            }, 5000);
+        });
+    </script>
+
+    <script>
+        let counter = 0;
+        const spinner = document.getElementById('spinner');
+
+        const intervalId = setInterval(() => {
+            counter++;
+            spinner.textContent = `${counter}%`;
+
+            if (counter === 100) {
+                clearInterval(intervalId);
+            }
+        }, 100); // Adjust this value to control the speed of the counter
+    </script>
+    <!-- base:js -->
+    <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page-->
+    <script src="{{ url_for('static', filename='js/Chart.min.js') }}"></script>
+    <!-- End plugin js for this page-->
+    <!-- inject:js -->
+    <script src="{{ url_for('static', filename='js/off-canvas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/hoverable-collapse.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/template.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page-->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <!-- End custom js for this page-->
+</body>
+
+</html>
