@@ -338,6 +338,7 @@
                             autofocus><br>
                         <!-- Hidden input to store the list of scanned items -->
                         <input type="hidden" name="scanned_items" id="scannedItemsInput">
+                        <input type="hidden" id="receiptValue" name="receiptValue">
                         <button type="button" id="addButton" class="btn" style="display: none; margin-top: 10px;">Add Item</button>
                         <button type="submit" class="btn" style="margin-top: 10px; margin-bottom: 10px;">Submit</button>
                     </form>
@@ -367,25 +368,20 @@
                         var addButton = document.getElementById('addButton');
                         var scannedItemsInput = document.getElementById('scannedItemsInput');
                         var scannedItemsTableBody = document.getElementById('scannedItemsTableBody');
+                        var receiptValueInput = document.getElementById('receiptValue'); // New hidden input
                         var scannedItems = [];
-
-                        // Retrieve available item names from the server-side template
-                        var availableItemNames = {{ available_itemNames | tojson | safe
-                    }};
-
-                            // Populate itemDetails for quick lookup
-                            var itemDetails = {};
-                            availableItemNames.forEach(item => {
-                                itemDetails[item.product_id] = item;
-                            });
-
-                            // Function to add item to the table
+                        
+                        var availableItemNames = {{ available_itemNames | tojson | safe }};
+                        var itemDetails = {};
+                        availableItemNames.forEach(item => {
+                            itemDetails[item.product_id] = item;
+                        });
+                
                         function addItem() {
                             var code = codeInput.value.trim();
                             if (code.length === 8) {
                                 var item = itemDetails[code];
                                 if (item) {
-                                    // Create a new row for the table
                                     var row = document.createElement('tr');
                                     row.innerHTML = `
                                         <td>${code}</td>
@@ -400,86 +396,80 @@
                                         </td>
                                     `;
                                     scannedItemsTableBody.appendChild(row);
-
-                                    // Initialize the scanned item entry with default values
+                
                                     scannedItems.push({ product_id: code, sold_quantity: 0 });
                                     scannedItemsInput.value = JSON.stringify(scannedItems);
-
-                                    // Clear the input field for the next scan
+                
                                     codeInput.value = '';
                                     codeInput.focus();
-
-                                    // Show the add button if there are items
+                
                                     if (scannedItems.length > 0) {
-                                                            addButton.style.display = 'none';
-                                                        }
-
-                                                        // Add event listener to the quantity input for real-time validation
-                                                        var quantityInput = document.getElementById(`quantity_${code}`);
-                                                        quantityInput.addEventListener('input', function () {
-                                                            validateQuantity(code);
-                                                            updateScannedItems(code, quantityInput.value.trim());
-                                                        });
-                                                    } else {
-                                                        alert('Item not found.');
-                                                    }
-                                                }
-                                            }
-
-                                            // Function to validate quantity and show warning if needed
-                                            function validateQuantity(productId) {
-                                                var quantityInput = document.getElementById(`quantity_${productId}`);
-                                                var warning = document.getElementById(`warning_${productId}`);
-                                                var zeroWarning = document.getElementById(`zero_warning_${productId}`);
-                                                var emptyWarning = document.getElementById(`empty_warning_${productId}`);
-                                                var quantity = quantityInput.value.trim();
-                                                var availableQuantity = itemDetails[productId].available_quantity;
-
-                                                if (quantity === '') {
-                                                    emptyWarning.style.display = 'block';
-                                                    warning.style.display = 'none';
-                                                    zeroWarning.style.display = 'none';
-                                                } else {
-                                                    quantity = parseInt(quantity, 10);
-                                                    if (quantity > availableQuantity) {
-                                                        warning.style.display = 'block';
-                                                        zeroWarning.style.display = 'none';
-                                                        emptyWarning.style.display = 'none';
-                                                    } else if (quantity <= 0) {
-                                                        zeroWarning.style.display = 'block';
-                                                        warning.style.display = 'none';
-                                                        emptyWarning.style.display = 'none';
-                                                    } else {
-                                                        warning.style.display = 'none';
-                                                        zeroWarning.style.display = 'none';
-                                                        emptyWarning.style.display = 'none';
-                                                    }
-                                                }
-                                            }
-
-    // Update the sold_quantity in scannedItems array
-    function updateScannedItems(productId, quantity) {
-        var item = scannedItems.find(item => item.product_id === productId);
-        if (item) {
-            item.sold_quantity = parseInt(quantity, 10) || 0; // Ensure to handle empty input
-            scannedItemsInput.value = JSON.stringify(scannedItems);
+                                        addButton.style.display = 'none';
+                                    }
+                
+                                    var quantityInput = document.getElementById(`quantity_${code}`);
+                                    quantityInput.addEventListener('input', function () {
+                                        validateQuantity(code);
+                                        updateScannedItems(code, quantityInput.value.trim());
+                                    });
+                                } else {
+                                    alert('Item not found.');
+                                }
                             }
                         }
-
-                        // Automatically add item when 8 characters are typed
-                            codeInput.addEventListener('keydown', function (event) {
+                
+                        function validateQuantity(productId) {
+                            var quantityInput = document.getElementById(`quantity_${productId}`);
+                            var warning = document.getElementById(`warning_${productId}`);
+                            var zeroWarning = document.getElementById(`zero_warning_${productId}`);
+                            var emptyWarning = document.getElementById(`empty_warning_${productId}`);
+                            var quantity = quantityInput.value.trim();
+                            var availableQuantity = itemDetails[productId].available_quantity;
+                
+                            if (quantity === '') {
+                                emptyWarning.style.display = 'block';
+                                warning.style.display = 'none';
+                                zeroWarning.style.display = 'none';
+                            } else {
+                                quantity = parseInt(quantity, 10);
+                                if (quantity > availableQuantity) {
+                                    warning.style.display = 'block';
+                                    zeroWarning.style.display = 'none';
+                                    emptyWarning.style.display = 'none';
+                                } else if (quantity <= 0) {
+                                    zeroWarning.style.display = 'block';
+                                    warning.style.display = 'none';
+                                    emptyWarning.style.display = 'none';
+                                } else {
+                                    warning.style.display = 'none';
+                                    zeroWarning.style.display = 'none';
+                                    emptyWarning.style.display = 'none';
+                                }
+                            }
+                        }
+                
+                        function updateScannedItems(productId, quantity) {
+                            var item = scannedItems.find(item => item.product_id === productId);
+                            if (item) {
+                                item.sold_quantity = parseInt(quantity, 10) || 0;
+                                scannedItemsInput.value = JSON.stringify(scannedItems);
+                            }
+                        }
+                
+                        codeInput.addEventListener('keydown', function (event) {
                             if (event.key === 'Enter') {
-                                event.preventDefault(); // Prevent form submission
-                                addItem(); // Add the item
+                                event.preventDefault();
+                                addItem();
                             }
                         });
-
-                        // Handle the form submission
+                
                         form.addEventListener('submit', function (event) {
+                            event.preventDefault(); // Prevent the default form submission
+                            
                             var allValid = true;
                             var anyItemScanned = scannedItems.length > 0;
                             var allQuantitiesEntered = true;
-
+                
                             scannedItems.forEach(item => {
                                 var quantityInput = document.getElementById(`quantity_${item.product_id}`);
                                 if (quantityInput) {
@@ -488,26 +478,47 @@
                                     if (quantity === '' || isNaN(quantity) || quantity <= 0 || quantity > availableQuantity) {
                                         allValid = false;
                                     } else {
-                                        item.sold_quantity = parseInt(quantity, 10); // Update the sold quantity
+                                        item.sold_quantity = parseInt(quantity, 10);
                                     }
                                 } else {
                                     allQuantitiesEntered = false;
                                 }
                             });
-
+                
                             if (!anyItemScanned) {
-                                event.preventDefault(); // Prevent form submission
                                 alert('Please scan at least one item before submitting.');
                             } else if (!allValid) {
-                                event.preventDefault(); // Prevent form submission
                                 alert('Please correct the quantities before submitting.');
                             } else if (!allQuantitiesEntered) {
-                                event.preventDefault(); // Prevent form submission
                                 alert('Please enter quantities for all scanned items.');
+                            } else {
+                                // Ask if the user wants a receipt
+                                var wantsReceipt = confirm('Do you want a receipt?');
+                                receiptValueInput.value = wantsReceipt ? 'yes' : 'no';
+                
+                                // Submit the form via AJAX
+                                var formData = new FormData(form);
+                                fetch(form.action, {
+                                    method: 'POST',
+                                    body: formData
+                                }).then(response => response.json())
+                                  .then(data => {
+                                      // Process download and redirect URLs from the response
+                                      if (data.download_url) {
+                                          window.location.href = data.download_url; // Trigger download
+                                      }
+                                      if (data.redirect_url) {
+                                          setTimeout(() => {
+                                              window.location.href = data.redirect_url; // Redirect after download
+                                          }, 1000); // Optional delay before redirecting
+                                      }
+                                  }).catch(error => {
+                                      console.error('Error submitting form:', error);
+                                  });
                             }
                         });
                     });
-</script>
+                </script>                  
                 <!-- content-wrapper ends -->
                 <!-- partial:partials/_footer.html -->
                 <footer class="footer">

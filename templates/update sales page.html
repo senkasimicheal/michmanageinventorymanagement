@@ -360,7 +360,7 @@
             <input class="property_inputs" type="hidden" name="update_sale_date" id="update_sale_date" value="null"><br>
             {%endif%}
         
-            <input type="hidden" name="receipt_value" id="receipt_value" value="no">
+            <input type="hidden" id="receiptValue" name="receiptValue">
         
             <button type="button" id="update-sale-button">Add Item</button>
             <input type="submit" class="btn" id="submit-button" value="Submit">
@@ -535,72 +535,100 @@
     document.addEventListener('DOMContentLoaded', (event) => {
         let itemsArray = [];
 
+        // Handle the "Update Sale" button click event
         document.getElementById('update-sale-button').addEventListener('click', () => {
-            const itemName = document.querySelector('input[name="typed_input"]').value;
-            const quantity = document.querySelector('input[name="update_sale_quantity"]').value;
-            const unitPrice = document.querySelector('input[name="update_sale_unit_price"]').value;
-            const saleDate = document.querySelector('input[name="update_sale_date"]').value;
+            const itemName = document.querySelector('input[name="typed_input"]').value.trim();
+            const quantity = document.querySelector('input[name="update_sale_quantity"]').value.trim();
+            const unitPrice = document.querySelector('input[name="update_sale_unit_price"]').value.trim();
+            const saleDate = document.querySelector('input[name="update_sale_date"]').value.trim();
 
+            // Validate inputs
             if (!itemName || !quantity || !unitPrice || !saleDate) {
                 alert("Please fill in all fields before updating a sale.");
                 return;
             }
 
+            // Add the new item to the itemsArray
             const itemObject = {
                 itemName,
-                quantity,
-                unitPrice,
+                quantity: parseInt(quantity, 10),
+                unitPrice: parseFloat(unitPrice),
                 saleDate
             };
 
             itemsArray.push(itemObject);
 
+            // Clear input fields
             document.querySelector('input[name="typed_input"]').value = '';
             document.querySelector('input[name="update_sale_quantity"]').value = '';
             document.querySelector('input[name="update_sale_unit_price"]').value = '';
         });
 
+        // Handle form submission
         document.getElementById('myForm').addEventListener('submit', (e) => {
             e.preventDefault();
 
+            // Check if at least one item was added
             if (itemsArray.length === 0) {
                 alert("Please update at least one item.");
                 return;
             }
 
-            var submitButton = document.getElementById("submit-button");
+            // Ask the user if they want a receipt
+            const wantsReceipt = confirm('Do you want a receipt?');
+            const receiptValueInput = document.getElementById('receiptValue');
+            receiptValueInput.value = wantsReceipt ? 'yes' : 'no';
+
+            // If the user wants a receipt, prepare receipt data
+            let receiptData = null;
+            if (wantsReceipt) {
+                receiptData = {
+                    items: itemsArray,
+                    totalQuantity: itemsArray.reduce((sum, item) => sum + item.quantity, 0),
+                    totalAmount: itemsArray.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0),
+                    receiptDate: new Date().toISOString()
+                };
+            }
+
+            // Disable the submit button and show a wait message
+            const submitButton = document.getElementById("submit-button");
             submitButton.disabled = true;
 
-            var waitMessage = document.getElementById("wait-message");
-            waitMessage.style.display = "inline";
+            const waitMessage = document.getElementById("wait-message");
+            waitMessage.style.display = "inline"; // Show wait message
 
             submitButton.value = "Submitting...";
 
+            // Submit the form via AJAX using fetch
             fetch('{{ url_for('stockManagement_route.update_sale') }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    items: itemsArray
+                    items: itemsArray,
+                    receiptValue: receiptValueInput.value,  // Include receipt value in the payload
+                    receiptData: receiptData // Add receipt data to the payload
                 })
             })
             .then(response => response.json())
             .then(data => {
+                // Clear the itemsArray after successful submission
                 itemsArray = [];
 
+                if (data.download_url) {
+                  window.location.href = data.download_url; // Trigger download
+                }
                 if (data.redirect_url) {
                     setTimeout(() => {
-                        window.location.href = data.redirect_url;
-                    }, 1000); // Adjust delay as needed
-                } else {
-                    window.location.href = data.redirect;
+                        window.location.href = data.redirect_url; // Redirect after download
+                    }, 1000); // Optional delay before redirecting
                 }
             })
             .catch((error) => {
                 alert("An error occurred while submitting updates.");
-                submitButton.disabled = false;
-                waitMessage.style.display = "none";
+                submitButton.disabled = false; // Re-enable the submit button on error
+                waitMessage.style.display = "none"; // Hide the wait message
             });
         });
     });

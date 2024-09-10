@@ -520,11 +520,10 @@ def update_sale():
 
             all_items = request.json.get('items', [])
             timestamp = datetime.now()
-            data = request.json or {}
-            receipt_value = data.get('receipt_value')
-            email = data.get('email')
+            receiptValueData = request.json
+            receiptValue = receiptValueData.get('receiptValue', 'no')
 
-            if receipt_value == 'yes' and email:
+            if receiptValue == "yes":
                 styles = getSampleStyleSheet()
                 data = [
                     [Paragraph(f"Agency Name", styles['Normal']),
@@ -595,7 +594,7 @@ def update_sale():
                             'timestamp': datetime.now()
                         })
                         db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
-                        if receipt_value == 'yes' and email:
+                        if receiptValue == "yes":
                             total_payment += revenue
                             data.append([
                                 Paragraph(item['itemName'], styles['Normal']),
@@ -609,7 +608,7 @@ def update_sale():
                     flash(f"Error processing item {item.get('itemName', 'unknown')}: {e}", 'error')
 
             if updates == 1:
-                if receipt_value == 'yes' and email:
+                if receiptValue == "yes":
                     data.append([])
                     data.append([Paragraph("TOTAL PAYMENT", styles['Heading4']),
                                 Paragraph("", styles['Normal']),
@@ -636,50 +635,33 @@ def update_sale():
                     pdf_data = buffer.getvalue()
                     buffer.close()
 
-                    if send_emails is not None:
-                        msg = Message(f"Payment Receipt From {company['company_name']}", 
-                                      sender='michmanage@outlook.com', 
-                                      recipients=[email])
-                        msg.html = f"""
-                        <html>
-                        <body>
-                        <p>Dear Client,</p>
-                        <p>Thank you for transacting with us, kindly find your payment receipt attached</p>
-                        <p>Best Regards,</p>
-                        <p>Mich Manage</p>
-                        </body>
-                        </html>
-                        """
-
-                        # Attach the PDF receipt to the email
-                        msg.attach("Payment Receipt.pdf", "application/pdf", pdf_data)
-
-                        # Send the email
-                        thread = threading.Thread(target=send_async_email, args=[current_app._get_current_object(), msg])
-                        thread.start()
-                flash('Sales updated successfully', 'success')
-
-            if out_of_stock_items:
-                flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
-            if over_quantified:
-                flash(f'Enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
-            if send_emails is not None:
-                return jsonify({'redirect': url_for('stockManagement_route.update_sales_page')})
-            else:
-                if receipt_value == 'yes' and email:
-                    filename = f'payment_receipt_{email}.pdf'
+                    filename = f'payment_receipt.pdf'
                     with open(filename, 'wb') as f:
                         f.write(pdf_data)
                     
                     filepath = os.path.join('.', filename)
                     remove_file_later(filepath, delay=10)
-                    
+                    flash('Sales updated successfully', 'success')
                     return jsonify({
                         'download_url': url_for('stockManagement_route.download_receipt', filename=filename),
                         'redirect_url': url_for('stockManagement_route.update_sales_page')
                     })
                 else:
-                    return jsonify({'redirect': url_for('stockManagement_route.update_sales_page')})
+                    flash('Sales updated successfully', 'success')
+                    if out_of_stock_items:
+                        flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
+                    if over_quantified:
+                        flash(f'Enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
+
+                    return jsonify({
+                        'redirect_url': url_for('stockManagement_route.update_sales_page')
+                    })
+
+            if out_of_stock_items:
+                flash(f'The following items are out of stock: {", ".join(out_of_stock_items)}', 'error')
+            if over_quantified:
+                flash(f'Enter smaller quantities for the following items: {", ".join(over_quantified)}', 'error')
+            return jsonify({'redirect': url_for('stockManagement_route.update_sales_page')})
         else:
             flash('Your session expired or does not exist', 'error')
             return redirect('/manager login page')
@@ -702,9 +684,29 @@ def store_scanned_sale():
 
     scanned_items_json = request.form.get('scanned_items')
     if scanned_items_json:
+        timestamp = datetime.now()
+        receiptValue = request.form.get('receiptValue')
         scanned_items = json.loads(scanned_items_json)
         success_messages = []
         error_messages = []
+        if receiptValue == "yes":
+            styles = getSampleStyleSheet()
+            receipt_data = [
+                [Paragraph(f"Agency Name", styles['Normal']),
+                Paragraph(f"{company['company_name']}", styles['Normal'])],
+                [Paragraph(f"Date & Time", styles['Normal']),
+                Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
+                [Paragraph("Transaction Type", styles['Normal']),
+                Paragraph(f"Sale", styles['Normal'])],
+                [Paragraph(f"Transaction Date", styles['Normal']),
+                Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
+                [Paragraph("ITEMS PURCHASED", styles['Normal'])],
+                [Paragraph("Item Name", styles['Heading4']),
+                Paragraph("Quantity", styles['Heading4']),
+                Paragraph("Unit Price", styles['Heading4']),
+                Paragraph("Total Price", styles['Heading4'])]
+            ]
+        total_payment = 0
         for item in scanned_items:
             product_id = item['product_id']
             sold_quantity = item['sold_quantity']
@@ -713,7 +715,6 @@ def store_scanned_sale():
             existing_item = db.inventories.find_one({'company_name': company['company_name'], 'product_id': product_id})
 
             if existing_item:
-                timestamp = datetime.now()
                 if 'available_quantity' in existing_item:
                     if existing_item['available_quantity'] > 0:
                         if existing_item['available_quantity'] >= sold_quantity:
@@ -752,6 +753,15 @@ def store_scanned_sale():
                     'stock_id': stock_id
                 }
 
+                if receiptValue == "yes":
+                    total_payment += revenue
+                    receipt_data.append([
+                        Paragraph(existing_item['itemName'], styles['Normal']),
+                        Paragraph(str(sold_quantity), styles['Normal']),
+                        Paragraph(f"UGX {selling_price:.2f}", styles['Normal']),
+                        Paragraph(f"UGX {revenue:.2f}", styles['Normal'])
+                    ])
+
                 db.stock_sales.insert_one(data)
                 db.audit_logs.insert_one({
                     'user': login_data,
@@ -767,8 +777,47 @@ def store_scanned_sale():
         # Flash success messages if any
         if success_messages:
             flash(' | '.join(success_messages), 'success')
-        
-        # Flash error messages if any
+            if receiptValue == "yes":
+                receipt_data.append([])
+                receipt_data.append([Paragraph("TOTAL PAYMENT", styles['Heading4']),
+                            Paragraph("", styles['Normal']),
+                            Paragraph("", styles['Normal']),
+                            Paragraph(f"UGX {total_payment:.2f}", styles['Normal'])])
+
+                buffer = io.BytesIO()
+                doc = SimpleDocTemplate(buffer, pagesize=letter)
+                table = Table(receipt_data, colWidths=[2.5 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch])
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 5), (-1, 5), colors.grey),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTNAME', (0, 6), (-1, -1), 'Helvetica'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 10),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, 1), colors.lightgrey)
+                ]))
+
+                elements = [Spacer(1, 0.5 * inch), table]
+                doc.build(elements)
+
+                pdf_data = buffer.getvalue()
+                buffer.close()
+
+                filename = f'payment_receipt.pdf'
+                with open(filename, 'wb') as f:
+                    f.write(pdf_data)
+                
+                filepath = os.path.join('.', filename)
+                remove_file_later(filepath, delay=10)
+                return jsonify({
+                    'download_url': url_for('stockManagement_route.download_receipt', filename=filename),
+                    'redirect_url': url_for('stockManagement_route.scan_bar_code_page')
+                })
+            else:
+                return jsonify({
+                    'redirect_url': url_for('stockManagement_route.scan_bar_code_page')
+                })
         if error_messages:
             flash(' | '.join(error_messages), 'error')
 
