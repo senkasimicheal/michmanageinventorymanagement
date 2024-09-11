@@ -380,6 +380,13 @@
                         function addItem() {
                             var code = codeInput.value.trim();
                             if (code.length === 8) {
+                                // Check if the item has already been scanned
+                                var alreadyScanned = scannedItems.some(item => item.product_id === code);
+                                if (alreadyScanned) {
+                                    alert('This product has already been scanned.');
+                                    return; // Exit the function to prevent adding the same product again
+                                }
+                                
                                 var item = itemDetails[code];
                                 if (item) {
                                     var row = document.createElement('tr');
@@ -396,17 +403,17 @@
                                         </td>
                                     `;
                                     scannedItemsTableBody.appendChild(row);
-                
+                        
                                     scannedItems.push({ product_id: code, sold_quantity: 0 });
                                     scannedItemsInput.value = JSON.stringify(scannedItems);
-                
+                        
                                     codeInput.value = '';
                                     codeInput.focus();
-                
+                        
                                     if (scannedItems.length > 0) {
                                         addButton.style.display = 'none';
                                     }
-                
+                        
                                     var quantityInput = document.getElementById(`quantity_${code}`);
                                     quantityInput.addEventListener('input', function () {
                                         validateQuantity(code);
@@ -416,7 +423,7 @@
                                     alert('Item not found.');
                                 }
                             }
-                        }
+                        }                        
                 
                         function validateQuantity(productId) {
                             var quantityInput = document.getElementById(`quantity_${productId}`);
@@ -518,7 +525,7 @@
                             }
                         });
                     });
-                </script>                  
+                </script>
                 <!-- content-wrapper ends -->
                 <!-- partial:partials/_footer.html -->
                 <footer class="footer">

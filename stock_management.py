@@ -23,7 +23,8 @@ from werkzeug.utils import secure_filename
 from gridfs import GridFS
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import inch
+from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from openpyxl import Workbook, load_workbook
@@ -524,22 +525,37 @@ def update_sale():
             receiptValue = receiptValueData.get('receiptValue', 'no')
 
             if receiptValue == "yes":
+                receipt_width = 5 * inch
                 styles = getSampleStyleSheet()
-                data = [
-                    [Paragraph(f"Agency Name", styles['Normal']),
-                    Paragraph(f"{company['company_name']}", styles['Normal'])],
-                    [Paragraph(f"Date & Time", styles['Normal']),
-                    Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
-                    [Paragraph("Transaction Type", styles['Normal']),
-                    Paragraph(f"Sale", styles['Normal'])],
-                    [Paragraph(f"Transaction Date", styles['Normal']),
-                    Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
-                    [Paragraph("ITEMS PURCHASED", styles['Normal'])],
-                    [Paragraph("Item Name", styles['Heading4']),
-                    Paragraph("Quantity", styles['Heading4']),
-                    Paragraph("Unit Price", styles['Heading4']),
-                    Paragraph("Total Price", styles['Heading4'])]
-                ]
+                buffer = io.BytesIO()
+                def add_border_and_watermark(canvas, doc):
+                    canvas.setDash(1, 3)
+                    canvas.setLineWidth(0.5)
+                    canvas.setStrokeColor(colors.black)
+                    canvas.rect(0.3 * inch, 0.3 * inch, receipt_width - 0.6 * inch, doc.height - 0.6 * inch)
+                    canvas.saveState()
+                    canvas.setFont('Helvetica-Bold', 30)
+                    canvas.setFillColor(colors.lightgrey)
+                    canvas.translate(receipt_width / 2, doc.height / 2)
+                    canvas.rotate(45)
+                    canvas.drawCentredString(0, 0, company['company_name'])
+                    canvas.restoreState()
+
+                receipt_elements = []
+                receipt_elements.append(Paragraph("<b>Agency Name:</b>", styles['Normal']))
+                receipt_elements.append(Paragraph(company['company_name'], styles['Normal']))
+                receipt_elements.append(Spacer(1, 12))
+                receipt_elements.append(Paragraph("<b>Date & Time:</b>", styles['Normal']))
+                receipt_elements.append(Paragraph(timestamp.strftime('%Y-%m-%d %H:%M %p'), styles['Normal']))
+                receipt_elements.append(Spacer(1, 12))
+                receipt_elements.append(Paragraph("<b>Transaction Type:</b>", styles['Normal']))
+                receipt_elements.append(Paragraph("Sale", styles['Normal']))
+                receipt_elements.append(Spacer(1, 12))
+                receipt_elements.append(Paragraph("<b>Transaction Date:</b>", styles['Normal']))
+                receipt_elements.append(Paragraph(timestamp.strftime('%Y-%m-%d %H:%M %p'), styles['Normal']))
+                receipt_elements.append(Spacer(1, 12))
+                receipt_elements.append(Paragraph("<b><u>ITEMS PURCHASED</u></b>", styles['Heading4']))
+                receipt_elements.append(Spacer(1, 12))
 
             out_of_stock_items = []
             over_quantified = []
@@ -596,12 +612,11 @@ def update_sale():
                         db.inventories.update_one({'_id': existing_item['_id']}, {'$set': {'available_quantity': available_quantity}})
                         if receiptValue == "yes":
                             total_payment += revenue
-                            data.append([
-                                Paragraph(item['itemName'], styles['Normal']),
-                                Paragraph(str(item['quantity']), styles['Normal']),
-                                Paragraph(f"UGX {item['unitPrice']:.2f}", styles['Normal']),
-                                Paragraph(f"UGX {revenue:.2f}", styles['Normal'])
-                            ])
+                            receipt_elements.append(Paragraph(f"Item: {item['itemName']}", styles['Normal']))
+                            receipt_elements.append(Paragraph(f"Quantity: {item['quantity']}", styles['Normal']))
+                            receipt_elements.append(Paragraph(f"Unit Price: UGX {item['unitPrice']:.2f}", styles['Normal']))
+                            receipt_elements.append(Paragraph(f"Total Price: UGX {revenue:.2f}", styles['Normal']))
+                            receipt_elements.append(Spacer(1, 12))
                     else:
                         flash(f"Item {item['itemName']} does not exist.", 'error')
                 except (ValueError, TypeError) as e:
@@ -609,28 +624,17 @@ def update_sale():
 
             if updates == 1:
                 if receiptValue == "yes":
-                    data.append([])
-                    data.append([Paragraph("TOTAL PAYMENT", styles['Heading4']),
-                                Paragraph("", styles['Normal']),
-                                Paragraph("", styles['Normal']),
-                                Paragraph(f"UGX {total_payment:.2f}", styles['Normal'])])
+                    receipt_elements.append(Spacer(1, 24))
+                    receipt_elements.append(Paragraph("<b>TOTAL PAYMENT:</b>", styles['Heading4']))
+                    receipt_elements.append(Paragraph(f"UGX {total_payment:.2f}", styles['Normal']))
 
-                    buffer = io.BytesIO()
-                    doc = SimpleDocTemplate(buffer, pagesize=letter)
-                    table = Table(data, colWidths=[2.5 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch])
-                    table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 5), (-1, 5), colors.grey),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTNAME', (0, 6), (-1, -1), 'Helvetica'),
-                        ('FONTSIZE', (0, 0), (-1, -1), 10),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('BACKGROUND', (0, 1), (-1, 1), colors.lightgrey)
-                    ]))
+                    estimated_height = len(receipt_elements) * 14 + 100
+                    left_margin = (receipt_width - 2.5 * inch) / 2
+                    doc = SimpleDocTemplate(buffer, pagesize=(receipt_width, estimated_height),
+                            leftMargin=left_margin, rightMargin=left_margin,
+                            topMargin=0.2 * inch, bottomMargin=0.2 * inch)
 
-                    elements = [Spacer(1, 0.5 * inch), table]
-                    doc.build(elements)
+                    doc.build(receipt_elements, onFirstPage=add_border_and_watermark)
 
                     pdf_data = buffer.getvalue()
                     buffer.close()
@@ -690,22 +694,37 @@ def store_scanned_sale():
         success_messages = []
         error_messages = []
         if receiptValue == "yes":
+            receipt_width = 5 * inch
             styles = getSampleStyleSheet()
-            receipt_data = [
-                [Paragraph(f"Agency Name", styles['Normal']),
-                Paragraph(f"{company['company_name']}", styles['Normal'])],
-                [Paragraph(f"Date & Time", styles['Normal']),
-                Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
-                [Paragraph("Transaction Type", styles['Normal']),
-                Paragraph(f"Sale", styles['Normal'])],
-                [Paragraph(f"Transaction Date", styles['Normal']),
-                Paragraph(f"{timestamp.strftime('%Y-%m-%d %H:%M %p')}", styles['Normal'])],
-                [Paragraph("ITEMS PURCHASED", styles['Normal'])],
-                [Paragraph("Item Name", styles['Heading4']),
-                Paragraph("Quantity", styles['Heading4']),
-                Paragraph("Unit Price", styles['Heading4']),
-                Paragraph("Total Price", styles['Heading4'])]
-            ]
+            buffer = io.BytesIO()
+            def add_border_and_watermark(canvas, doc):
+                canvas.setDash(1, 3)
+                canvas.setLineWidth(0.5)
+                canvas.setStrokeColor(colors.black)
+                canvas.rect(0.3 * inch, 0.3 * inch, receipt_width - 0.6 * inch, doc.height - 0.6 * inch)
+                canvas.saveState()
+                canvas.setFont('Helvetica-Bold', 30)
+                canvas.setFillColor(colors.lightgrey)
+                canvas.translate(receipt_width / 2, doc.height / 2)
+                canvas.rotate(45)
+                canvas.drawCentredString(0, 0, company['company_name'])
+                canvas.restoreState()
+
+            receipt_elements = []
+            receipt_elements.append(Paragraph("<b>Agency Name:</b>", styles['Normal']))
+            receipt_elements.append(Paragraph(company['company_name'], styles['Normal']))
+            receipt_elements.append(Spacer(1, 12))
+            receipt_elements.append(Paragraph("<b>Date & Time:</b>", styles['Normal']))
+            receipt_elements.append(Paragraph(timestamp.strftime('%Y-%m-%d %H:%M %p'), styles['Normal']))
+            receipt_elements.append(Spacer(1, 12))
+            receipt_elements.append(Paragraph("<b>Transaction Type:</b>", styles['Normal']))
+            receipt_elements.append(Paragraph("Sale", styles['Normal']))
+            receipt_elements.append(Spacer(1, 12))
+            receipt_elements.append(Paragraph("<b>Transaction Date:</b>", styles['Normal']))
+            receipt_elements.append(Paragraph(timestamp.strftime('%Y-%m-%d %H:%M %p'), styles['Normal']))
+            receipt_elements.append(Spacer(1, 12))
+            receipt_elements.append(Paragraph("<b><u>ITEMS PURCHASED</u></b>", styles['Heading4']))
+            receipt_elements.append(Spacer(1, 12))
         total_payment = 0
         for item in scanned_items:
             product_id = item['product_id']
@@ -755,12 +774,11 @@ def store_scanned_sale():
 
                 if receiptValue == "yes":
                     total_payment += revenue
-                    receipt_data.append([
-                        Paragraph(existing_item['itemName'], styles['Normal']),
-                        Paragraph(str(sold_quantity), styles['Normal']),
-                        Paragraph(f"UGX {selling_price:.2f}", styles['Normal']),
-                        Paragraph(f"UGX {revenue:.2f}", styles['Normal'])
-                    ])
+                    receipt_elements.append(Paragraph(f"Item: {existing_item['itemName']}", styles['Normal']))
+                    receipt_elements.append(Paragraph(f"Quantity: {sold_quantity}", styles['Normal']))
+                    receipt_elements.append(Paragraph(f"Unit Price: UGX {selling_price:.2f}", styles['Normal']))
+                    receipt_elements.append(Paragraph(f"Total Price: UGX {revenue:.2f}", styles['Normal']))
+                    receipt_elements.append(Spacer(1, 12))
 
                 db.stock_sales.insert_one(data)
                 db.audit_logs.insert_one({
@@ -778,28 +796,17 @@ def store_scanned_sale():
         if success_messages:
             flash(' | '.join(success_messages), 'success')
             if receiptValue == "yes":
-                receipt_data.append([])
-                receipt_data.append([Paragraph("TOTAL PAYMENT", styles['Heading4']),
-                            Paragraph("", styles['Normal']),
-                            Paragraph("", styles['Normal']),
-                            Paragraph(f"UGX {total_payment:.2f}", styles['Normal'])])
+                receipt_elements.append(Spacer(1, 24))
+                receipt_elements.append(Paragraph("<b>TOTAL PAYMENT:</b>", styles['Heading4']))
+                receipt_elements.append(Paragraph(f"UGX {total_payment:.2f}", styles['Normal']))
 
-                buffer = io.BytesIO()
-                doc = SimpleDocTemplate(buffer, pagesize=letter)
-                table = Table(receipt_data, colWidths=[2.5 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch])
-                table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 5), (-1, 5), colors.grey),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTNAME', (0, 6), (-1, -1), 'Helvetica'),
-                    ('FONTSIZE', (0, 0), (-1, -1), 10),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                    ('BACKGROUND', (0, 1), (-1, 1), colors.lightgrey)
-                ]))
+                estimated_height = len(receipt_elements) * 14 + 100
+                left_margin = (receipt_width - 2.5 * inch) / 2
+                doc = SimpleDocTemplate(buffer, pagesize=(receipt_width, estimated_height),
+                        leftMargin=left_margin, rightMargin=left_margin,
+                        topMargin=0.2 * inch, bottomMargin=0.2 * inch)
 
-                elements = [Spacer(1, 0.5 * inch), table]
-                doc.build(elements)
+                doc.build(receipt_elements, onFirstPage=add_border_and_watermark)
 
                 pdf_data = buffer.getvalue()
                 buffer.close()
