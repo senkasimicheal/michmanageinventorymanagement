@@ -105,7 +105,7 @@ def userlogin():
             fields = ['add_properties', 'add_tenants', 'update_tenant', 'edit_tenant', 'manage_contracts', 'add_stock', 'update_stock',
                       'update_sales','inhouse','view_stock_info','view_revenue','view_sales','system_selling_price','point_of_sale',
                       'view_finance_dashboard','add_new_finance_account','update_finance_account','view_finance','edit_finance',
-                      'delete_finance']
+                      'delete_finance', 'quotations', 'invoices']
             
             is_manager = db.managers.find_one({'manager_email': manager['email'], 'name':manager['company_name']})
             if is_manager:

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Invoices</title>
+  {% if session['dark_mode'] == 'yes' %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/dark_mode.css') }}">
+  {% endif %}
+  <!-- base:css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/typicons/typicons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor.bundle.base.css') }}">
+  <!-- endinject -->
+  <!-- plugin css for this page -->
+  <!-- End plugin css for this page -->
+  <!-- inject:css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vertical-layout-light/style.css') }}">
+  <!-- endinject -->
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/webp">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+</head>
+
+<body>
+  <!-- preloader -->
+  <div class="preloader">
+    <div class="spinner" id="spinner">0%</div>
+  </div>
+
+  <script>
+    // hide preloader when document is ready
+    jQuery(document).ready(function () {
+      // add a delay of 1 second
+      setTimeout(function () {
+        // fade out the preloader
+        jQuery(".preloader").fadeOut("slow");
+        // show the hero area
+        jQuery(".container-scroller").addClass('visible');
+      }, 1000);
+    });
+  </script>
+
+  <div class="container-scroller">
+    <!-- partial:partials/_navbar.html -->
+    <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+      <div class="navbar-brand-wrapper d-flex justify-content-center">
+        <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
+          <a class="navbar-brand brand-logo" href="#"><img src="/static/images/logo.png" alt="logo" /></a>
+          <a class="navbar-brand brand-logo-mini" href="#"><img class="display-picture-logged-in"
+              src="data:image/jpeg;base64,{{ dp }}" alt="DP"></a>
+          <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+            <span class="typcn typcn-th-menu"></span>
+          </button>
+        </div>
+      </div>
+      <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+        <ul class="navbar-nav mr-lg-2">
+          <li class="nav-item nav-profile dropdown">
+            <a class="nav-link" href="#" data-toggle="dropdown" id="profileDropdown">
+              <img class="display-picture-logged-in" src="data:image/jpeg;base64,{{ dp }}" alt="DP">
+              <span class="nav-profile-name">{{ session['user_message1'] }}</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+              <a class="dropdown-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                <i class="typcn typcn-cog-outline text-primary"></i>
+                Settings
+              </a>
+              <a class="dropdown-item" href="{{ url_for('logout') }}">
+                <i class="typcn typcn-eject text-primary"></i>
+                Logout
+              </a>
+            </div>
+          </li>
+          <li class="nav-item nav-user-status dropdown">
+
+          </li>
+        </ul>
+        <ul class="navbar-nav navbar-nav-right">
+          <li class="nav-item dropdown">
+            <a class="nav-link count-indicator dropdown-toggle d-flex justify-content-center align-items-center"
+              id="messageDropdown" href="#" data-toggle="dropdown">
+              <i class="typcn typcn-cog-outline mx-0"></i>
+              <span class="count"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
+              aria-labelledby="messageDropdown">
+              <p class="mb-0 font-weight-normal float-left dropdown-header">User Account</p>
+              <a class="dropdown-item preview-item" href="{{url_for('managerAccountSetup_route.account_setup_page')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Settings
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    User account set up
+                  </p>
+                </div>
+              </a>
+              {% if session['is_manager'] == 'is_manager' %}
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.view_user_accounts')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Users
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    View other users
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('otherUserAccounts_route.add_new_manager_email')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Add User
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Add User
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('userRights_route.manage_user_rights')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">User rights
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Manage user rights
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_audit_logs')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Audit logs
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Activities
+                  </p>
+                </div>
+              </a>
+              <a class="dropdown-item preview-item" href="{{url_for('logs_route.view_login_history')}}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Login history
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Login history
+                  </p>
+                </div>
+              </a>
+              {%endif%}
+              <a class="dropdown-item preview-item" href="{{ url_for('logout') }}">
+                <div class="preview-item-content flex-grow">
+                  <h6 class="preview-subject ellipsis font-weight-normal">Log Out
+                  </h6>
+                  <p class="font-weight-light small-text text-muted mb-0">
+                    Log Out
+                  </p>
+                </div>
+              </a>
+            </div>
+          </li>
+        </ul>
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button"
+          data-toggle="offcanvas">
+          <span class="typcn typcn-th-menu"></span>
+        </button>
+      </div>
+    </nav>
+    <!-- partial -->
+    <nav class="navbar-breadcrumb col-xl-12 col-12 d-flex flex-row p-0">
+      <div class="navbar-links-wrapper d-flex align-items-stretch">
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-calendar-outline"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-mail"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-folder"></i></a>
+        </div>
+        <div class="nav-link">
+          <a href="javascript:;"><i class="typcn typcn-document-text"></i></a>
+        </div>
+      </div>
+      <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+        <ul class="navbar-nav mr-lg-2">
+          <li class="nav-item ml-0">
+            <h4 class="mb-0">Invoices</h4>
+          </li>
+        </ul>
+        <ul class="navbar-nav navbar-nav-right">
+          <li class="nav-item mr-0">
+            <h5 class="mb-0">{{session['user_message2']}} Days left</h5>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <div class="container-fluid page-body-wrapper">
+
+      <!-- partial -->
+      <!-- partial:partials/_sidebar.html -->
+      <nav class="sidebar sidebar-offcanvas" id="sidebar">
+        <ul class="nav">
+            {% if session['is_manager'] == 'is_manager' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.stock_overview') }}">
+                    <i class="typcn typcn-device-desktop menu-icon"></i>
+                    <span class="menu-title">Dashboard</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('add_stock') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.add_new_stock_page') }}" id="new-stock">
+                    <i class="typcn typcn-document-add menu-icon"></i>
+                    <span class="menu-title">New Stock</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('update_stock') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_existing_stock') }}" id="update-new-stock">
+                <i class="typcn typcn-briefcase menu-icon"></i>
+                <span class="menu-title">Update Stock</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.generate_bar_codes') }}" id="update-new-stock">
+                    <i class="typcn typcn-briefcase menu-icon"></i>
+                    <span class="menu-title">Generate Bar Codes</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('quotations') != 'no' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('invoicingQuotation_route.quotation_page') }}" id="update-sale">
+                  <i class="typcn typcn-book menu-icon"></i>
+                  <span class="menu-title">Generate Quotation</span>
+              </a>
+            </li>
+            {% endif %}
+            {% if session.get('invoices') != 'no' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('invoicingQuotation_route.invoice_page') }}" id="update-sale">
+                  <i class="typcn typcn-book menu-icon"></i>
+                  <span class="menu-title">Generate Invoice</span>
+              </a>
+            </li>
+            {% endif %}
+            {% if session.get('update_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_sales_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Update Sales</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.scan_bar_code_page') }}" id="update-sale">
+                    <i class="typcn typcn-book menu-icon"></i>
+                    <span class="menu-title">Scan Bar Code</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('update_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.expenses_page') }}" id="update-sale">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">Record Expenses</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_stock_info') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.stock_details') }}">
+                    <i class="typcn typcn-cloud-storage menu-icon"></i>
+                    <span class="menu-title">Current Stock</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.stock_history_details') }}">
+                    <i class="typcn typcn-cloud-storage menu-icon"></i>
+                    <span class="menu-title">Stock History</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_revenue') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.revenue_details') }}">
+                    <i class="typcn typcn-business-card menu-icon"></i>
+                    <span class="menu-title">Profits</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.sales_details') }}">
+                    <i class="typcn typcn-arrow-sorted-up menu-icon"></i>
+                    <span class="menu-title">Sales</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('view_sales') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.view_expenses') }}" id="update-sale">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">View Expenses</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if session.get('inhouse') != 'no' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_production_activity') }}" id="inhouse">
+                    <i class="typcn typcn-document-add menu-icon"></i>
+                    <span class="menu-title">Production</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.update_inhouse_use_page') }}" id="inhouse-use">
+                    <i class="typcn typcn-document-add menu-icon"></i>
+                    <span class="menu-title">In-House Use</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.inhouse_items_use_details') }}">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">In-House Info</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('stockManagement_route.view_production_info') }}">
+                    <i class="typcn typcn-calculator menu-icon"></i>
+                    <span class="menu-title">Production Info</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+      </nav>
+      <!-- partial -->
+      <div class="main-panel">
+        <div id="notification" class="notification"></div>
+
+        <div>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert {{ 'alert-success' if category == 'success' else 'alert-danger' }}"
+            style="font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: small;">
+            {{ message }}
+          </div>
+          {% endfor %}
+          {% endif %}
+          {% endwith %}
+        </div>
+
+        <div class="update-sales-form content-wrapper">
+          <form id="myForm" class="property_forn content-pannel" action="{{ url_for('invoicingQuotation_route.invoice') }}" method="POST">
+            <label class="input_labels" for="">Item Name</label>
+            <div class="custom-select-container">
+                <input type="text" id="filterInput" name="typed_input" placeholder="Type to search...">
+                <div class="options-container" id="optionsContainer">
+                </div>
+            </div>
+            <div id="stock_details"></div>
+        
+            <label class="input_labels" for="">Quantity</label>
+            <input class="property_inputs" type="number" name="update_sale_quantity" id="update_sale_quantity" min="1">
+            <div id="quantity_warning" style="display: none; color: red;">Quantity invoiced exceeds available stock.</div>
+        
+            {% if session.get('system_selling_price') == 'no' or session['is_manager'] == 'is_manager' %}
+            <label class="input_labels" for="">Unit Selling Price</label>
+            <input class="property_inputs" type="number" name="update_sale_unit_price" id="update_sale_unit_price" min="1"><br>
+            <input type="hidden" id="hidden_selling_price">
+            {%else%}
+            <input type="hidden" name="update_sale_unit_price" id="hidden_selling_price">
+            {%endif%}
+        
+            <button type="button" id="update-sale-button">Add Item</button>
+            <input type="submit" class="btn" id="submit-button" value="Submit">
+            <span id="wait-message" style="color: green; display: none;">Please wait, your data is being saved...</span>
+          </form>        
+        </div>
+
+        <script>
+          const itemsToUpdate = {{ available_itemNames | tojson }};
+        </script>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            const filterInput = document.getElementById('filterInput');
+            const optionsContainer = document.getElementById('optionsContainer');
+            const stockDetailsElement = document.getElementById('stock_details');
+            const updateSaleQuantity = document.getElementById('update_sale_quantity');
+            const quantityWarning = document.getElementById('quantity_warning');
+            const updateSaleButton = document.getElementById('update-sale-button');
+            const submitButton = document.getElementById('submit-button');
+            const hiddenSellingPriceInput = document.getElementById('hidden_selling_price');
+            let selectedItem = null;
+
+            if (typeof itemsToUpdate === 'undefined') {
+              console.error('itemsToUpdate is not defined.');
+              return;
+            }
+
+            function populateOptions() {
+              optionsContainer.innerHTML = '';
+              itemsToUpdate.forEach(item => {
+                const optionDiv = document.createElement('div');
+                optionDiv.textContent = item.itemName;
+                optionDiv.dataset.availableQuantity = item.available_quantity;
+                optionDiv.dataset.unitOfMeasurement = item.unitOfMeasurement;
+
+                if (item.selling_price) {
+                  optionDiv.dataset.sellingPrice = item.selling_price;
+                }
+
+                optionDiv.addEventListener('click', function () {
+                  filterInput.value = item.itemName;
+                  let stockDetailsText = 'Available Quantity: ' + item.available_quantity + ' ' + item.unitOfMeasurement;
+
+                  if (item.selling_price) {
+                    stockDetailsText += '\nSelling Price: ' + item.selling_price;
+
+                    if (hiddenSellingPriceInput) {
+                      hiddenSellingPriceInput.value = item.selling_price;
+                    }
+                  }else {
+                    stockDetailsText += '\nSelling Price: ' + 0;
+                    hiddenSellingPriceInput.value = 0;
+                  }
+
+                  stockDetailsElement.innerText = stockDetailsText;
+                  stockDetailsElement.style.color = 'green';
+                  selectedItem = item;
+                  optionsContainer.style.display = 'none';
+                  updateSaleQuantity.value = '';
+                  quantityWarning.style.display = 'none';
+                  updateSaleButton.disabled = false;
+                  submitButton.disabled = false;
+                });
+                optionsContainer.appendChild(optionDiv);
+              });
+            }
+
+            filterInput.addEventListener('focus', function () {
+              optionsContainer.style.display = 'block';
+            });
+
+            filterInput.addEventListener('input', function () {
+              const filter = filterInput.value.toLowerCase().trim();
+              const options = optionsContainer.children;
+
+              for (let i = 0; i < options.length; i++) {
+                const optionText = options[i].textContent.toLowerCase();
+                if (optionText.includes(filter)) {
+                  options[i].style.display = '';
+                } else {
+                  options[i].style.display = 'none';
+                }
+              }
+            });
+
+            document.addEventListener('click', function (event) {
+              if (!optionsContainer.contains(event.target) && !filterInput.contains(event.target)) {
+                optionsContainer.style.display = 'none';
+              }
+            });
+
+            updateSaleQuantity.addEventListener('input', function () {
+              if (selectedItem) {
+                const availableQuantity = parseInt(selectedItem.available_quantity, 10);
+                const quantitySold = parseInt(this.value, 10);
+
+                if (quantitySold > availableQuantity) {
+                  quantityWarning.style.display = 'block';
+                  updateSaleButton.disabled = true;
+                  submitButton.disabled = true;
+                } else {
+                  quantityWarning.style.display = 'none';
+                  updateSaleButton.disabled = false;
+                  submitButton.disabled = false;
+                }
+              }
+            });
+
+            updateSaleButton.addEventListener('click', function () {
+              if (updateSaleButton.disabled) {
+                alert('Cannot add item. Quantity sold exceeds available stock.');
+              }
+            });
+
+            populateOptions();
+          });
+        </script>
+        <footer class="footer">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-sm-flex justify-content-center justify-content-sm-between">
+                <p>
+                  &copy; <span id="displayYear"></span> All Rights Reserved By
+                  <a href="#">Mich Manage</a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(function () {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function (alert) {
+          alert.style.display = 'none';
+        });
+      }, 5000);
+    });
+  </script>
+
+  <script>
+    let counter = 0;
+    const spinner = document.getElementById('spinner');
+
+    const intervalId = setInterval(() => {
+      counter++;
+      spinner.textContent = `${counter}%`;
+
+      if (counter === 100) {
+        clearInterval(intervalId);
+      }
+    }, 100);
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        let itemsArray = [];
+
+        // Handle the "Update Sale" button click event
+        document.getElementById('update-sale-button').addEventListener('click', () => {
+            const itemName = document.querySelector('input[name="typed_input"]')?.value.trim();
+            const quantity = document.querySelector('input[name="update_sale_quantity"]')?.value.trim();
+            const unitPrice = document.querySelector('input[name="update_sale_unit_price"]')?.value.trim();
+
+            // Validate inputs
+            if (!itemName || !quantity || !unitPrice) {
+                alert("Please fill in all fields before updating an invoice.");
+                return;
+            }
+
+            // Add the new item to the itemsArray
+            const itemObject = {
+                itemName,
+                quantity: parseInt(quantity, 10),
+                unitPrice: parseFloat(unitPrice),
+            };
+
+            itemsArray.push(itemObject);
+
+            // Clear input fields
+            document.querySelector('input[name="typed_input"]').value = '';
+            document.querySelector('input[name="update_sale_quantity"]').value = '';
+            document.querySelector('input[name="update_sale_unit_price"]').value = '';
+        });
+
+        // Email validation function
+        function validateEmail(email) {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailPattern.test(email);
+        }
+
+        // Date validation function
+        function validateDate(dueDate) {
+            const today = new Date();
+            const due = new Date(dueDate);
+            return due >= today;
+        }
+
+        // Ask for user input with validation
+        function getValidatedInput(promptMessage, validationFunction, errorMessage) {
+            let input;
+            while (true) {
+                input = prompt(promptMessage);
+                if (!input) {
+                    alert("This field is required.");
+                } else if (!validationFunction(input.trim())) {
+                    alert(errorMessage);
+                } else {
+                    return input.trim();
+                }
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('myForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // Check if at least one item was added
+            if (itemsArray.length === 0) {
+                alert("Please update at least one item.");
+                return;
+            }
+
+            // Get and validate email input
+            const emailInput = getValidatedInput(
+                "Please enter your email address:",
+                validateEmail,
+                "Please enter a valid email address."
+            );
+
+            // Get and validate bill to input
+            const billToInput = getValidatedInput(
+                "Please enter the company billed (Bill To):",
+                (input) => input.length > 0,
+                "Bill To is required."
+            );
+
+            // Get and validate due date input
+            const dueDateInput = getValidatedInput(
+                "Please enter the due date (YYYY-MM-DD):",
+                validateDate,
+                "Please enter a valid future due date."
+            );
+
+            // Disable the submit button and show a wait message
+            const submitButton = document.getElementById("submit-button");
+            submitButton.disabled = true;
+
+            // Submit the form via AJAX using fetch
+            fetch('{{ url_for('invoicingQuotation_route.invoice') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    items: itemsArray,
+                    email: emailInput,  // Send the email value
+                    dueDate: dueDateInput, // Send the due date value
+                    billTo: billToInput // Send the bill to value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear the itemsArray after successful submission
+                itemsArray = [];
+
+                if (data.download_url) {
+                    window.location.href = data.download_url; // Trigger download
+                }
+                if (data.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url; // Redirect after download
+                    }, 1000); // Optional delay before redirecting
+                }
+            })
+            .catch((error) => {
+                alert("An error occurred while submitting updates.");
+                submitButton.disabled = false; // Re-enable the submit button on error
+            });
+        });
+    });
+  </script>
+
+  <script src="{{ url_for('static', filename='js/vendor.bundle.base.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/Chart.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/off-canvas.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/hoverable-collapse.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/template.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/todolist.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

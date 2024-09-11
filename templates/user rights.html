@@ -227,6 +227,22 @@
               </a>
           </li>
           {% endif %}
+          {% if session.get('quotations') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('invoicingQuotation_route.quotation_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Generate Quotation</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('invoices') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('invoicingQuotation_route.invoice_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Generate Invoice</span>
+            </a>
+          </li>
+          {% endif %}
           {% if session.get('update_sales') != 'no' %}
           <li class="nav-item">
               <a class="nav-link" href="{{ url_for('stockManagement_route.update_sales_page') }}" id="update-sale">

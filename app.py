@@ -52,6 +52,7 @@ from user_rights import userRights
 from logs import logs
 from admin import Admin
 from accounting import accounting
+from invoicing_quotation import invoicing_quotation
 from utils import get_mongo_client, get_db_and_fs, get_mail_instance, send_async_email
 
 app = Flask(__name__, static_folder='static')
@@ -83,6 +84,7 @@ app.register_blueprint(userRights)
 app.register_blueprint(logs)
 app.register_blueprint(Admin)
 app.register_blueprint(accounting)
+app.register_blueprint(invoicing_quotation)
 
 @app.after_request
 def after_request(response):

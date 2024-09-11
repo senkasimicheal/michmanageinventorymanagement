@@ -229,7 +229,7 @@
       <!-- partial -->
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
-        <ul class="nav"> 
+        <ul class="nav">
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
           {% if session['is_manager'] == 'is_manager' %}
           <li class="nav-item">
@@ -259,6 +259,22 @@
                   <i class="typcn typcn-briefcase menu-icon"></i>
                   <span class="menu-title">Generate Bar Codes</span>
               </a>
+          </li>
+          {% endif %}
+          {% if session.get('quotations') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('invoicingQuotation_route.quotation_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Generate Quotation</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('invoices') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('invoicingQuotation_route.invoice_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Generate Invoice</span>
+            </a>
           </li>
           {% endif %}
           {% if session.get('update_sales') != 'no' %}

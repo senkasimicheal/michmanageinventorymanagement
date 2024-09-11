@@ -153,6 +153,8 @@ def register_account():
             'view_sales': 'no',
             'system_selling_price': 'no',
             'point_of_sale': 'no',
+            'quotations': 'no',
+            'invoices': 'no',
             'view_finance_dashboard': 'no',
             'add_new_finance_account': 'no',
             'update_finance_account': 'no',

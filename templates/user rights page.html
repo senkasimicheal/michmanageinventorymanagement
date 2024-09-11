@@ -223,6 +223,22 @@
               </a>
           </li>
           {% endif %}
+          {% if session.get('quotations') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('invoicingQuotation_route.quotation_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Generate Quotation</span>
+            </a>
+          </li>
+          {% endif %}
+          {% if session.get('invoices') != 'no' %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('invoicingQuotation_route.invoice_page') }}" id="update-sale">
+                <i class="typcn typcn-book menu-icon"></i>
+                <span class="menu-title">Generate Invoice</span>
+            </a>
+          </li>
+          {% endif %}
           {% if session.get('update_sales') != 'no' %}
           <li class="nav-item">
               <a class="nav-link" href="{{ url_for('stockManagement_route.update_sales_page') }}" id="update-sale">
@@ -366,6 +382,7 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
+          <p>User: {{managerName}}</p>
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
           <form id="permissionForm2" class="property_forn content-pannel" action="{{ url_for('userRights_route.user_rights_initiated') }}" method="POST">
             <input type="hidden" name="email" value="{{ email }}">
@@ -414,6 +431,16 @@
               <label for="mySwitch14">Point Of Sale Capture</label>
               <input type="checkbox" id="mySwitch14" name="permissions" data-input-id="hiddenInput14">
               <input type="hidden" id="hiddenInput14" name="point_of_sale" value="{{ point_of_sale }}">
+            </div>
+            <div>
+              <label for="mySwitch15">Quotations</label>
+              <input type="checkbox" id="mySwitch15" name="permissions" data-input-id="hiddenInput15">
+              <input type="hidden" id="hiddenInput15" name="quotations" value="{{ quotations }}">
+            </div>
+            <div>
+              <label for="mySwitch16">Invoices</label>
+              <input type="checkbox" id="mySwitch16" name="permissions" data-input-id="hiddenInput16">
+              <input type="hidden" id="hiddenInput16" name="invoices" value="{{ invoices }}">
             </div>
             <input required type="submit" class="btn" id="submitButton" value="Save">
             <span id="wait-message" style="color: green; display: none;">Please wait, we are saving user rights...</span>

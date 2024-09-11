@@ -50,6 +50,7 @@ def manage_user_rights_page(email,company_name):
         else:
             dp_str = None
         manager = db.registered_managers.find_one({'email': email, 'company_name': company_name})
+        managerName = manager['name']
         add_properties = manager.get('add_properties', "no")
         add_tenants = manager.get('add_tenants', "no")
         update_tenant = manager.get('update_tenant', "no")
@@ -64,6 +65,8 @@ def manage_user_rights_page(email,company_name):
         view_sales = manager.get('view_sales', "no")
         system_selling_price = manager.get('system_selling_price', "no")
         point_of_sale = manager.get('point_of_sale', "no")
+        quotations = manager.get('quotations', "no")
+        invoices = manager.get('invoices', "no")
         view_finance_dashboard = manager.get('view_finance_dashboard', "no")
         add_new_finance_account = manager.get('add_new_finance_account', "no")
         update_finance_account = manager.get('update_finance_account', "no")
@@ -71,13 +74,13 @@ def manage_user_rights_page(email,company_name):
         edit_finance = manager.get('edit_finance', "no")
         delete_finance = manager.get('delete_finance', "no")
         
-        return render_template('user rights page.html', email=email,company_name=company_name,
+        return render_template('user rights page.html', email=email,company_name=company_name,managerName=managerName,
                                add_properties=add_properties,add_tenants=add_tenants,
                                update_tenant=update_tenant,edit_tenant=edit_tenant,
                                manage_contracts=manage_contracts,add_stock=add_stock,
                                update_stock=update_stock,update_sales=update_sales,inhouse=inhouse,
                                view_stock_info=view_stock_info,view_revenue=view_revenue,view_sales=view_sales,
-                               system_selling_price=system_selling_price,point_of_sale=point_of_sale,
+                               system_selling_price=system_selling_price,point_of_sale=point_of_sale,quotations=quotations,invoices=invoices,
                                view_finance_dashboard=view_finance_dashboard,add_new_finance_account=add_new_finance_account,
                                update_finance_account=update_finance_account,view_finance=view_finance,
                                edit_finance=edit_finance,delete_finance=delete_finance,dp=dp_str)
@@ -106,6 +109,8 @@ def user_rights_initiated():
         view_sales = request.form.get('view_sales')
         system_selling_price = request.form.get('system_selling_price')
         point_of_sale = request.form.get('point_of_sale')
+        quotations = request.form.get('quotations')
+        invoices = request.form.get('invoices')
         view_finance_dashboard = request.form.get('view_finance_dashboard')
         add_new_finance_account = request.form.get('add_new_finance_account')
         update_finance_account = request.form.get('update_finance_account')
@@ -142,6 +147,10 @@ def user_rights_initiated():
             update_fields['system_selling_price'] = system_selling_price
         if point_of_sale:
             update_fields['point_of_sale'] = point_of_sale
+        if quotations:
+            update_fields['quotations'] = quotations
+        if invoices:
+            update_fields['invoices'] = invoices
         if view_finance_dashboard:
             update_fields['view_finance_dashboard'] = view_finance_dashboard
         if add_new_finance_account:
