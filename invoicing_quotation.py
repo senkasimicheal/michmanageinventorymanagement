@@ -75,14 +75,11 @@ def invoice_page():
                             'unitOfMeasurement': item.get('unitOfMeasurement', '')
                         }
                         
-                        # Add the 'sellingPrice' field if it exists in the item
                         if 'selling_price' in item:
                             item_dict['selling_price'] = item['selling_price']
 
-                        # Append the item_dict to the available_itemNames list
                         available_itemNames.append(item_dict)
 
-                # Sort the available_itemNames list in alphabetical order by 'itemName'
                 available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
                 return render_template('invoice.html', dp=dp_str, available_itemNames=available_itemNames)
@@ -277,14 +274,11 @@ def quotation_page():
                             'unitOfMeasurement': item.get('unitOfMeasurement', '')
                         }
                         
-                        # Add the 'sellingPrice' field if it exists in the item
                         if 'selling_price' in item:
                             item_dict['selling_price'] = item['selling_price']
 
-                        # Append the item_dict to the available_itemNames list
                         available_itemNames.append(item_dict)
 
-                # Sort the available_itemNames list in alphabetical order by 'itemName'
                 available_itemNames = sorted(available_itemNames, key=lambda x: x['itemName'])
 
                 return render_template('quotation.html', dp=dp_str, available_itemNames=available_itemNames)
@@ -333,17 +327,15 @@ def quotation():
             styles = getSampleStyleSheet()
             elements = []
             
-            elements.append(Paragraph("<b><font size=16>QUOTATION</font></b>", styles['Title']))
-            elements.append(Spacer(1, 24))
-            
-            elements.append(Paragraph(f"<b>{company['company_name']}</b>", styles['Title']))
-            elements.append(Paragraph(f"{company['address']}", styles['Normal']))
+            elements.append(Paragraph("<b><font size=16>QUOTATION</font></b>", styles['Title']))         
+            elements.append(Paragraph(f"<b>From:</b> {company['company_name']}", styles['Normal']))
+            elements.append(Paragraph(f"Address: {company['address']}", styles['Normal']))
             elements.append(Paragraph(f"Phone: {company['phone_number']}", styles['Normal']))
             elements.append(Paragraph(f"Email: {company['email']}", styles['Normal']))
             elements.append(Spacer(1, 24))
 
             elements.append(Paragraph(f"<b>To:</b> {client_name}", styles['Normal']))
-            elements.append(Paragraph(f"{client_address}", styles['Normal']))
+            elements.append(Paragraph(f"Address: {client_address}", styles['Normal']))
             elements.append(Paragraph(f"Phone: {telephone_contact}", styles['Normal']))
             elements.append(Paragraph(f"Email: {email}", styles['Normal']))
             elements.append(Spacer(1, 24))
@@ -353,7 +345,7 @@ def quotation():
             elements.append(Paragraph(f"<b>Due Date:</b> {due_date}", styles['Normal']))
             elements.append(Spacer(1, 24))
 
-            elements.append(Paragraph("<b><u>Quotation Details</u></b>", styles['Heading2']))
+            elements.append(Paragraph("<b><u>Details</u></b>", styles['Heading2']))
             elements.append(Spacer(1, 12))
 
             table_data = [['Description', 'Quantity', 'Unit Price', 'Amount']]
