@@ -231,12 +231,12 @@ def invoice():
 
             flash('Invoice generated successfully', 'success')
             return jsonify({
-                'download_url': url_for('invoicingQuotation_route.download_invoice', filename=filename),
+                'download_url': url_for('invoicingQuotation_route.download_invoice_quotation', filename=filename),
                 'redirect_url': url_for('invoicingQuotation_route.invoice_page')
             })
 
 @invoicing_quotation.route('/download-invoice/<filename>')
-def download_invoice(filename):
+def download_invoice_quotation(filename):
     return send_from_directory(directory='.', path=filename, as_attachment=True, download_name=filename)
 
 def remove_file_later(filepath, delay=10):
@@ -423,8 +423,8 @@ def quotation():
             remove_file_later(filepath, delay=10)
             db.quotations.insert_one({'company_name': company['company_name'], 'quotation_number': quotation_number})
 
-            flash('Invoice generated successfully', 'success')
+            flash('Quotation generated successfully', 'success')
             return jsonify({
-                'download_url': url_for('invoicingQuotation_route.download_invoice', filename=filename),
-                'redirect_url': url_for('invoicingQuotation_route.invoice_page')
+                'download_url': url_for('invoicingQuotation_route.download_invoice_quotation', filename=filename),
+                'redirect_url': url_for('invoicingQuotation_route.quotation_page')
             })
