@@ -382,11 +382,13 @@
           {% endwith %}
         </div>
         <div class="content-wrapper">
-          <p>User: {{managerName}}</p>
           {% if session['account_type'] == 'Enterprise Resource Planning' %}
           <form id="permissionForm2" class="property_forn content-pannel" action="{{ url_for('userRights_route.user_rights_initiated') }}" method="POST">
             <input type="hidden" name="email" value="{{ email }}">
             <input type="hidden" name="company_name" value="{{ company_name }}">
+            <div>
+              <p>User: {{managerName}}</p>
+            </div>
             <div>
               <label for="mySwitch6">Add Stock</label>
               <input type="checkbox" id="mySwitch6" name="permissions" data-input-id="hiddenInput6">
@@ -451,6 +453,9 @@
           <form id="permissionForm3" class="property_forn" action="{{ url_for('userRights_route.user_rights_initiated') }}" method="POST">
             <input type="hidden" name="email" value="{{ email }}">
             <input type="hidden" name="company_name" value="{{ company_name }}">
+            <div>
+              <p>User: {{managerName}}</p>
+            </div>
             <div>
               <label for="mySwitch25">View Finance Dashboard</label>
               <input type="checkbox" id="mySwitch25" name="permissions" data-input-id="hiddenInput25">
